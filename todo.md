@@ -128,3 +128,5 @@
 - [x] Validar desktop e mobile com TypeScript, testes e screenshots
 - [x] Validar visualmente em desktop e mobile o painel interno da call ativa com botões de sair e compartilhar tela
 - [x] Validar visualmente que a nova disposição não sobrepõe composer, canais ou previews em uma sala ativa
+- [x] Estilizar manualmente a caixa de salas de voz e o botão de adicionar call com acabamento profissional
+- [x] Validar a nova caixa de voz em desktop e mobile após corrigir o seletor visual

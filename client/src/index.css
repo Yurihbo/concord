@@ -133,3 +133,13 @@ a { color: inherit; text-decoration: none; }
 .voice-call-controls button.leave-call:hover { color: #ffffff; border-color: #dc2626; background: #dc2626; }
 .call-dock { display: none !important; }
 @media (max-width: 760px) { .voice-call-panel { margin: 10px 14px 0; padding: 13px; border-radius: 12px; }.voice-call-heading h3 { font-size: 13px; }.voice-call-live { font-size: 8px; }.voice-call-controls { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }.voice-call-controls button { width: 100%; padding: 0 8px; }.voice-call-controls button.leave-call { margin-left: 0; grid-column: 1 / -1; }.voice-call-controls button span { white-space: nowrap; } }
+
+/* Professional voice-room box treatment */
+.voice-channel-group { padding: 11px 9px 10px; border: 1px solid #29496d; border-radius: 12px; background: linear-gradient(145deg, #132842, #0f2035); box-shadow: inset 0 1px rgba(255,255,255,.05), 0 10px 20px rgba(3, 12, 27, .12); }
+.voice-channel-group .group-label { align-items: center; padding: 0 2px 10px; color: #aac9ec; font-size: 9px; }
+.voice-channel-group .group-label span { letter-spacing: .12em; }
+.voice-channel-group .sidebar-add-button { width: 26px; height: 26px; border-color: #5f87b7; border-radius: 8px; color: #e8f3ff; background: #24517e; box-shadow: 0 3px 10px rgba(37, 99, 235, .22); }
+.voice-channel-group .sidebar-add-button:hover { transform: translateY(-1px); background: #3476b5; border-color: #9bc7ff; box-shadow: 0 5px 14px rgba(59, 130, 246, .32); }
+.voice-channel-group .voice-link { margin: 0; border: 1px solid transparent; border-radius: 9px; background: rgba(38, 81, 126, .55); }
+.voice-channel-group .voice-link:hover, .voice-channel-group .voice-link.active { border-color: #66a8ee; background: #24517e; box-shadow: 0 5px 14px rgba(8, 27, 52, .22); }
+.voice-channel-group > .dm-status { margin-top: 2px; padding: 10px 8px; border: 1px dashed #41678f; color: #b8cde5 !important; background: rgba(30, 63, 98, .38); }

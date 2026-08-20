@@ -72,3 +72,13 @@
 - [x] Implementar renegociação remota para novas offers de vídeo e tela
 - [x] Alternar câmera sem destruir a conexão WebRTC ativa
 - [x] Cobrir histórico, signaling e previews com testes comportamentais
+- [x] Listar dispositivos de áudio disponíveis e permitir escolher microfone e saída
+- [x] Adicionar teste de microfone com nível de entrada e feedback visual
+- [x] Adicionar modo expandido para compartilhamento de tela dentro da chamada
+- [x] Adicionar suporte Picture-in-Picture para preview remoto/local quando disponível
+- [x] Reforçar adição de amigos pelo código público completo da conta
+- [x] Validar código, impedir adicionar a própria conta e atualizar a lista após sucesso
+- [x] Criar testes e validação visual para dispositivos, PiP e amizade por código
+- [x] Usar o preview remoto como sink único para respeitar a saída selecionada
+- [x] Adicionar Picture-in-Picture para preview remoto e local
+- [x] Validar o fluxo de código público com formato completo e bloqueio da própria conta

@@ -11,6 +11,8 @@ export class ConcordWebRTCService {
   private localStream: MediaStream | null = null;
   private screenStream: MediaStream | null = null;
   private cameraStream: MediaStream | null = null;
+  private audioContext: AudioContext | null = null;
+  private analyser: AnalyserNode | null = null;
   private state: CallState = "idle";
   private onStateChange?: (state: CallState) => void;
 
@@ -18,14 +20,35 @@ export class ConcordWebRTCService {
   getState(): CallState { return this.state; }
   private updateState(state: CallState): void { this.state = state; this.onStateChange?.(state); }
 
-  async captureMicrophone(): Promise<MediaStream> {
+  async listAudioDevices(): Promise<MediaDeviceInfo[]> {
+    if (!navigator.mediaDevices?.enumerateDevices) return [];
+    return (await navigator.mediaDevices.enumerateDevices()).filter((device) => device.kind === "audioinput" || device.kind === "audiooutput");
+  }
+
+  async captureMicrophone(deviceId?: string): Promise<MediaStream> {
     if (!navigator.mediaDevices?.getUserMedia) throw new Error("Este navegador não permite acesso ao microfone.");
     this.updateState("requesting");
     try {
-      this.localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+      this.localStream = await navigator.mediaDevices.getUserMedia({ audio: deviceId ? { deviceId: { exact: deviceId } } : true });
       this.updateState("connected");
       return this.localStream;
     } catch (error) { this.updateState("error"); throw error; }
+  }
+
+  getMicrophoneLevel(): number {
+    if (!this.analyser) return 0;
+    const buffer = new Uint8Array(this.analyser.fftSize);
+    this.analyser.getByteTimeDomainData(buffer);
+    const average = buffer.reduce((sum, value) => sum + Math.abs(value - 128), 0) / buffer.length;
+    return Math.min(1, average / 48);
+  }
+
+  startMicrophoneMeter(): void {
+    if (!this.localStream) return;
+    this.audioContext = new AudioContext();
+    const source = this.audioContext.createMediaStreamSource(this.localStream);
+    this.analyser = this.audioContext.createAnalyser();
+    source.connect(this.analyser);
   }
 
   async captureCamera(): Promise<MediaStream> {
@@ -110,6 +133,10 @@ export class ConcordWebRTCService {
     this.localStream = null;
     this.screenStream = null;
     this.cameraStream = null;
+    this.analyser?.disconnect();
+    void this.audioContext?.close();
+    this.analyser = null;
+    this.audioContext = null;
     this.updateState("idle");
   }
 }

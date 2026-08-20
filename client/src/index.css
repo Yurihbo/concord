@@ -83,3 +83,33 @@ a { color: inherit; text-decoration: none; }
 @media (max-width: 520px) { .mobile-nav-actions { gap: 4px; }.mobile-nav-actions button { width: 30px; height: 30px; }.landing-nav { height: 72px; }.landing-nav .logo-mark { width: 35px; height: 35px; }.hero-copy h1 { font-size: 43px; }.hero-copy > p { font-size: 14px; }.hero-actions { align-items: start; flex-direction: column; gap: 18px; }.preview-body { grid-template-columns: 38px 110px 1fr; min-height: 300px; }.preview-sidebar { padding: 15px 8px; }.preview-chat .chat-heading { padding: 15px 12px; }.preview-messages { padding: 13px 10px; }.preview-message p { font-size: 8px; }.preview-input { left: 10px; right: 10px; }.friends-tabs { flex-wrap: wrap; gap: 10px; }.friends-search { order: 5; width: 100%; margin-left: 0; }.friends-grid { grid-template-columns: 1fr; }.app-shell { grid-template-columns: 54px 1fr; }.server-icon { width: 34px; height: 34px; }.server-rail { padding-top: 12px; }.channel-title span { display: none; }.channel-title h2 { font-size: 12px; }.message-area { padding-top: 20px; }.channel-intro h1 { font-size: 20px; }.message-author span { display: none; }.message-copy p { font-size: 11px; } }
 
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; } }
+
+/* Contrast and voice-room controls */
+.concord-dialog[data-slot="dialog-content"] { background: #ffffff !important; color: #111827 !important; border: 1px solid #cbd5e1 !important; box-shadow: 0 24px 70px rgba(15, 23, 42, .28) !important; }
+.concord-dialog [data-slot="dialog-title"] { color: #111827 !important; font-weight: 800; }
+.concord-dialog [data-slot="dialog-description"] { color: #475569 !important; }
+.concord-dialog .dialog-form { display: grid; gap: 10px; margin-top: 4px; }
+.concord-dialog .dialog-form label { color: #1e293b !important; font-size: 12px; font-weight: 700; }
+.concord-dialog .dialog-form input, .concord-dialog input { min-height: 42px; color: #111827 !important; background: #f8fafc !important; border: 1px solid #94a3b8 !important; border-radius: 8px; }
+.concord-dialog .dialog-form input::placeholder, .concord-dialog input::placeholder { color: #64748b !important; opacity: 1; }
+.concord-dialog .primary-cta { min-height: 42px; color: #ffffff !important; background: #1d4ed8 !important; }
+.concord-dialog [data-slot="dialog-close"] { color: #334155 !important; opacity: 1 !important; }
+.sidebar-add-button { width: 24px; height: 24px; display: grid; place-items: center; padding: 0; border: 1px solid #5b7393; border-radius: 6px; color: #dbeafe; background: #1c3556; }
+.sidebar-add-button:hover, .sidebar-add-button:focus-visible { color: #ffffff; background: #2563eb; border-color: #7db0ff; outline: 2px solid rgba(96, 165, 250, .45); outline-offset: 2px; }
+.voice-link { min-height: 36px; color: #b9dcff; background: #173653; border: 1px solid rgba(96, 165, 250, .18); }
+.voice-link:hover, .voice-link.active { color: #ffffff; background: #24517e; border-color: #60a5fa; }
+.voice-note { color: #9fb5cf !important; }
+@media (max-width: 760px) { .concord-dialog[data-slot="dialog-content"] { max-width: calc(100% - 24px) !important; padding: 20px !important; } .sidebar-add-button { width: 30px; height: 30px; } }
+
+/* Explicit feedback-state contrast */
+.dm-status { color: #c5d3e5 !important; background: rgba(30, 55, 86, .45); border: 1px solid rgba(96, 165, 250, .18); border-radius: 7px; }
+.dm-status.dm-error, .error-state { color: #fecaca !important; background: #4c1d2b; border-color: #b45367; }
+.account-results { color: #111827 !important; background: #ffffff !important; border-color: #94a3b8 !important; box-shadow: 0 8px 24px rgba(15, 23, 42, .12); }
+.account-result { color: #111827 !important; border-bottom: 1px solid #e2e8f0; }
+.account-result:last-child { border-bottom: 0; }
+.account-result strong { color: #0f172a !important; }
+.account-result span, .account-result .public-id { color: #1d4ed8 !important; }
+.empty-state { color: #334155 !important; background: #f8fafc; border: 1px dashed #94a3b8; border-radius: 10px; }
+.voice-members { color: #d0def0 !important; background: rgba(18, 42, 60, .72); border-radius: 7px; }
+.voice-members > div { color: #e2e8f0 !important; }
+.voice-note { color: #c4d4e8 !important; }

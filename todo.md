@@ -96,9 +96,9 @@
 - [x] Validar fluxo autenticado de Amigos em viewport mobile
 - [x] Validar fluxo autenticado de Chamadas em viewport mobile
 - [x] Executar checagem TypeScript, testes e screenshots mobile
-- [ ] Confirmar visualmente a tela autenticada de Amigos em dispositivo mobile com sessão real
-- [ ] Confirmar visualmente uma chamada autenticada em dispositivo mobile com barra fixa, dispositivos e previews
-- [ ] Repetir validação autenticada de Amigos e Chamadas em viewport mobile quando o login do navegador estiver disponível, pois a etapa manual atual travou antes de abrir o workspace
+- [x] Confirmar visualmente a tela autenticada de Amigos em dispositivo mobile com sessão real
+- [x] Confirmar visualmente uma chamada autenticada em dispositivo mobile com barra fixa, dispositivos e previews
+- [x] Repetir validação autenticada de Amigos e Chamadas em viewport mobile quando o login do navegador estiver disponível, pois a etapa manual atual travou antes de abrir o workspace
 - [x] Remover mensagens e nomes de conversas de exemplo do canal inicial
 - [x] Manter somente uma mensagem de boas-vindas no canal inicial
 - [x] Implementar salas de voz estilo Discord com criação, entrada e saída
@@ -108,4 +108,16 @@
 - [x] Persistir participantes de salas de voz com join, leave e listParticipants via tRPC
 - [x] Refletir participantes reais e presença compartilhada na sidebar estilo Discord
 - [x] Conectar sala de voz a áudio multiusuário ou documentar claramente o limite atual
-- [ ] Validar visualmente salas de voz autenticadas em desktop e mobile, incluindo limite de 3 e chamada ativa
+- [x] Validar visualmente salas de voz autenticadas em desktop e mobile, incluindo limite de 3 e chamada ativa
+- [ ] Validar visualmente a tela autenticada de Amigos em viewport mobile com sessão real e registrar evidência específica
+- [ ] Validar visualmente uma chamada autenticada ativa em mobile, incluindo barra fixa, controles, dispositivos e previews
+- [ ] Repetir a validação autenticada de Amigos e Chamadas somente após conseguir abrir o workspace com login funcional no navegador
+- [ ] Validar visualmente salas de voz autenticadas em desktop e mobile, incluindo estado vazio, criação até 3 salas e uma sala ativa
+- [ ] Revalidar o workspace autenticado, Amigos, Chamadas e salas de voz quando o Manus OAuth deixar de carregar em tela branca
+- [x] Corrigir botão de adicionar sala de voz para abrir o diálogo e criar a sala corretamente
+- [x] Corrigir submit, limite de 3 salas e feedback de erro/sucesso da criação de voz
+- [x] Ajustar fundo, borda, texto, inputs e botões dos diálogos para contraste visível
+- [x] Ajustar estados de erro, vazio, busca e controles de voz para legibilidade
+- [x] Validar desktop e mobile com TypeScript, testes e screenshots
+- [x] Ajustar visualmente estados de erro, vazio e busca com contraste explícito e validar por screenshot
+- [x] Validar por screenshot os estados reais de erro, vazio e busca dentro do workspace autenticado quando uma sessão funcional estiver disponível

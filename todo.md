@@ -5,13 +5,13 @@
 - [x] Aplicar identidade visual Concord refinada, escura, tecnológica e responsiva
 - [x] Criar marca visual do Concord e assets leves para favicon/PWA
 - [x] Integrar o fluxo de autenticação via Manus OAuth
-- [ ] Criar perfil editável com nome e avatar
+- [x] Criar perfil editável com nome e avatar
 - [x] Criar workspace autenticado com sidebar de comunidades, canais e DMs
-- [ ] Implementar criação e gerenciamento de comunidades com nome, ícone e descrição
-- [ ] Implementar canais de texto organizados por categorias
-- [ ] Implementar mensagens persistidas e atualização em tempo real por polling ou Data API/SSE
-- [ ] Implementar sistema de amizades: enviar, aceitar e recusar solicitações
-- [ ] Implementar mensagens diretas entre amigos
+- [x] Implementar criação e gerenciamento de comunidades com nome, ícone e descrição
+- [x] Implementar canais de texto organizados por categorias
+- [x] Implementar mensagens persistidas e atualização em tempo real por polling ou Data API/SSE
+- [x] Implementar sistema de amizades: enviar, aceitar e recusar solicitações
+- [x] Implementar mensagens diretas entre amigos
 - [x] Implementar manifest.json e configuração PWA instalável
 - [x] Criar schema, helpers e procedures tRPC para comunidades, canais, mensagens, amizades e DMs
 - [x] Criar testes Vitest para as funcionalidades de backend adicionadas
@@ -21,9 +21,12 @@
 - [x] Criar ícones PWA/favicons completos (favicon.ico, 16/32, apple-touch-icon, 192x192 e 512x512)
 - [x] Adicionar navegação real de DMs na sidebar autenticada, com lista de conversas diretas e seleção de thread
 - [x] Completar configuração PWA com suporte básico de instalação e cache quando compatível com o template
-- [ ] Implementar e demonstrar estados vazios, loading e erro para comunidades, canais, amizades e DMs
+- [x] Implementar e demonstrar estados vazios, loading e erro para comunidades, canais, amizades e DMs
 - [x] Validar também o layout mobile com evidência visual
 - [x] Implementar seleção real de thread de DM na sidebar, com estado ativo e renderização da conversa direta correspondente
 - [x] Conectar a lista de DMs e a abertura de thread aos procedures tRPC de DMs (open, list, send) em vez de usar toasts placeholder
 - [x] Conectar a lista de DMs da sidebar a dados reais do backend/tRPC, removendo nomes e friendId hardcoded
 - [x] Adicionar loading/erro para a abertura de thread de DM antes de renderizar a conversa
+- [x] Adicionar edição real de avatar no perfil, com campo/upload e persistência via profile.update
+- [x] Conectar comunidades, canais e mensagens de canal ao backend/tRPC, removendo dados hardcoded e adicionando loading/empty/error
+- [x] Implementar UI real de amizades (enviar, aceitar, recusar) e fazer o botão de DM na tela de amigos abrir a conversa real

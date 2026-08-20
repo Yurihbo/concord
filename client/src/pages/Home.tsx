@@ -120,6 +120,11 @@ function Workspace({ onLogout, userName, userId }: { onLogout: () => void; userN
   const [deafened, setDeafened] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [newCommunity, setNewCommunity] = useState("");
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [profileName, setProfileName] = useState(userName);
+  const [profileAvatar, setProfileAvatar] = useState("");
+  const communityMutation = trpc.communities.create.useMutation();
+  const profileMutation = trpc.profile.update.useMutation({ onSuccess: () => { toast.success("Perfil atualizado"); setProfileOpen(false); } });
   const [activeDm, setActiveDm] = useState<string | null>(null);
   const [dmThreadId, setDmThreadId] = useState<number | null>(null);
   const openDm = trpc.dms.open.useMutation({ onSuccess: (threadId) => setDmThreadId(threadId) });
@@ -137,9 +142,11 @@ function Workspace({ onLogout, userName, userId }: { onLogout: () => void; userN
 
   const createCommunity = () => {
     if (!newCommunity.trim()) return;
-    toast.success(`${newCommunity.trim()} foi criado localmente`, { description: "A conexão com o backend será usada para persistir esta comunidade." });
-    setNewCommunity("");
-    setCreateOpen(false);
+    communityMutation.mutate({ name: newCommunity.trim(), description: "Comunidade criada no Concord" }, { onSuccess: () => { toast.success(`${newCommunity.trim()} foi criada`); setNewCommunity(""); setCreateOpen(false); } });
+  };
+
+  const saveProfile = () => {
+    if (profileName.trim()) profileMutation.mutate({ name: profileName.trim(), avatarUrl: profileAvatar.trim() || null });
   };
 
   return (
@@ -164,7 +171,7 @@ function Workspace({ onLogout, userName, userId }: { onLogout: () => void; userN
           <div className="channel-group"><div className="group-label"><span>NO AR</span><Plus size={13} /></div><button className="channel-link voice-link"><Volume2 size={15} /><span>Estúdio aberto</span><span className="voice-count">3</span></button><div className="voice-members"><div><span className="voice-avatar amber">M</span>Maya Torres</div><div><span className="voice-avatar blue">R</span>Ravi Mendes</div><div><span className="voice-avatar green">C</span>Clara Ono</div></div></div>
           <div className="side-tip"><Sparkles size={14} /><p><strong>Seu espaço, seu ritmo.</strong><br />Convide pessoas para construir junto.</p></div>
         </div>
-        <div className="user-panel"><Avatar initials={userName ? userName.slice(0, 2).toUpperCase() : "VC"} tone="bg-slate-200 text-slate-900" online /><div className="user-meta"><strong>{displayName}</strong><span>online</span></div><button onClick={() => setMuted(!muted)} className={muted ? "control-active" : ""}><Mic size={15} /></button><button onClick={onLogout}><MoreHorizontal size={16} /></button></div>
+        <div className="user-panel"><button className="user-identity" onClick={() => setProfileOpen(true)}><Avatar initials={userName ? userName.slice(0, 2).toUpperCase() : "VC"} tone="bg-slate-200 text-slate-900" online /><div className="user-meta"><strong>{displayName}</strong><span>online</span></div></button><button onClick={() => setMuted(!muted)} className={muted ? "control-active" : ""}><Mic size={15} /></button><button onClick={onLogout}><MoreHorizontal size={16} /></button></div>
       </aside>
 
       <main className="content-area">
@@ -177,7 +184,7 @@ function Workspace({ onLogout, userName, userId }: { onLogout: () => void; userN
 
       <aside className="member-sidebar"><div className="member-heading"><span>MEMBROS — 12</span><button><MoreHorizontal size={17} /></button></div><div className="member-group"><span className="member-role">ONLINE — 4</span>{friends.map((friend) => <button className="member-card" key={friend.name} onClick={() => toast.info(`Abrindo conversa com ${friend.name}`)}><Avatar initials={friend.initials} tone={friend.tone} online /><div><strong>{friend.name}</strong><span>{friend.status}</span></div></button>)}</div><div className="member-group"><span className="member-role">OFFLINE — 8</span><div className="offline-person"><Avatar initials="JP" tone="bg-slate-200 text-slate-700" /><span>João Prado</span></div><div className="offline-person"><Avatar initials="AS" tone="bg-slate-200 text-slate-700" /><span>Ana Sato</span></div></div><div className="call-dock"><div className="call-status"><span className="call-pulse" /><div><strong>Estúdio aberto</strong><span>3 pessoas na sala</span></div><button onClick={() => toast.success("Convite copiado")}> <UserPlus size={15} /></button></div><div className="call-actions"><button className={muted ? "control-active" : ""} onClick={() => setMuted(!muted)}><Mic size={16} /></button><button className={deafened ? "control-active" : ""} onClick={() => setDeafened(!deafened)}><Headphones size={16} /></button><button onClick={() => toast.info("Compartilhamento de tela disponível ao entrar na chamada")}><Video size={16} /></button><button className="disconnect" onClick={() => toast.info("Você ainda não está em uma chamada")}> <X size={16} /></button></div></div></aside>
 
-      <Dialog open={createOpen} onOpenChange={setCreateOpen}><DialogContent className="concord-dialog"><DialogHeader><DialogTitle>Criar uma comunidade</DialogTitle><DialogDescription>Um espaço para as conversas que importam para você.</DialogDescription></DialogHeader><div className="dialog-form"><label htmlFor="community-name">Nome da comunidade</label><Input id="community-name" value={newCommunity} onChange={(event) => setNewCommunity(event.target.value)} placeholder="Ex.: Clube de leitura" autoFocus /><Button className="primary-cta" onClick={createCommunity}>Criar comunidade <ArrowRight size={16} /></Button></div></DialogContent></Dialog>
+      <Dialog open={createOpen} onOpenChange={setCreateOpen}><DialogContent className="concord-dialog"><DialogHeader><DialogTitle>Criar uma comunidade</DialogTitle><DialogDescription>Um espaço para as conversas que importam para você.</DialogDescription></DialogHeader><div className="dialog-form"><label htmlFor="community-name">Nome da comunidade</label><Input id="community-name" value={newCommunity} onChange={(event) => setNewCommunity(event.target.value)} placeholder="Ex.: Clube de leitura" autoFocus /><Button className="primary-cta" onClick={createCommunity} disabled={communityMutation.isPending}>Criar comunidade <ArrowRight size={16} /></Button></div></DialogContent></Dialog><Dialog open={profileOpen} onOpenChange={setProfileOpen}><DialogContent className="concord-dialog"><DialogHeader><DialogTitle>Editar perfil</DialogTitle><DialogDescription>Atualize como você aparece nas conversas do Concord.</DialogDescription></DialogHeader><div className="dialog-form"><label htmlFor="profile-name">Nome de exibição</label><Input id="profile-name" value={profileName} onChange={(event) => setProfileName(event.target.value)} placeholder="Seu nome" autoFocus /><label htmlFor="profile-avatar">Avatar por URL</label><Input id="profile-avatar" value={profileAvatar} onChange={(event) => setProfileAvatar(event.target.value)} placeholder="https://..." type="url" /><Button className="primary-cta" onClick={saveProfile} disabled={profileMutation.isPending}>Salvar alterações <Check size={16} /></Button></div></DialogContent></Dialog>
     </div>
   );
 }

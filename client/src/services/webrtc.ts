@@ -10,6 +10,7 @@ export class ConcordWebRTCService {
   private peer: RTCPeerConnection | null = null;
   private localStream: MediaStream | null = null;
   private screenStream: MediaStream | null = null;
+  private cameraStream: MediaStream | null = null;
   private state: CallState = "idle";
   private onStateChange?: (state: CallState) => void;
 
@@ -25,6 +26,18 @@ export class ConcordWebRTCService {
       this.updateState("connected");
       return this.localStream;
     } catch (error) { this.updateState("error"); throw error; }
+  }
+
+  async captureCamera(): Promise<MediaStream> {
+    if (!navigator.mediaDevices?.getUserMedia) throw new Error("Este navegador não permite acesso à câmera.");
+    this.cameraStream?.getTracks().forEach((track) => track.stop());
+    this.cameraStream = await navigator.mediaDevices.getUserMedia({ video: true });
+    const track = this.cameraStream.getVideoTracks()[0];
+    const sender = this.peer?.getSenders().find((item) => item.track?.kind === "video");
+    if (sender) await sender.replaceTrack(track);
+    else if (this.peer) this.peer.addTrack(track, this.cameraStream);
+    this.updateState("connected");
+    return this.cameraStream;
   }
 
   async shareScreen(): Promise<MediaStream> {
@@ -71,9 +84,13 @@ export class ConcordWebRTCService {
     this.peer.onicecandidate = (event) => { if (event.candidate) callback(JSON.stringify(event.candidate)); };
   }
 
+  setCameraEnabled(enabled: boolean): void {
+    this.cameraStream?.getVideoTracks().forEach((track) => { track.enabled = enabled; });
+  }
+
   addLocalTracks(): void {
     if (!this.peer) throw new Error("A conexão WebRTC ainda não foi criada.");
-    for (const stream of [this.localStream, this.screenStream]) stream?.getTracks().forEach((track) => this.peer?.addTrack(track, stream));
+    for (const stream of [this.localStream, this.cameraStream, this.screenStream]) stream?.getTracks().forEach((track) => this.peer?.addTrack(track, stream));
   }
 
   toggleMicrophone(enabled: boolean): void { this.localStream?.getAudioTracks().forEach((track) => { track.enabled = enabled; }); }
@@ -87,10 +104,12 @@ export class ConcordWebRTCService {
   dispose(): void {
     this.localStream?.getTracks().forEach((track) => track.stop());
     this.screenStream?.getTracks().forEach((track) => track.stop());
+    this.cameraStream?.getTracks().forEach((track) => track.stop());
     this.peer?.close();
     this.peer = null;
     this.localStream = null;
     this.screenStream = null;
+    this.cameraStream = null;
     this.updateState("idle");
   }
 }

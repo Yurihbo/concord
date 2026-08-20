@@ -57,3 +57,18 @@
 - [x] Conectar chamada de áudio entre contas com signaling e mute funcional na trilha local
 - [x] Integrar vídeo e compartilhamento de tela ao contexto da chamada ativa
 - [x] Adicionar testes de busca por ID, amizade, início/encerramento de chamadas e conta pré-armazenada
+- [x] Adicionar notificações sonoras para chamadas recebidas, aceitas, encerradas e falhas
+- [x] Criar histórico visual de chamadas com participante, data, duração, status e tipo de mídia
+- [x] Adicionar preview local do microfone, câmera e tela compartilhada na chamada
+- [x] Adicionar preview remoto de áudio, vídeo e tela recebidos via WebRTC
+- [x] Adicionar controles de preview: mutar, câmera, tela, volume e encerrar
+- [x] Criar testes e validação visual para notificações, histórico e previews
+- [x] Adicionar sons distintos para chamada aceita e falha
+- [x] Exibir participante e duração calculada no histórico de chamadas
+- [x] Implementar preview local de câmera e tela com atualização explícita do stream
+- [x] Renderizar e validar mídia remota de vídeo e tela na chamada
+- [x] Adicionar controles de câmera e volume
+- [x] Adicionar testes Vitest específicos para histórico, signaling e previews
+- [x] Implementar renegociação remota para novas offers de vídeo e tela
+- [x] Alternar câmera sem destruir a conexão WebRTC ativa
+- [x] Cobrir histórico, signaling e previews com testes comportamentais

@@ -17,6 +17,9 @@ export const appRouter = router({
       return { success: true } as const;
     }),
   }),
+  permissions: router({
+    me: protectedProcedure.query(({ ctx }) => ({ role: ctx.user.role, canManageCommunities: ctx.user.role === "admin", canManageChannels: ctx.user.role === "admin" })),
+  }),
   profile: router({
     update: protectedProcedure.input(z.object({ name: nonEmpty.optional(), avatarUrl: z.string().url().nullable().optional() })).mutation(({ ctx, input }) => updateUserProfile(ctx.user.id, input)),
   }),

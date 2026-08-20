@@ -3,6 +3,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { startLogin } from "@/const";
 import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
+import { ConcordWebRTCService } from "@/services/webrtc";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
@@ -118,6 +119,8 @@ function Workspace({ onLogout, userName, userId }: { onLogout: () => void; userN
   const [view, setView] = useState<"home" | "friends">("home");
   const [muted, setMuted] = useState(false);
   const [deafened, setDeafened] = useState(false);
+  const [screenSharing, setScreenSharing] = useState(false);
+  const [webrtc] = useState(() => new ConcordWebRTCService());
   const [createOpen, setCreateOpen] = useState(false);
   const [newCommunity, setNewCommunity] = useState("");
   const [profileOpen, setProfileOpen] = useState(false);
@@ -129,14 +132,25 @@ function Workspace({ onLogout, userName, userId }: { onLogout: () => void; userN
   const [dmThreadId, setDmThreadId] = useState<number | null>(null);
   const openDm = trpc.dms.open.useMutation({ onSuccess: (threadId) => setDmThreadId(threadId) });
   const friendshipsQuery = trpc.friends.list.useQuery(undefined, { refetchInterval: 10000 });
+  const communitiesQuery = trpc.communities.list.useQuery(undefined, { refetchInterval: 15000 });
+  const communityItems = communitiesQuery.data ?? [];
+  const selectedCommunityId = communityItems[activeCommunity]?.community.id;
+  const channelsQuery = trpc.communities.channels.useQuery({ communityId: selectedCommunityId ?? 0 }, { enabled: Boolean(selectedCommunityId) });
+  const channelItems = channelsQuery.data ?? [];
+  const selectedChannelId = channelItems.find((channel) => channel.name === activeChannel)?.id;
+  const channelMessagesQuery = trpc.messages.list.useQuery({ channelId: selectedChannelId ?? 0, limit: 50 }, { enabled: Boolean(selectedChannelId), refetchInterval: 5000 });
+  const sendChannelMessage = trpc.messages.send.useMutation({ onSuccess: () => channelMessagesQuery.refetch() });
   const dmContacts = (friendshipsQuery.data ?? []).filter((entry) => entry.friendship.status === "accepted" && entry.user).map((entry) => ({ id: entry.user!.id, name: entry.user!.name ?? `Conexão ${entry.user!.id}`, initials: (entry.user!.name ?? "CO").slice(0, 2).toUpperCase() }));
   const displayName = userName || "Você";
-  const activeName = communities[activeCommunity]?.name ?? "Concord Lab";
-  const visibleMessages = useMemo(() => [...messages, ...sentMessages.map((text, i) => ({ name: displayName, handle: "@você", time: "agora", initials: "VC", tone: "bg-slate-200 text-slate-900", text }))], [displayName, sentMessages]);
+  const activeName = communityItems[activeCommunity]?.community.name ?? communities[activeCommunity]?.name ?? "Concord Lab";
+  const backendMessages = (channelMessagesQuery.data ?? []).map((item) => ({ name: item.author.name ?? "Concord", handle: "@membro", time: new Date(item.message.createdAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }), initials: (item.author.name ?? "CO").slice(0, 2).toUpperCase(), tone: "bg-slate-200 text-slate-900", text: item.message.body }));
+  const visibleMessages = useMemo(() => [...(backendMessages.length ? backendMessages : messages), ...sentMessages.map((text) => ({ name: displayName, handle: "@você", time: "agora", initials: "VC", tone: "bg-slate-200 text-slate-900", text }))], [backendMessages, displayName, sentMessages]);
 
   const sendMessage = () => {
     if (!message.trim()) return;
-    setSentMessages((current) => [...current, message.trim()]);
+    const body = message.trim();
+    if (selectedChannelId) sendChannelMessage.mutate({ channelId: selectedChannelId, body });
+    else setSentMessages((current) => [...current, body]);
     setMessage("");
   };
 
@@ -157,7 +171,7 @@ function Workspace({ onLogout, userName, userId }: { onLogout: () => void; userN
         <button className={`server-icon home-server ${view === "home" ? "selected" : ""}`} onClick={() => setView("home")}><HomeIcon size={18} /></button>
         <button className={`server-icon friends-server ${view === "friends" ? "selected" : ""}`} onClick={() => setView("friends")}><Users size={18} /></button>
         <div className="rail-divider" />
-        {communities.map((community, index) => <button key={community.name} className={`server-icon community-icon bg-gradient-to-br ${community.tone} ${activeCommunity === index && view === "home" ? "selected" : ""}`} onClick={() => { setActiveCommunity(index); setView("home"); }} title={community.name}>{community.short}{community.unread > 0 && <span className="unread-pill">{community.unread}</span>}</button>)}
+        {(communityItems.length ? communityItems.map((entry) => ({ name: entry.community.name, short: entry.community.name.slice(0, 2).toUpperCase(), tone: "from-blue-400 to-indigo-600", unread: 0 })) : communities).map((community, index) => <button key={`${community.name}-${index}`} className={`server-icon community-icon bg-gradient-to-br ${community.tone} ${activeCommunity === index && view === "home" ? "selected" : ""}`} onClick={() => { setActiveCommunity(index); setView("home"); }} title={community.name}>{community.short}{community.unread > 0 && <span className="unread-pill">{community.unread}</span>}</button>)}
         <button className="server-icon add-server" onClick={() => setCreateOpen(true)}><Plus size={19} /></button>
         <div className="rail-bottom"><button className="server-icon settings-server" title="Configurações"><Settings size={17} /></button></div>
       </aside>
@@ -167,7 +181,7 @@ function Workspace({ onLogout, userName, userId }: { onLogout: () => void; userN
         <div className="channel-scroll">
           <button className="discover-link"><Compass size={15} /> Explorar comunidades</button>
           <div className="channel-group dm-group"><div className="group-label"><span>MENSAGENS DIRETAS</span><Plus size={13} /></div>{friendshipsQuery.isLoading ? <div className="dm-status">Carregando contatos...</div> : friendshipsQuery.isError ? <div className="dm-status dm-error">Não foi possível carregar DMs.</div> : dmContacts.length ? dmContacts.map((contact) => <button key={contact.id} className={`channel-link dm-link ${activeDm === contact.name ? "active" : ""}`} onClick={() => { setActiveDm(contact.name); openDm.mutate({ friendId: contact.id }); }}><Avatar initials={contact.initials} tone="bg-blue-200 text-blue-900" online /><span>{contact.name}</span></button>) : <div className="dm-status">Nenhuma amizade aceita ainda.</div>}</div>
-          {channels.map((group) => <div className="channel-group" key={group.category}><div className="group-label"><span>{group.category}</span><Plus size={13} /></div>{group.items.map((channel) => <button key={channel.name} className={`channel-link ${activeChannel === channel.name && view === "home" ? "active" : ""}`} onClick={() => { setActiveChannel(channel.name); setView("home"); }}><Hash size={15} />{channel.name}{channel.name === "geral" && <span className="channel-live" />}</button>)}</div>)}
+          {channelsQuery.isLoading ? <div className="dm-status">Carregando canais...</div> : channelsQuery.isError ? <div className="dm-status dm-error">Não foi possível carregar canais.</div> : channelItems.length ? <div className="channel-group"><div className="group-label"><span>CANAIS</span><Plus size={13} /></div>{channelItems.map((channel) => <button key={channel.id} className={`channel-link ${activeChannel === channel.name && view === "home" ? "active" : ""}`} onClick={() => { setActiveChannel(channel.name); setActiveDm(null); setView("home"); }}><Hash size={15} />{channel.name}</button>)}</div> : channels.map((group) => <div className="channel-group" key={group.category}><div className="group-label"><span>{group.category}</span><Plus size={13} /></div>{group.items.map((channel) => <button key={channel.name} className={`channel-link ${activeChannel === channel.name && view === "home" ? "active" : ""}`} onClick={() => { setActiveChannel(channel.name); setView("home"); }}><Hash size={15} />{channel.name}{channel.name === "geral" && <span className="channel-live" />}</button>)}</div>)}
           <div className="channel-group"><div className="group-label"><span>NO AR</span><Plus size={13} /></div><button className="channel-link voice-link"><Volume2 size={15} /><span>Estúdio aberto</span><span className="voice-count">3</span></button><div className="voice-members"><div><span className="voice-avatar amber">M</span>Maya Torres</div><div><span className="voice-avatar blue">R</span>Ravi Mendes</div><div><span className="voice-avatar green">C</span>Clara Ono</div></div></div>
           <div className="side-tip"><Sparkles size={14} /><p><strong>Seu espaço, seu ritmo.</strong><br />Convide pessoas para construir junto.</p></div>
         </div>
@@ -182,7 +196,7 @@ function Workspace({ onLogout, userName, userId }: { onLogout: () => void; userN
         </>}
       </main>
 
-      <aside className="member-sidebar"><div className="member-heading"><span>MEMBROS — 12</span><button><MoreHorizontal size={17} /></button></div><div className="member-group"><span className="member-role">ONLINE — 4</span>{friends.map((friend) => <button className="member-card" key={friend.name} onClick={() => toast.info(`Abrindo conversa com ${friend.name}`)}><Avatar initials={friend.initials} tone={friend.tone} online /><div><strong>{friend.name}</strong><span>{friend.status}</span></div></button>)}</div><div className="member-group"><span className="member-role">OFFLINE — 8</span><div className="offline-person"><Avatar initials="JP" tone="bg-slate-200 text-slate-700" /><span>João Prado</span></div><div className="offline-person"><Avatar initials="AS" tone="bg-slate-200 text-slate-700" /><span>Ana Sato</span></div></div><div className="call-dock"><div className="call-status"><span className="call-pulse" /><div><strong>Estúdio aberto</strong><span>3 pessoas na sala</span></div><button onClick={() => toast.success("Convite copiado")}> <UserPlus size={15} /></button></div><div className="call-actions"><button className={muted ? "control-active" : ""} onClick={() => setMuted(!muted)}><Mic size={16} /></button><button className={deafened ? "control-active" : ""} onClick={() => setDeafened(!deafened)}><Headphones size={16} /></button><button onClick={() => toast.info("Compartilhamento de tela disponível ao entrar na chamada")}><Video size={16} /></button><button className="disconnect" onClick={() => toast.info("Você ainda não está em uma chamada")}> <X size={16} /></button></div></div></aside>
+      <aside className="member-sidebar"><div className="member-heading"><span>MEMBROS — 12</span><button><MoreHorizontal size={17} /></button></div><div className="member-group"><span className="member-role">ONLINE — 4</span>{friends.map((friend) => <button className="member-card" key={friend.name} onClick={() => toast.info(`Abrindo conversa com ${friend.name}`)}><Avatar initials={friend.initials} tone={friend.tone} online /><div><strong>{friend.name}</strong><span>{friend.status}</span></div></button>)}</div><div className="member-group"><span className="member-role">OFFLINE — 8</span><div className="offline-person"><Avatar initials="JP" tone="bg-slate-200 text-slate-700" /><span>João Prado</span></div><div className="offline-person"><Avatar initials="AS" tone="bg-slate-200 text-slate-700" /><span>Ana Sato</span></div></div><div className="call-dock"><div className="call-status"><span className="call-pulse" /><div><strong>Estúdio aberto</strong><span>3 pessoas na sala</span></div><button onClick={() => toast.success("Convite copiado")}> <UserPlus size={15} /></button></div><div className="call-actions"><button className={muted ? "control-active" : ""} onClick={() => setMuted(!muted)}><Mic size={16} /></button><button className={deafened ? "control-active" : ""} onClick={() => setDeafened(!deafened)}><Headphones size={16} /></button><button className={screenSharing ? "control-active" : ""} onClick={async () => { try { if (screenSharing) { webrtc.stopScreenShare(); setScreenSharing(false); } else { await webrtc.shareScreen(); setScreenSharing(true); toast.success("Compartilhamento de tela iniciado"); } } catch (error) { toast.error(error instanceof Error ? error.message : "Não foi possível compartilhar a tela."); } }}><Video size={16} /></button><button className="disconnect" onClick={() => toast.info("Você ainda não está em uma chamada")}> <X size={16} /></button></div></div></aside>
 
       <Dialog open={createOpen} onOpenChange={setCreateOpen}><DialogContent className="concord-dialog"><DialogHeader><DialogTitle>Criar uma comunidade</DialogTitle><DialogDescription>Um espaço para as conversas que importam para você.</DialogDescription></DialogHeader><div className="dialog-form"><label htmlFor="community-name">Nome da comunidade</label><Input id="community-name" value={newCommunity} onChange={(event) => setNewCommunity(event.target.value)} placeholder="Ex.: Clube de leitura" autoFocus /><Button className="primary-cta" onClick={createCommunity} disabled={communityMutation.isPending}>Criar comunidade <ArrowRight size={16} /></Button></div></DialogContent></Dialog><Dialog open={profileOpen} onOpenChange={setProfileOpen}><DialogContent className="concord-dialog"><DialogHeader><DialogTitle>Editar perfil</DialogTitle><DialogDescription>Atualize como você aparece nas conversas do Concord.</DialogDescription></DialogHeader><div className="dialog-form"><label htmlFor="profile-name">Nome de exibição</label><Input id="profile-name" value={profileName} onChange={(event) => setProfileName(event.target.value)} placeholder="Seu nome" autoFocus /><label htmlFor="profile-avatar">Avatar por URL</label><Input id="profile-avatar" value={profileAvatar} onChange={(event) => setProfileAvatar(event.target.value)} placeholder="https://..." type="url" /><Button className="primary-cta" onClick={saveProfile} disabled={profileMutation.isPending}>Salvar alterações <Check size={16} /></Button></div></DialogContent></Dialog>
     </div>

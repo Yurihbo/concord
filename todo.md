@@ -30,3 +30,17 @@
 - [x] Adicionar edição real de avatar no perfil, com campo/upload e persistência via profile.update
 - [x] Conectar comunidades, canais e mensagens de canal ao backend/tRPC, removendo dados hardcoded e adicionando loading/empty/error
 - [x] Implementar UI real de amizades (enviar, aceitar, recusar) e fazer o botão de DM na tela de amigos abrir a conversa real
+- [x] Conectar a lista de comunidades ao workspace via trpc.communities.list
+- [x] Conectar categorias e canais reais via trpc.communities.channels com estados loading/empty/error
+- [x] Conectar mensagens de canal via trpc.messages.list/send com polling e atualização otimista
+- [x] Criar serviço WebRTC isolado para captura de microfone, áudio e estado da chamada
+- [x] Implementar compartilhamento de tela e áudio do sistema quando suportado pelo navegador
+- [x] Adicionar sinalização mínima e tratamento de permissões/dispositivos para chamadas
+- [x] Criar base de cargos e permissões administrativas para comunidades e canais
+- [x] Adicionar testes e validação visual para os novos fluxos
+- [ ] Implementar categories reais no backend/frontend com agrupamento e estado vazio sem fallback hardcoded
+- [ ] Remover fallback local das mensagens de canal e adicionar atualização otimista real
+- [ ] Adicionar estado de chamada ao serviço WebRTC e integrá-lo à UI
+- [ ] Implementar signaling mínimo com offer/answer/ICE e tratamento de dispositivos
+- [ ] Criar schema de cargos e permissões por comunidade e canal
+- [ ] Adicionar testes Vitest específicos para os fluxos novos e nova validação visual

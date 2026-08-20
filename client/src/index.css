@@ -143,3 +143,23 @@ a { color: inherit; text-decoration: none; }
 .voice-channel-group .voice-link { margin: 0; border: 1px solid transparent; border-radius: 9px; background: rgba(38, 81, 126, .55); }
 .voice-channel-group .voice-link:hover, .voice-channel-group .voice-link.active { border-color: #66a8ee; background: #24517e; box-shadow: 0 5px 14px rgba(8, 27, 52, .22); }
 .voice-channel-group > .dm-status { margin-top: 2px; padding: 10px 8px; border: 1px dashed #41678f; color: #b8cde5 !important; background: rgba(30, 63, 98, .38); }
+
+/* Bottom-left active call dock */
+.voice-sidebar-dock { margin: 0 10px 8px; padding: 10px; border: 1px solid #355a83; border-radius: 12px; color: #dcecff; background: linear-gradient(145deg, #183454, #10243c); box-shadow: 0 10px 22px rgba(3, 12, 27, .24); }
+.voice-sidebar-dock-title { display: flex; align-items: center; gap: 8px; margin-bottom: 9px; color: #8bc0fa; }
+.voice-sidebar-dock-title > div { min-width: 0; flex: 1; }
+.voice-sidebar-dock-title strong, .voice-sidebar-dock-title span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.voice-sidebar-dock-title strong { color: #f4f8ff; font-size: 10px; }
+.voice-sidebar-dock-title span { margin-top: 2px; color: #9bb6d5; font-size: 9px; }
+.voice-sidebar-dock-actions { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.voice-sidebar-dock-actions button { height: 30px; display: grid; place-items: center; border: 1px solid #50759e; border-radius: 8px; color: #d8eaff; background: #23496f; }
+.voice-sidebar-dock-actions button:hover, .voice-sidebar-dock-actions button.is-active { color: #ffffff; border-color: #8cc5ff; background: #2e6aa0; }
+.voice-sidebar-dock-actions button.leave-call { color: #ffd9d6; border-color: #b85a61; background: #722d38; }
+.voice-sidebar-dock-actions button.leave-call:hover { color: #ffffff; background: #c23c4b; border-color: #ff9ca4; }
+.community-header .desktop-more, .community-header .mobile-close-panel { color: #bcd0e8 !important; }
+.community-header .desktop-more:hover { color: #ffffff !important; }
+.header-actions button, .mobile-nav-actions button { color: #5b6d82; }
+.header-actions button:hover, .mobile-nav-actions button:hover { color: #2563eb; background: #eef5ff; border-radius: 8px; }
+.profile-chip { min-width: 0; }
+.profile-chip span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (max-width: 760px) { .voice-sidebar-dock { margin: 0 8px 7px; padding: 8px; }.voice-sidebar-dock-actions button { height: 34px; }.channel-sidebar.mobile-open .voice-sidebar-dock { margin-bottom: 8px; } }

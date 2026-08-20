@@ -130,3 +130,8 @@
 - [x] Validar visualmente que a nova disposição não sobrepõe composer, canais ou previews em uma sala ativa
 - [x] Estilizar manualmente a caixa de salas de voz e o botão de adicionar call com acabamento profissional
 - [x] Validar a nova caixa de voz em desktop e mobile após corrigir o seletor visual
+- [x] Posicionar sair da call e compartilhar tela no canto inferior esquerdo acima do painel do usuário
+- [x] Corrigir o nome do usuário exibido no cabeçalho superior esquerdo usando a identidade autenticada
+- [x] Tornar ícones de notificações, busca, membros, configurações e comunidade realmente funcionais
+- [x] Reorganizar as laterais para evitar sobreposição entre call, canais, membros e conteúdo principal
+- [x] Validar interações e responsividade em desktop e mobile com TypeScript, testes e screenshots

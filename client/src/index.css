@@ -113,3 +113,23 @@ a { color: inherit; text-decoration: none; }
 .voice-members { color: #d0def0 !important; background: rgba(18, 42, 60, .72); border-radius: 7px; }
 .voice-members > div { color: #e2e8f0 !important; }
 .voice-note { color: #c4d4e8 !important; }
+
+/* In-call UX: controls live inside the conversation, not over sidebars */
+.voice-call-panel { margin: 16px 5% 0; padding: 16px; border: 1px solid #c9d9ed; border-radius: 14px; color: #17304f; background: linear-gradient(135deg, #eef6ff, #ffffff); box-shadow: 0 10px 24px rgba(28, 67, 112, .08); }
+.voice-call-heading { display: flex; align-items: center; gap: 11px; }
+.voice-call-icon { width: 36px; height: 36px; display: grid; place-items: center; border-radius: 10px; color: #ffffff; background: #2563eb; }
+.voice-call-heading > div:nth-child(2) { min-width: 0; flex: 1; }
+.voice-call-kicker { color: #2563eb; font: 9px 'DM Mono', monospace; letter-spacing: .08em; }
+.voice-call-heading h3 { margin: 3px 0 0; color: #172b48; font-size: 14px; }
+.voice-call-heading p { margin: 3px 0 0; color: #5b7390; font-size: 10px; }
+.voice-call-live { padding: 5px 8px; border-radius: 999px; color: #047857; background: #d1fae5; font: 9px 'DM Mono', monospace; }
+.voice-call-members { display: flex; gap: 7px; margin: 13px 0; }
+.voice-call-members > span { width: 28px; height: 28px; display: grid; place-items: center; border: 2px solid #ffffff; border-radius: 9px; color: #1e40af; background: #bfdbfe; font-size: 9px; font-weight: 800; box-shadow: 0 2px 8px rgba(37,99,235,.13); }
+.voice-call-members .voice-member-empty { width: auto; padding: 0 9px; color: #49627f; background: #e7eef8; font-weight: 600; }
+.voice-call-controls { display: flex; flex-wrap: wrap; gap: 8px; }
+.voice-call-controls button { min-height: 36px; display: inline-flex; align-items: center; justify-content: center; gap: 7px; padding: 0 12px; border: 1px solid #b7c9df; border-radius: 8px; color: #274564; background: #ffffff; font-size: 10px; font-weight: 700; }
+.voice-call-controls button:hover, .voice-call-controls button.is-active { color: #1d4ed8; border-color: #60a5fa; background: #eaf3ff; }
+.voice-call-controls button.leave-call { color: #b42318; border-color: #f3b3ae; background: #fff1f0; margin-left: auto; }
+.voice-call-controls button.leave-call:hover { color: #ffffff; border-color: #dc2626; background: #dc2626; }
+.call-dock { display: none !important; }
+@media (max-width: 760px) { .voice-call-panel { margin: 10px 14px 0; padding: 13px; border-radius: 12px; }.voice-call-heading h3 { font-size: 13px; }.voice-call-live { font-size: 8px; }.voice-call-controls { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }.voice-call-controls button { width: 100%; padding: 0 8px; }.voice-call-controls button.leave-call { margin-left: 0; grid-column: 1 / -1; }.voice-call-controls button span { white-space: nowrap; } }

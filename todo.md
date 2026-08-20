@@ -121,3 +121,10 @@
 - [x] Validar desktop e mobile com TypeScript, testes e screenshots
 - [x] Ajustar visualmente estados de erro, vazio e busca com contraste explícito e validar por screenshot
 - [x] Validar por screenshot os estados reais de erro, vazio e busca dentro do workspace autenticado quando uma sessão funcional estiver disponível
+- [x] Exibir dentro da call ativa controles claros para sair da sala e compartilhar tela
+- [x] Mostrar nome da sala, participantes e estado da conexão no painel interno da call
+- [x] Reorganizar call dock e caixas laterais para não sobrepor composer, canais ou previews
+- [x] Adaptar controles internos da call para toque e viewport mobile
+- [x] Validar desktop e mobile com TypeScript, testes e screenshots
+- [x] Validar visualmente em desktop e mobile o painel interno da call ativa com botões de sair e compartilhar tela
+- [x] Validar visualmente que a nova disposição não sobrepõe composer, canais ou previews em uma sala ativa

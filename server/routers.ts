@@ -3,7 +3,7 @@ import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
-import { createChannelMessage, createCommunity, createDirectMessage, createFriendRequest, getOrCreateDirectThread, listChannelMessages, listChannels, listCommunitiesForUser, listDirectMessages, listFriendships, updateFriendship, updateUserProfile } from "./db";
+import { createCall, createChannelMessage, createCommunity, createDirectMessage, createFriendRequest, getOrCreateDirectThread, listCalls, listChannelMessages, listChannels, listCommunitiesForUser, listDirectMessages, listFriendships, searchUsersByPublicId, updateCall, updateFriendship, updateUserProfile } from "./db";
 
 const nonEmpty = z.string().trim().min(1).max(200);
 
@@ -31,6 +31,14 @@ export const appRouter = router({
   messages: router({
     list: protectedProcedure.input(z.object({ channelId: z.number().int().positive(), limit: z.number().int().min(1).max(100).optional() })).query(({ input }) => listChannelMessages(input.channelId, input.limit)),
     send: protectedProcedure.input(z.object({ channelId: z.number().int().positive(), body: nonEmpty.max(4000) })).mutation(({ ctx, input }) => createChannelMessage(input.channelId, ctx.user.id, input.body)),
+  }),
+  accounts: router({
+    search: protectedProcedure.input(z.object({ query: nonEmpty.max(24) })).query(({ ctx, input }) => searchUsersByPublicId(ctx.user.id, input.query)),
+  }),
+  calls: router({
+    list: protectedProcedure.query(({ ctx }) => listCalls(ctx.user.id)),
+    start: protectedProcedure.input(z.object({ calleeId: z.number().int().positive(), media: z.enum(["audio", "video", "screen"]).default("audio") })).mutation(({ ctx, input }) => createCall(ctx.user.id, input.calleeId, input.media)),
+    update: protectedProcedure.input(z.object({ callId: z.number().int().positive(), status: z.enum(["connected", "declined", "ended", "missed"]) })).mutation(({ ctx, input }) => updateCall(ctx.user.id, input.callId, input.status)),
   }),
   friends: router({
     list: protectedProcedure.query(({ ctx }) => listFriendships(ctx.user.id)),

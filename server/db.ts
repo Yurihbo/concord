@@ -1,6 +1,6 @@
-import { and, desc, eq, inArray, or } from "drizzle-orm";
+import { and, desc, eq, inArray, like, or } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, channels, communities, communityMembers, directMessages, directThreadMembers, directThreads, friendships, messages, users } from "../drizzle/schema";
+import { InsertUser, calls, channels, communities, communityMembers, directMessages, directThreadMembers, directThreads, friendships, messages, users } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -13,11 +13,17 @@ export async function getDb() {
   return _db;
 }
 
-export async function upsertUser(user: InsertUser): Promise<void> {
+function generatePublicId(openId: string): string {
+  let hash = 0;
+  for (const char of openId) hash = (hash * 31 + char.charCodeAt(0)) >>> 0;
+  return `CON-${hash.toString(36).toUpperCase().padStart(8, "0")}`.slice(0, 12);
+}
+
+export async function upsertUser(user: Omit<InsertUser, "publicId"> & { publicId?: string }): Promise<void> {
   if (!user.openId) throw new Error("User openId is required for upsert");
   const db = await getDb();
   if (!db) { console.warn("[Database] Cannot upsert user: database not available"); return; }
-  const values: InsertUser = { openId: user.openId };
+  const values: InsertUser = { openId: user.openId, publicId: user.publicId ?? generatePublicId(user.openId) };
   const updateSet: Record<string, unknown> = {};
   const textFields = ["name", "email", "loginMethod", "avatarUrl", "bio"] as const;
   for (const field of textFields) {
@@ -97,6 +103,32 @@ export async function listFriendships(userId: number) {
   if (!otherIds.length) return [];
   const people = await db.select().from(users).where(inArray(users.id, otherIds));
   return rows.map((friendship) => ({ friendship, user: people.find((person) => person.id === (friendship.requesterId === userId ? friendship.addresseeId : friendship.requesterId)) })).filter((entry) => entry.user);
+}
+
+export async function searchUsersByPublicId(currentUserId: number, query: string) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select({ id: users.id, publicId: users.publicId, name: users.name, avatarUrl: users.avatarUrl }).from(users).where(and(like(users.publicId, `%${query.trim().toUpperCase()}%`), eq(users.role, "user"))).limit(20);
+}
+
+export async function createCall(callerId: number, calleeId: number, media: "audio" | "video" | "screen" = "audio") {
+  const db = await getDb();
+  if (!db) throw new Error("Database unavailable");
+  const created = await db.insert(calls).values({ callerId, calleeId, media, status: "ringing" }).$returningId();
+  return db.select().from(calls).where(eq(calls.id, created[0]!.id)).limit(1);
+}
+
+export async function updateCall(userId: number, callId: number, status: "connected" | "declined" | "ended" | "missed") {
+  const db = await getDb();
+  if (!db) throw new Error("Database unavailable");
+  await db.update(calls).set({ status, endedAt: status === "ended" || status === "declined" || status === "missed" ? new Date() : undefined }).where(and(eq(calls.id, callId), or(eq(calls.callerId, userId), eq(calls.calleeId, userId))));
+  return db.select().from(calls).where(eq(calls.id, callId)).limit(1);
+}
+
+export async function listCalls(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(calls).where(or(eq(calls.callerId, userId), eq(calls.calleeId, userId))).orderBy(desc(calls.startedAt)).limit(30);
 }
 
 export async function updateFriendship(userId: number, friendshipId: number, status: "accepted" | "declined") {

@@ -111,7 +111,7 @@ function Landing({ onLogin }: { onLogin: () => void }) {
   );
 }
 
-function Workspace({ onLogout, userName, userId }: { onLogout: () => void; userName: string; userId?: number }) {
+function Workspace({ onLogout, userName, userId, publicId }: { onLogout: () => void; userName: string; userId?: number; publicId?: string }) {
   const [activeCommunity, setActiveCommunity] = useState(0);
   const [activeChannel, setActiveChannel] = useState("geral");
   const [message, setMessage] = useState("");
@@ -185,7 +185,7 @@ function Workspace({ onLogout, userName, userId }: { onLogout: () => void; userN
           <div className="channel-group"><div className="group-label"><span>NO AR</span><Plus size={13} /></div><button className="channel-link voice-link"><Volume2 size={15} /><span>Estúdio aberto</span><span className="voice-count">3</span></button><div className="voice-members"><div><span className="voice-avatar amber">M</span>Maya Torres</div><div><span className="voice-avatar blue">R</span>Ravi Mendes</div><div><span className="voice-avatar green">C</span>Clara Ono</div></div></div>
           <div className="side-tip"><Sparkles size={14} /><p><strong>Seu espaço, seu ritmo.</strong><br />Convide pessoas para construir junto.</p></div>
         </div>
-        <div className="user-panel"><button className="user-identity" onClick={() => setProfileOpen(true)}><Avatar initials={userName ? userName.slice(0, 2).toUpperCase() : "VC"} tone="bg-slate-200 text-slate-900" online /><div className="user-meta"><strong>{displayName}</strong><span>online</span></div></button><button onClick={() => setMuted(!muted)} className={muted ? "control-active" : ""}><Mic size={15} /></button><button onClick={onLogout}><MoreHorizontal size={16} /></button></div>
+        <div className="user-panel"><button className="user-identity" onClick={() => setProfileOpen(true)}><Avatar initials={userName ? userName.slice(0, 2).toUpperCase() : "VC"} tone="bg-slate-200 text-slate-900" online /><div className="user-meta"><strong>{displayName}</strong><span>{publicId ?? "CONTA"}</span></div></button><button onClick={() => setMuted(!muted)} className={muted ? "control-active" : ""}><Mic size={15} /></button><button onClick={onLogout}><MoreHorizontal size={16} /></button></div>
       </aside>
 
       <main className="content-area">
@@ -216,15 +216,29 @@ function DmView({ name, threadId, opening, openError }: { name: string; threadId
 }
 
 function FriendsView() {
-  const [friendQuery, setFriendQuery] = useState("");
-  const [requestSent, setRequestSent] = useState(false);
-  const filteredFriends = friends.filter((friend) => friend.name.toLowerCase().includes(friendQuery.toLowerCase()));
-  return <section className="friends-view"><div className="friends-header"><div><span className="section-kicker">CONEXÕES</span><h1>Seus amigos</h1><p>Encontre as pessoas que tornam cada conversa melhor.</p></div><Button className="primary-cta" onClick={() => setRequestSent(true)}><UserPlus size={16} /> Adicionar amigo</Button></div><div className="friends-tabs"><button className="active">Todos <span>24</span></button><button>Online <span>4</span></button><button>Solicitações <span>2</span></button><div className="friends-search"><Search size={15} /><Input value={friendQuery} onChange={(event) => setFriendQuery(event.target.value)} placeholder="Buscar amigos" /></div></div>{requestSent && <div className="request-banner"><Check size={16} /> Solicitação enviada. A pessoa receberá uma notificação no Concord.</div>}<div className="friends-grid">{filteredFriends.map((friend) => <article className="friend-tile" key={friend.name}><div className="friend-tile-top"><Avatar initials={friend.initials} tone={friend.tone} online /><button><MoreHorizontal size={17} /></button></div><h3>{friend.name}</h3><p>{friend.status}</p><div className="friend-actions"><Button variant="outline" onClick={() => toast.info(`Abrindo DM com ${friend.name}`)}><MessageCircle size={15} /> Mensagem</Button><button className="icon-action"><Video size={16} /></button></div></article>)}</div></section>;
+  const { user } = useAuth();
+  const [query, setQuery] = useState("");
+  const [audioStream, setAudioStream] = useState<MediaStream | null>(null);
+  const [audioMuted, setAudioMuted] = useState(false);
+  const [activeCallId, setActiveCallId] = useState<number | null>(null);
+  const [callState, setCallState] = useState<"idle" | "requesting" | "connected" | "error">("idle");
+  const accountSearch = trpc.accounts.search.useQuery({ query }, { enabled: query.trim().length >= 3 });
+  const friendshipQuery = trpc.friends.list.useQuery(undefined, { refetchInterval: 10000 });
+  const requestMutation = trpc.friends.request.useMutation({ onSuccess: () => { toast.success("Solicitação enviada"); friendshipQuery.refetch(); } });
+  const respondMutation = trpc.friends.respond.useMutation({ onSuccess: () => friendshipQuery.refetch() });
+  const callStart = trpc.calls.start.useMutation({ onSuccess: (rows) => { const call = rows[0]; if (call) setActiveCallId(call.id); } });
+  const callUpdate = trpc.calls.update.useMutation({ onSuccess: () => { setActiveCallId(null); setCallState("idle"); } });
+  const accepted = (friendshipQuery.data ?? []).filter((entry) => entry.friendship.status === "accepted" && entry.user);
+  const pending = (friendshipQuery.data ?? []).filter((entry) => entry.friendship.status === "pending" && entry.friendship.addresseeId === user?.id && entry.user);
+  const startAudioCall = async (friendId: number) => {
+    try { setCallState("requesting"); if (!navigator.mediaDevices?.getUserMedia) throw new Error("Seu navegador não permite chamadas de áudio."); const stream = await navigator.mediaDevices.getUserMedia({ audio: true }); setAudioStream(stream); setCallState("connected"); callStart.mutate({ calleeId: friendId, media: "audio" }); } catch (error) { setCallState("error"); toast.error(error instanceof Error ? error.message : "Não foi possível iniciar a chamada."); }
+  };
+  return <section className="friends-view"><div className="friends-header"><div><span className="section-kicker">CONEXÕES</span><h1>Seus amigos</h1><p>Adicione alguém usando o ID público exibido abaixo do nome.</p></div><div className="friends-search account-search"><Search size={15} /><Input value={query} onChange={(event) => setQuery(event.target.value.toUpperCase())} placeholder="Buscar por ID: CON-..." /></div></div>{query.trim().length >= 3 && <div className="account-results">{accountSearch.isLoading ? <div className="empty-state">Procurando contas...</div> : accountSearch.isError ? <div className="empty-state error-state">Não foi possível buscar contas.</div> : accountSearch.data?.length ? accountSearch.data.map((account) => <div className="account-result" key={account.id}><Avatar initials={(account.name ?? "CO").slice(0, 2).toUpperCase()} tone="bg-blue-200 text-blue-900" /><div><strong>{account.name ?? "Conta Concord"}</strong><span>{account.publicId}</span></div><Button className="primary-cta" onClick={() => requestMutation.mutate({ addresseeId: account.id })} disabled={requestMutation.isPending}><UserPlus size={14} /> Adicionar</Button></div>) : <div className="empty-state">Nenhuma conta encontrada para esse ID.</div>}</div>}<div className="friends-tabs"><button className="active">Amigos <span>{accepted.length}</span></button><button>Solicitações <span>{pending.length}</span></button></div>{pending.length > 0 && <div className="request-list">{pending.map((entry) => <div className="request-banner" key={entry.friendship.id}><span>Solicitação de {entry.user?.name ?? "conta"}</span><Button variant="outline" onClick={() => respondMutation.mutate({ friendshipId: entry.friendship.id, status: "accepted" })}><Check size={14} /> Aceitar</Button><Button variant="outline" onClick={() => respondMutation.mutate({ friendshipId: entry.friendship.id, status: "declined" })}><X size={14} /> Recusar</Button></div>)}</div>}{callState !== "idle" && <div className={`request-banner ${callState === "error" ? "dm-error" : ""}`}>{callState === "requesting" ? "Solicitando acesso ao microfone..." : callState === "connected" ? `Chamada de áudio ativa${activeCallId ? ` #${activeCallId}` : ""}` : "A chamada não pôde ser iniciada."}{activeCallId && <><Button variant="outline" onClick={() => { audioStream?.getAudioTracks().forEach((track) => { track.enabled = audioMuted; }); setAudioMuted((value) => !value); }}>{audioMuted ? "Ativar microfone" : "Mutar microfone"}</Button><Button variant="outline" onClick={() => { audioStream?.getTracks().forEach((track) => track.stop()); callUpdate.mutate({ callId: activeCallId, status: "ended" }); }}>Encerrar</Button></>}</div>}<div className="friends-grid">{accepted.length ? accepted.map((entry) => { const person = entry.user!; return <article className="friend-tile" key={person.id}><div className="friend-tile-top"><Avatar initials={(person.name ?? "CO").slice(0, 2).toUpperCase()} tone="bg-blue-200 text-blue-900" online /><span className="public-id">{person.publicId}</span></div><h3>{person.name ?? "Conta Concord"}</h3><p>Amigo no Concord</p><div className="friend-actions"><Button variant="outline" onClick={() => toast.info("Abra a conversa pela lista de DMs")}><MessageCircle size={15} /> Mensagem</Button><button className="icon-action" onClick={() => startAudioCall(person.id)} title="Chamada de áudio"><Headphones size={16} /></button></div></article>; }) : <div className="empty-state">Você ainda não tem amigos aceitos. Procure uma conta pelo ID acima.</div>}</div></section>;
 }
 
 export default function Home() {
   const { user, loading, isAuthenticated, logout } = useAuth();
   if (loading) return <div className="loading-screen"><LogoMark /><span>Preparando seu espaço...</span></div>;
   if (!isAuthenticated) return <Landing onLogin={() => startLogin()} />;
-  return <Workspace onLogout={() => logout()} userName={user?.name ?? ""} userId={user?.id} />;
+  return <Workspace onLogout={() => logout()} userName={user?.name ?? ""} userId={user?.id} publicId={user?.publicId} />;
 }

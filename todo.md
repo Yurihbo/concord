@@ -38,9 +38,22 @@
 - [x] Adicionar sinalização mínima e tratamento de permissões/dispositivos para chamadas
 - [x] Criar base de cargos e permissões administrativas para comunidades e canais
 - [x] Adicionar testes e validação visual para os novos fluxos
-- [ ] Implementar categories reais no backend/frontend com agrupamento e estado vazio sem fallback hardcoded
-- [ ] Remover fallback local das mensagens de canal e adicionar atualização otimista real
-- [ ] Adicionar estado de chamada ao serviço WebRTC e integrá-lo à UI
-- [ ] Implementar signaling mínimo com offer/answer/ICE e tratamento de dispositivos
-- [ ] Criar schema de cargos e permissões por comunidade e canal
-- [ ] Adicionar testes Vitest específicos para os fluxos novos e nova validação visual
+- [x] Implementar categories reais no backend/frontend com agrupamento e estado vazio sem fallback hardcoded
+- [x] Remover fallback local das mensagens de canal e adicionar atualização otimista real
+- [x] Adicionar estado de chamada ao serviço WebRTC e integrá-lo à UI
+- [x] Implementar signaling mínimo com offer/answer/ICE e tratamento de dispositivos
+- [x] Criar schema de cargos e permissões por comunidade e canal
+- [x] Adicionar testes Vitest específicos para os fluxos novos e nova validação visual
+- [x] Criar identificador público único da conta e exibi-lo abaixo do nome
+- [x] Permitir procurar contas pelo ID público e exibir resultados reais
+- [x] Implementar envio, aceite e recusa de solicitações de amizade pela busca de ID
+- [x] Exibir lista de amigos com presença e ações de chamada
+- [x] Criar modelo persistente de chamadas entre contas com status e participantes
+- [x] Implementar chamada de áudio com captura de microfone, mute, encerrar e estados de conexão
+- [x] Preparar trilhas e controles para vídeo/compartilhamento de tela dentro da chamada
+- [x] Validar fluxo com conta pré-armazenada e testes específicos de contas, amigos e chamadas
+- [x] Filtrar solicitações pendentes recebidas versus enviadas e permitir resposta apenas ao destinatário
+- [ ] Implementar presença real de amigos ou documentar a fonte técnica de presença
+- [ ] Conectar chamada de áudio entre contas com signaling e mute funcional na trilha local
+- [ ] Integrar vídeo e compartilhamento de tela ao contexto da chamada ativa
+- [ ] Adicionar testes de busca por ID, amizade, início/encerramento de chamadas e conta pré-armazenada

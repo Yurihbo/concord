@@ -15,6 +15,13 @@
       "when": 1787252436269,
       "tag": "0001_daily_wendigo",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1787254490734,
+      "tag": "0002_special_sphinx",
+      "breakpoints": true
     }
   ]
 }

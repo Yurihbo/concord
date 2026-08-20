@@ -3,6 +3,7 @@ import { int, mysqlEnum, mysqlTable, text, timestamp, varchar } from "drizzle-or
 export const users = mysqlTable("users", {
   id: int("id").autoincrement().primaryKey(),
   openId: varchar("openId", { length: 64 }).notNull().unique(),
+  publicId: varchar("publicId", { length: 24 }).notNull().unique(),
   name: text("name"),
   email: varchar("email", { length: 320 }),
   loginMethod: varchar("loginMethod", { length: 64 }),
@@ -75,6 +76,16 @@ export const directThreadMembers = mysqlTable("directThreadMembers", {
   userId: int("userId").notNull(),
 });
 
+export const calls = mysqlTable("calls", {
+  id: int("id").autoincrement().primaryKey(),
+  callerId: int("callerId").notNull(),
+  calleeId: int("calleeId").notNull(),
+  status: mysqlEnum("status", ["ringing", "connected", "declined", "ended", "missed"]).default("ringing").notNull(),
+  media: mysqlEnum("media", ["audio", "video", "screen"]).default("audio").notNull(),
+  startedAt: timestamp("startedAt").defaultNow().notNull(),
+  endedAt: timestamp("endedAt"),
+});
+
 export const directMessages = mysqlTable("directMessages", {
   id: int("id").autoincrement().primaryKey(),
   threadId: int("threadId").notNull(),
@@ -84,6 +95,7 @@ export const directMessages = mysqlTable("directMessages", {
 });
 
 export type User = typeof users.$inferSelect;
+export type Call = typeof calls.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 export type Community = typeof communities.$inferSelect;
 export type Channel = typeof channels.$inferSelect;

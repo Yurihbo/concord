@@ -3,16 +3,17 @@ import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
-import { createCall, createChannelMessage, createCommunity, createDirectMessage, createFriendRequest, getOrCreateDirectThread, listCalls, listChannelMessages, listChannels, listCommunitiesForUser, listDirectMessages, listFriendships, searchUsersByPublicId, updateCall, updateFriendship, updateUserProfile } from "./db";
+import { addCallSignal, createCall, createChannelMessage, createCommunity, createDirectMessage, createFriendRequest, getOrCreateDirectThread, listCallSignals, listCalls, listChannelMessages, listChannels, listCommunitiesForUser, listDirectMessages, listFriendships, searchUsersByPublicId, setUserPresence, updateCall, updateFriendship, updateUserProfile } from "./db";
 
 const nonEmpty = z.string().trim().min(1).max(200);
 
 export const appRouter = router({
   system: systemRouter,
   auth: router({
-    me: publicProcedure.query(opts => opts.ctx.user),
-    logout: publicProcedure.mutation(({ ctx }) => {
+    me: publicProcedure.query(async (opts) => { if (opts.ctx.user) await setUserPresence(opts.ctx.user.id, "online"); return opts.ctx.user; }),
+    logout: publicProcedure.mutation(async ({ ctx }) => {
       const cookieOptions = getSessionCookieOptions(ctx.req);
+      if (ctx.user) await setUserPresence(ctx.user.id, "offline");
       ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
       return { success: true } as const;
     }),
@@ -37,6 +38,9 @@ export const appRouter = router({
   }),
   calls: router({
     list: protectedProcedure.query(({ ctx }) => listCalls(ctx.user.id)),
+    signal: protectedProcedure.input(z.object({ callId: z.number().int().positive(), kind: z.enum(["offer", "answer", "ice"]), payload: nonEmpty })).mutation(({ ctx, input }) => addCallSignal(ctx.user.id, input.callId, input.kind, input.payload)),
+    signals: protectedProcedure.input(z.object({ callId: z.number().int().positive(), afterId: z.number().int().positive().optional() })).query(({ ctx, input }) => listCallSignals(ctx.user.id, input.callId, input.afterId)),
+    presence: protectedProcedure.input(z.object({ presence: z.enum(["online", "away", "offline"]) })).mutation(({ ctx, input }) => setUserPresence(ctx.user.id, input.presence)),
     start: protectedProcedure.input(z.object({ calleeId: z.number().int().positive(), media: z.enum(["audio", "video", "screen"]).default("audio") })).mutation(({ ctx, input }) => createCall(ctx.user.id, input.calleeId, input.media)),
     update: protectedProcedure.input(z.object({ callId: z.number().int().positive(), status: z.enum(["connected", "declined", "ended", "missed"]) })).mutation(({ ctx, input }) => updateCall(ctx.user.id, input.callId, input.status)),
   }),

@@ -8,6 +8,7 @@ export const users = mysqlTable("users", {
   email: varchar("email", { length: 320 }),
   loginMethod: varchar("loginMethod", { length: 64 }),
   avatarUrl: text("avatarUrl"),
+  presence: mysqlEnum("presence", ["online", "away", "offline"]).default("online").notNull(),
   bio: text("bio"),
   role: mysqlEnum("role", ["user", "admin"]).default("user").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
@@ -84,6 +85,15 @@ export const calls = mysqlTable("calls", {
   media: mysqlEnum("media", ["audio", "video", "screen"]).default("audio").notNull(),
   startedAt: timestamp("startedAt").defaultNow().notNull(),
   endedAt: timestamp("endedAt"),
+});
+
+export const callSignals = mysqlTable("callSignals", {
+  id: int("id").autoincrement().primaryKey(),
+  callId: int("callId").notNull(),
+  senderId: int("senderId").notNull(),
+  kind: mysqlEnum("kind", ["offer", "answer", "ice"]).notNull(),
+  payload: text("payload").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
 export const directMessages = mysqlTable("directMessages", {

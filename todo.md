@@ -53,7 +53,7 @@
 - [x] Preparar trilhas e controles para vídeo/compartilhamento de tela dentro da chamada
 - [x] Validar fluxo com conta pré-armazenada e testes específicos de contas, amigos e chamadas
 - [x] Filtrar solicitações pendentes recebidas versus enviadas e permitir resposta apenas ao destinatário
-- [ ] Implementar presença real de amigos ou documentar a fonte técnica de presença
-- [ ] Conectar chamada de áudio entre contas com signaling e mute funcional na trilha local
-- [ ] Integrar vídeo e compartilhamento de tela ao contexto da chamada ativa
-- [ ] Adicionar testes de busca por ID, amizade, início/encerramento de chamadas e conta pré-armazenada
+- [x] Implementar presença real de amigos ou documentar a fonte técnica de presença
+- [x] Conectar chamada de áudio entre contas com signaling e mute funcional na trilha local
+- [x] Integrar vídeo e compartilhamento de tela ao contexto da chamada ativa
+- [x] Adicionar testes de busca por ID, amizade, início/encerramento de chamadas e conta pré-armazenada

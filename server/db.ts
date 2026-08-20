@@ -1,6 +1,6 @@
-import { and, desc, eq, inArray, like, or } from "drizzle-orm";
+import { and, desc, eq, gt, inArray, like, or } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, calls, channels, communities, communityMembers, directMessages, directThreadMembers, directThreads, friendships, messages, users } from "../drizzle/schema";
+import { InsertUser, callSignals, calls, channels, communities, communityMembers, directMessages, directThreadMembers, directThreads, friendships, messages, users } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -123,6 +123,31 @@ export async function updateCall(userId: number, callId: number, status: "connec
   if (!db) throw new Error("Database unavailable");
   await db.update(calls).set({ status, endedAt: status === "ended" || status === "declined" || status === "missed" ? new Date() : undefined }).where(and(eq(calls.id, callId), or(eq(calls.callerId, userId), eq(calls.calleeId, userId))));
   return db.select().from(calls).where(eq(calls.id, callId)).limit(1);
+}
+
+export async function addCallSignal(userId: number, callId: number, kind: "offer" | "answer" | "ice", payload: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database unavailable");
+  const call = await db.select().from(calls).where(and(eq(calls.id, callId), or(eq(calls.callerId, userId), eq(calls.calleeId, userId)))).limit(1);
+  if (!call[0]) throw new Error("Call not found");
+  await db.insert(callSignals).values({ callId, senderId: userId, kind, payload });
+  return { success: true } as const;
+}
+
+export async function listCallSignals(userId: number, callId: number, afterId?: number) {
+  const db = await getDb();
+  if (!db) return [];
+  const call = await db.select().from(calls).where(and(eq(calls.id, callId), or(eq(calls.callerId, userId), eq(calls.calleeId, userId)))).limit(1);
+  if (!call[0]) throw new Error("Call not found");
+  const conditions = [eq(callSignals.callId, callId)];
+  if (afterId) conditions.push(gt(callSignals.id, afterId));
+  return db.select().from(callSignals).where(and(...conditions)).orderBy(callSignals.id);
+}
+
+export async function setUserPresence(userId: number, presence: "online" | "away" | "offline") {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(users).set({ presence }).where(eq(users.id, userId));
 }
 
 export async function listCalls(userId: number) {

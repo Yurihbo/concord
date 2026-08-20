@@ -22,6 +22,13 @@
       "when": 1787254490734,
       "tag": "0002_special_sphinx",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "5",
+      "when": 1787254850524,
+      "tag": "0003_silly_chimera",
+      "breakpoints": true
     }
   ]
 }

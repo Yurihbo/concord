@@ -41,6 +41,36 @@ export class ConcordWebRTCService {
     return this.peer;
   }
 
+  async createOffer(): Promise<string> {
+    if (!this.peer) throw new Error("A conexão WebRTC ainda não foi criada.");
+    const offer = await this.peer.createOffer();
+    await this.peer.setLocalDescription(offer);
+    return JSON.stringify(offer);
+  }
+
+  async applyAnswer(payload: string): Promise<void> {
+    if (!this.peer) throw new Error("A conexão WebRTC ainda não foi criada.");
+    await this.peer.setRemoteDescription(JSON.parse(payload) as RTCSessionDescriptionInit);
+  }
+
+  async applyOffer(payload: string): Promise<string> {
+    if (!this.peer) throw new Error("A conexão WebRTC ainda não foi criada.");
+    await this.peer.setRemoteDescription(JSON.parse(payload) as RTCSessionDescriptionInit);
+    const answer = await this.peer.createAnswer();
+    await this.peer.setLocalDescription(answer);
+    return JSON.stringify(answer);
+  }
+
+  async addIceCandidate(payload: string): Promise<void> {
+    if (!this.peer) throw new Error("A conexão WebRTC ainda não foi criada.");
+    await this.peer.addIceCandidate(JSON.parse(payload) as RTCIceCandidateInit);
+  }
+
+  onIceCandidate(callback: (payload: string) => void): void {
+    if (!this.peer) throw new Error("A conexão WebRTC ainda não foi criada.");
+    this.peer.onicecandidate = (event) => { if (event.candidate) callback(JSON.stringify(event.candidate)); };
+  }
+
   addLocalTracks(): void {
     if (!this.peer) throw new Error("A conexão WebRTC ainda não foi criada.");
     for (const stream of [this.localStream, this.screenStream]) stream?.getTracks().forEach((track) => this.peer?.addTrack(track, stream));

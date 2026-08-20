@@ -16,6 +16,11 @@ describe("Concord account and call contracts", () => {
     expect(caller.accounts.search).toBeTypeOf("function");
     expect(caller.calls.start).toBeTypeOf("function");
     expect(caller.calls.update).toBeTypeOf("function");
+    expect(caller.calls.signal).toBeTypeOf("function");
+    expect(caller.calls.signals).toBeTypeOf("function");
+    expect(caller.calls.presence).toBeTypeOf("function");
+    expect(caller.friends.request).toBeTypeOf("function");
+    expect(caller.friends.respond).toBeTypeOf("function");
   });
 
   it("returns the current user's public identity through auth.me", async () => {

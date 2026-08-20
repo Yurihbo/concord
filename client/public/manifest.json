@@ -1,0 +1,14 @@
+{
+  "name": "Concord — Comunicação simples e intencional",
+  "short_name": "Concord",
+  "description": "Comunidades e conversas que encontram seu ritmo.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#070d18",
+  "theme_color": "#0b1220",
+  "lang": "pt-BR",
+  "icons": [
+    { "src": "/manus-storage/icon-192_d708ddda.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "/manus-storage/icon-512_4c7d8ee5.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

@@ -90,3 +90,11 @@
 - [x] Adicionar atalhos mobile equivalentes em DM e Amigos
 - [x] Fechar a gaveta mobile ao selecionar canal ou conversa
 - [x] Validar o workspace mobile após a correção responsiva
+- [x] Criar barra inferior fixa para chamadas ativas no mobile
+- [x] Adicionar controles mobile de microfone, áudio, câmera, tela e encerramento na barra fixa
+- [x] Exibir estado de chamada, participante e duração sem cobrir o composer
+- [x] Validar fluxo autenticado de Amigos em viewport mobile
+- [x] Validar fluxo autenticado de Chamadas em viewport mobile
+- [x] Executar checagem TypeScript, testes e screenshots mobile
+- [ ] Confirmar visualmente a tela autenticada de Amigos em dispositivo mobile com sessão real
+- [ ] Confirmar visualmente uma chamada autenticada em dispositivo mobile com barra fixa, dispositivos e previews

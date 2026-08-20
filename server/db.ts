@@ -1,6 +1,6 @@
-import { and, desc, eq, gt, inArray, like, or } from "drizzle-orm";
+import { and, desc, eq, gt, inArray, like, lt, ne, or } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, callSignals, calls, channels, communities, communityMembers, directMessages, directThreadMembers, directThreads, friendships, messages, users } from "../drizzle/schema";
+import { InsertUser, callSignals, calls, channels, communities, communityMembers, directMessages, directThreadMembers, directThreads, friendships, messages, users, voiceMembers } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -71,6 +71,53 @@ export async function listChannels(communityId: number) {
   const db = await getDb();
   if (!db) return [];
   return db.select().from(channels).where(eq(channels.communityId, communityId));
+}
+
+export async function createVoiceChannel(userId: number, communityId: number, name: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database unavailable");
+  const membership = await db.select().from(communityMembers).where(and(eq(communityMembers.communityId, communityId), eq(communityMembers.userId, userId))).limit(1);
+  if (!membership[0]) throw new Error("Você não participa deste servidor");
+  const existing = await db.select().from(channels).where(and(eq(channels.communityId, communityId), eq(channels.kind, "voice")));
+  if (existing.length >= 3) throw new Error("Este servidor já possui o limite de 3 salas de voz");
+  const created = await db.insert(channels).values({ communityId, name, kind: "voice", position: existing.length }).$returningId();
+  return db.select().from(channels).where(eq(channels.id, created[0]!.id)).limit(1);
+}
+
+export async function listVoiceChannels(communityId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(channels).where(and(eq(channels.communityId, communityId), eq(channels.kind, "voice")));
+}
+
+export async function joinVoiceChannel(userId: number, channelId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database unavailable");
+  const channel = await db.select().from(channels).where(and(eq(channels.id, channelId), eq(channels.kind, "voice"))).limit(1);
+  if (!channel[0]) throw new Error("Sala de voz não encontrada");
+  await db.delete(voiceMembers).where(and(eq(voiceMembers.userId, userId), ne(voiceMembers.channelId, channelId)));
+  const existing = await db.select().from(voiceMembers).where(and(eq(voiceMembers.channelId, channelId), eq(voiceMembers.userId, userId))).limit(1);
+  if (existing[0]) {
+    await db.update(voiceMembers).set({ lastSeenAt: new Date() }).where(eq(voiceMembers.id, existing[0].id));
+  } else {
+    await db.insert(voiceMembers).values({ channelId, userId });
+  }
+  return listVoiceParticipants(channelId);
+}
+
+export async function leaveVoiceChannel(userId: number, channelId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database unavailable");
+  await db.delete(voiceMembers).where(and(eq(voiceMembers.channelId, channelId), eq(voiceMembers.userId, userId)));
+  return { success: true } as const;
+}
+
+export async function listVoiceParticipants(channelId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  const staleBefore = new Date(Date.now() - 45_000);
+  await db.delete(voiceMembers).where(and(eq(voiceMembers.channelId, channelId), lt(voiceMembers.lastSeenAt, staleBefore)));
+  return db.select({ member: voiceMembers, user: users }).from(voiceMembers).innerJoin(users, eq(voiceMembers.userId, users.id)).where(eq(voiceMembers.channelId, channelId));
 }
 
 export async function listChannelMessages(channelId: number, limit = 50) {

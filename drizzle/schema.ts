@@ -104,9 +104,18 @@ export const directMessages = mysqlTable("directMessages", {
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
+export const voiceMembers = mysqlTable("voiceMembers", {
+  id: int("id").autoincrement().primaryKey(),
+  channelId: int("channelId").notNull(),
+  userId: int("userId").notNull(),
+  joinedAt: timestamp("joinedAt").defaultNow().notNull(),
+  lastSeenAt: timestamp("lastSeenAt").defaultNow().onUpdateNow().notNull(),
+});
+
 export type User = typeof users.$inferSelect;
 export type Call = typeof calls.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 export type Community = typeof communities.$inferSelect;
 export type Channel = typeof channels.$inferSelect;
 export type Message = typeof messages.$inferSelect;
+export type VoiceMember = typeof voiceMembers.$inferSelect;

@@ -3,7 +3,7 @@ import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
-import { addCallSignal, createCall, createChannelMessage, createCommunity, createDirectMessage, createFriendRequest, getOrCreateDirectThread, listCallSignals, listCalls, listChannelMessages, listChannels, listCommunitiesForUser, listDirectMessages, listFriendships, searchUsersByPublicId, setUserPresence, updateCall, updateFriendship, updateUserProfile } from "./db";
+import { addCallSignal, createCall, createChannelMessage, createCommunity, createDirectMessage, createFriendRequest, createVoiceChannel, getOrCreateDirectThread, joinVoiceChannel, leaveVoiceChannel, listCallSignals, listCalls, listChannelMessages, listChannels, listCommunitiesForUser, listDirectMessages, listFriendships, listVoiceChannels, listVoiceParticipants, searchUsersByPublicId, setUserPresence, updateCall, updateFriendship, updateUserProfile } from "./db";
 
 const nonEmpty = z.string().trim().min(1).max(200);
 
@@ -28,6 +28,11 @@ export const appRouter = router({
     list: protectedProcedure.query(({ ctx }) => listCommunitiesForUser(ctx.user.id)),
     create: protectedProcedure.input(z.object({ name: nonEmpty.max(120), description: z.string().max(500).optional(), iconUrl: z.string().url().optional() })).mutation(({ ctx, input }) => createCommunity(ctx.user.id, input)),
     channels: protectedProcedure.input(z.object({ communityId: z.number().int().positive() })).query(({ input }) => listChannels(input.communityId)),
+    voice: protectedProcedure.input(z.object({ communityId: z.number().int().positive() })).query(({ input }) => listVoiceChannels(input.communityId)),
+    createVoice: protectedProcedure.input(z.object({ communityId: z.number().int().positive(), name: nonEmpty.max(80) })).mutation(({ ctx, input }) => createVoiceChannel(ctx.user.id, input.communityId, input.name)),
+    participants: protectedProcedure.input(z.object({ channelId: z.number().int().positive() })).query(({ input }) => listVoiceParticipants(input.channelId)),
+    join: protectedProcedure.input(z.object({ channelId: z.number().int().positive() })).mutation(({ ctx, input }) => joinVoiceChannel(ctx.user.id, input.channelId)),
+    leave: protectedProcedure.input(z.object({ channelId: z.number().int().positive() })).mutation(({ ctx, input }) => leaveVoiceChannel(ctx.user.id, input.channelId)),
   }),
   messages: router({
     list: protectedProcedure.input(z.object({ channelId: z.number().int().positive(), limit: z.number().int().min(1).max(100).optional() })).query(({ input }) => listChannelMessages(input.channelId, input.limit)),

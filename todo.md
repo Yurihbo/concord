@@ -98,3 +98,14 @@
 - [x] Executar checagem TypeScript, testes e screenshots mobile
 - [ ] Confirmar visualmente a tela autenticada de Amigos em dispositivo mobile com sessão real
 - [ ] Confirmar visualmente uma chamada autenticada em dispositivo mobile com barra fixa, dispositivos e previews
+- [ ] Repetir validação autenticada de Amigos e Chamadas em viewport mobile quando o login do navegador estiver disponível, pois a etapa manual atual travou antes de abrir o workspace
+- [x] Remover mensagens e nomes de conversas de exemplo do canal inicial
+- [x] Manter somente uma mensagem de boas-vindas no canal inicial
+- [x] Implementar salas de voz estilo Discord com criação, entrada e saída
+- [x] Limitar a criação a no máximo 3 salas de voz por servidor
+- [x] Persistir salas de voz e participantes sem criar processos pesados no host
+- [x] Validar estados vazios, limite de 3 salas, desktop, mobile e chamadas WebRTC
+- [x] Persistir participantes de salas de voz com join, leave e listParticipants via tRPC
+- [x] Refletir participantes reais e presença compartilhada na sidebar estilo Discord
+- [x] Conectar sala de voz a áudio multiusuário ou documentar claramente o limite atual
+- [ ] Validar visualmente salas de voz autenticadas em desktop e mobile, incluindo limite de 3 e chamada ativa

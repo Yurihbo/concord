@@ -29,6 +29,13 @@
       "when": 1787254850524,
       "tag": "0003_silly_chimera",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "5",
+      "when": 1787265530145,
+      "tag": "0004_black_moon_knight",
+      "breakpoints": true
     }
   ]
 }

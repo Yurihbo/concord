@@ -82,3 +82,11 @@
 - [x] Usar o preview remoto como sink único para respeitar a saída selecionada
 - [x] Adicionar Picture-in-Picture para preview remoto e local
 - [x] Validar o fluxo de código público com formato completo e bloqueio da própria conta
+- [x] Alinhar a navegação mobile com comunidades, canais, DMs, amigos e configurações
+- [x] Garantir acesso mobile à busca por código público e ações de amizade
+- [x] Adaptar chamadas, seleção de dispositivos, teste de microfone e controles de mídia para toque
+- [x] Adaptar previews, modo expandido e Picture-in-Picture para mobile
+- [x] Validar a paridade mobile em viewport estreita com testes e screenshot
+- [x] Adicionar atalhos mobile equivalentes em DM e Amigos
+- [x] Fechar a gaveta mobile ao selecionar canal ou conversa
+- [x] Validar o workspace mobile após a correção responsiva

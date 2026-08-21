@@ -18,6 +18,10 @@ service cloud.firestore {
       allow create: if isSelf(userId);
       allow update: if isSelf(userId);
       allow delete: if false;
+
+      match /memberships/{communityId} {
+        allow read, write: if isSelf(userId);
+      }
     }
 
     match /communities/{communityId} {
@@ -53,7 +57,21 @@ service cloud.firestore {
       }
 
       match /signaling/{signalId} {
-        allow read, write: if isCommunityMember(communityId) && (request.resource.data.from == request.auth.uid || request.resource.data.to == request.auth.uid);
+        allow read: if isCommunityMember(communityId);
+      allow create: if isCommunityMember(communityId) && request.resource.data.from == request.auth.uid;
+      allow update, delete: if isCommunityMember(communityId) && (resource.data.from == request.auth.uid || resource.data.to == request.auth.uid);
+      }
+    }
+
+    match /calls/{callId} {
+      allow read, create: if signedIn();
+      allow update: if signedIn() && (resource.data.callerId == request.auth.uid || resource.data.calleeId == request.auth.uid);
+      allow delete: if false;
+
+      match /signals/{signalId} {
+        allow create: if signedIn() && request.resource.data.from == request.auth.uid;
+        allow read: if signedIn() && resource.data.to == request.auth.uid;
+        allow update, delete: if signedIn() && (resource.data.from == request.auth.uid || resource.data.to == request.auth.uid);
       }
     }
 

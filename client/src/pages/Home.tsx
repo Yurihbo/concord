@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
+import FirebaseWorkspace from "@/pages/FirebaseWorkspace";
 import { startLogin } from "@/const";
 import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
@@ -300,6 +301,7 @@ function FriendsView({ onOpenChannels, onOpenProfile }: { onOpenChannels: () => 
 }
 
 export default function Home() {
+  if (import.meta.env.VITE_FIREBASE_MODE === "true") return <FirebaseWorkspace />;
   const { user, loading, isAuthenticated, logout } = useAuth();
   if (loading) return <div className="loading-screen"><LogoMark /><span>Preparando seu espaço...</span></div>;
   if (!isAuthenticated) return <Landing onLogin={() => startLogin()} />;

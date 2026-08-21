@@ -190,3 +190,64 @@ a { color: inherit; text-decoration: none; }
 .firebase-mode-toggle { justify-self: center; color: #1d4ed8; background: transparent; border: 0; font-size: .8rem; font-weight: 700; cursor: pointer; }
 .firebase-mode-toggle:hover { text-decoration: underline; }
 @media (max-width: 480px) { .firebase-auth-shell { padding: 1rem; } .firebase-auth-card { padding: 1.35rem; border-radius: 1rem; } }
+
+.firebase-workspace { min-height: 100dvh; display: grid; grid-template-columns: 72px 236px minmax(0,1fr) 250px; background: #f7f9fc; color: #111827; }
+.firebase-sidebar, .firebase-channel-sidebar { display: flex; flex-direction: column; color: #cbd5e1; background: #0b1220; }
+.firebase-sidebar { padding: 1.1rem .7rem .8rem; }
+.firebase-brand { margin-bottom: 1.2rem; color: #f8fafc; font: 800 .72rem 'DM Mono', monospace; writing-mode: vertical-rl; letter-spacing: .16em; transform: rotate(180deg); }
+.firebase-community-list { display: grid; gap: .55rem; justify-items: center; }
+.firebase-community { width: 2.45rem; height: 2.45rem; display: grid; place-items: center; color: #a7b5c9; background: #162236; border: 0; border-radius: .8rem; font-size: .68rem; font-weight: 800; transition: .16s ease; }
+.firebase-community:hover, .firebase-community.active { color: #fff; background: #2563eb; transform: translateY(-1px); }
+.firebase-community.add { color: #54d598; background: #123127; }
+.firebase-sidebar-user { display: flex; align-items: center; gap: .45rem; margin-top: auto; padding-top: .75rem; border-top: 1px solid #1d2a3d; }
+.firebase-sidebar-user > div { min-width: 0; flex: 1; display: grid; gap: .15rem; }
+.firebase-sidebar-user strong { overflow: hidden; color: #e4edf8; font-size: .62rem; text-overflow: ellipsis; white-space: nowrap; }
+.firebase-sidebar-user small { color: #54d598; font: .5rem 'DM Mono', monospace; }
+.firebase-sidebar-user button { color: #94a3b8; background: transparent; border: 0; }
+.firebase-channel-sidebar { background: #101a2b; border-right: 1px solid #1d2a3d; }
+.firebase-channel-sidebar header { padding: 1.15rem 1rem; border-bottom: 1px solid #1d2a3d; }
+.firebase-channel-sidebar header strong { display: block; color: #edf4fb; font-size: .82rem; }
+.firebase-channel-sidebar header span, .firebase-label, .firebase-kicker { color: #6b83a3; font: .55rem 'DM Mono', monospace; letter-spacing: .1em; text-transform: uppercase; }
+.firebase-channel-list { display: grid; gap: .25rem; padding: 1rem .7rem; }
+.firebase-channel-list > button { display: flex; align-items: center; gap: .45rem; padding: .55rem .65rem; color: #8293ac; background: transparent; border: 0; border-radius: .45rem; text-align: left; font-size: .75rem; }
+.firebase-channel-list > button:hover, .firebase-channel-list > button.active { color: #eff6ff; background: #1b2e4c; }
+.firebase-channel-list > button.voice { color: #72b4e5; background: #132a3c; }
+.firebase-channel-list > button.voice.active { color: #fff; outline: 1px solid #47db9b; }
+.firebase-label { display: flex; align-items: center; justify-content: space-between; padding: .25rem .45rem .45rem; margin-top: .65rem; }
+.firebase-label button { color: #81a9df; background: transparent; border: 0; }
+.firebase-chat { min-width: 0; display: flex; flex-direction: column; background: #fbfcfe; }
+.firebase-chat-header { display: flex; align-items: center; justify-content: space-between; min-height: 4.35rem; padding: .9rem 1.4rem; background: rgba(255,255,255,.9); border-bottom: 1px solid #e8edf3; }
+.firebase-chat-header h1 { margin: .25rem 0 0; color: #172033; font-size: 1rem; }
+.firebase-header-actions { display: flex; gap: .35rem; }
+.firebase-header-actions button { display: grid; place-items: center; width: 2.1rem; height: 2.1rem; color: #64748b; background: transparent; border: 0; border-radius: .5rem; }
+.firebase-header-actions button:hover { color: #1d4ed8; background: #eff6ff; }
+.firebase-notice { margin: .8rem 1.4rem 0; padding: .65rem .8rem; color: #1e40af; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: .55rem; font-size: .75rem; }
+.firebase-message-list { flex: 1; overflow: auto; padding: 1.5rem 1.4rem; }
+.firebase-message-list article { display: flex; gap: .7rem; padding: .7rem 0; }
+.firebase-message-list article strong { color: #24324a; font-size: .75rem; }
+.firebase-message-list article p { margin: .25rem 0 0; color: #526176; font-size: .8rem; line-height: 1.5; }
+.firebase-avatar { width: 2.2rem; height: 2.2rem; display: grid; place-items: center; flex: 0 0 auto; color: #1e3a8a; background: #bfdbfe; border-radius: .65rem; font-size: .65rem; font-weight: 800; }
+.firebase-avatar.small { width: 1.75rem; height: 1.75rem; }
+.firebase-composer { display: flex; gap: .55rem; padding: 1rem 1.4rem 1.25rem; }
+.firebase-composer input { flex: 1; min-height: 2.75rem; color: #111827; background: #fff; border-color: #dbe3ee; }
+.firebase-composer button { min-width: 2.75rem; }
+.firebase-empty, .firebase-voice-stage { display: grid; place-items: center; align-content: center; flex: 1; gap: .75rem; color: #718096; text-align: center; }
+.firebase-voice-stage h2 { margin: 0; color: #1f2d43; }
+.firebase-voice-stage p { margin: 0; font-size: .78rem; }
+.firebase-member-grid { display: flex; flex-wrap: wrap; justify-content: center; gap: .8rem; max-width: 34rem; padding: 1rem; }
+.firebase-member { display: grid; justify-items: center; gap: .35rem; color: #64748b; font-size: .7rem; }
+.firebase-member.speaking .firebase-avatar { outline: 3px solid #22c55e; box-shadow: 0 0 0 5px rgba(34,197,94,.14); }
+.firebase-right-panel { padding: 1rem; color: #526176; background: #fff; border-left: 1px solid #e8edf3; }
+.firebase-right-heading { display: flex; justify-content: space-between; color: #64748b; font: .6rem 'DM Mono', monospace; letter-spacing: .1em; }
+.firebase-right-heading small { color: #2563eb; }
+.firebase-friend-search { margin: .8rem 0; }
+.firebase-friend-search input { min-height: 2.3rem; font-size: .7rem; }
+.firebase-search-result, .firebase-friend-list > div { display: flex; align-items: center; gap: .55rem; padding: .55rem 0; }
+.firebase-search-result > div { min-width: 0; flex: 1; }
+.firebase-search-result strong, .firebase-search-result small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.firebase-search-result strong { color: #24324a; font-size: .7rem; }
+.firebase-search-result small { color: #6d8fbe; font: .52rem 'DM Mono', monospace; }
+.firebase-search-result button { display: grid; place-items: center; width: 1.8rem; height: 1.8rem; color: #2563eb; background: #eff6ff; border: 0; border-radius: .45rem; }
+.firebase-friend-list { margin-top: 1rem; border-top: 1px solid #edf1f6; }
+.firebase-friend-list > div { color: #526176; font-size: .7rem; }
+@media (max-width: 900px) { .firebase-workspace { grid-template-columns: 62px minmax(0,1fr); } .firebase-channel-sidebar, .firebase-right-panel { display: none; } .firebase-sidebar-user > div { display: none; } .firebase-chat-header { padding-inline: 1rem; } .firebase-message-list { padding-inline: 1rem; } .firebase-composer { padding-inline: 1rem; } }

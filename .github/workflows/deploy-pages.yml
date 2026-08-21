@@ -35,6 +35,7 @@ jobs:
         run: pnpm build:pages
         env:
           GITHUB_PAGES: true
+          VITE_FIREBASE_MODE: true
           VITE_FIREBASE_API_KEY: ${{ vars.VITE_FIREBASE_API_KEY }}
           VITE_FIREBASE_AUTH_DOMAIN: ${{ vars.VITE_FIREBASE_AUTH_DOMAIN }}
           VITE_FIREBASE_PROJECT_ID: ${{ vars.VITE_FIREBASE_PROJECT_ID }}

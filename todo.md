@@ -193,13 +193,13 @@
 - [x] Separar configuração pública e segredos do frontend estático
 - [ ] Preservar ou substituir chamadas, salas, amizades e atividade de voz com serviços compatíveis
 - [x] Documentar workflow de publicação e variáveis necessárias no GitHub Pages
-- [ ] Validar build estático e salvar checkpoint da adaptação
+- [x] Validar build estático e salvar checkpoint da adaptação (build Pages, TypeScript e 20 testes aprovados)
 - [x] Escolher e configurar o provedor externo para auth, banco e realtime da opção B (Firebase escolhido)
 - [x] Modelar migração de usuários, comunidades, canais, mensagens, amizades, DMs e salas de voz
-- [ ] Migrar login e sessão para frontend estático sem segredos expostos
+- [x] Migrar login e sessão para frontend estático sem segredos expostos (Firebase Auth integrado ao modo `VITE_FIREBASE_MODE`)
 - [ ] Migrar procedures tRPC para API/realtime externo mantendo contratos da UI
 - [ ] Preservar WebRTC, signaling, atividade de voz, sons e compartilhamento de tela
-- [ ] Configurar base path e GitHub Actions para publicar o frontend no GitHub Pages
+- [x] Configurar base path e GitHub Actions para publicar o frontend no GitHub Pages
 - [ ] Validar produção, documentação, variáveis e workflow completo
 - [x] Usar Firebase Auth como provedor de login do frontend estático (serviço e painel inicial criados)
 - [ ] Usar Firestore para usuários, comunidades, canais, mensagens, amizades, DMs e salas de voz

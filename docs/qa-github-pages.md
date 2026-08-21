@@ -9,3 +9,7 @@ A validação do seletor nativo de compartilhamento de tela continua pendente em
 ## Atualização posterior
 
 Após a alteração manual, a API passou a reportar `build_type: workflow`, e os runs `32447985123` e `32447885899` terminaram com sucesso. Os deployments associados reportaram estado `success` e URL `https://yurihbo.github.io/concord/`. Ainda assim, as verificações em `https://yurihbo.github.io/concord/` e com cache-buster retornaram `404 There isn't a GitHub Pages site here.`; o domínio ainda não está servindo o deployment apesar do estado verde. Isso requer verificação no painel de Pages/domínio ou suporte do GitHub, não uma alteração no bundle do Concord.
+
+## Inspeção do artefato
+
+O artefato `github-pages` do run `32447985123` foi baixado e extraído localmente. Ele contém `index.html`, `404.html`, `manifest.json`, `sw.js`, `concord-icon.svg` e `assets/` diretamente na raiz do artefato; ambos os HTML têm 368.214 bytes. Portanto, não há diretório extra nem ausência de arquivo no pacote enviado ao GitHub Pages.

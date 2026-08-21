@@ -223,3 +223,6 @@
 - [ ] Corrigir criação e seleção de salas de voz no workspace Firebase publicado
 - [ ] Corrigir controles de entrada/saída da sala, microfone e compartilhamento de tela no workspace Firebase publicado
 - [ ] Validar layout desktop/mobile e os fluxos publicados após a correção de paridade
+- [x] Comparar a publicação Firebase com a interface original e mapear diferenças de estrutura, tipografia, espaçamento, navegação e estados vazios
+- [x] Alinhar o workspace Firebase ao layout original de quatro áreas, incluindo trilho de servidores, canais, conversa, membros e painel do usuário
+- [x] Reproduzir na publicação a hierarquia visual e os controles do workspace original sem remover os recursos Firebase (bundle Firebase recompilado e prévia local desktop/mobile alinhada)

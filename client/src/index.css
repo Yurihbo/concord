@@ -287,3 +287,21 @@ a { color: inherit; text-decoration: none; }
 .firebase-no-community strong { color: #f1f5f9; font-size: .75rem; }
 .firebase-no-community p { margin: 0; color: #91a8c5; font-size: .66rem; line-height: 1.45; }
 .firebase-no-community .primary-cta { min-height: 2.15rem; justify-content: center; font-size: .66rem; }
+
+/* Firebase voice activity, screen preview and social dialog */
+.speaking-avatar { border: 3px solid #22c55e !important; box-shadow: 0 0 0 3px rgba(34,197,94,.18), 0 0 14px rgba(34,197,94,.65); }
+.firebase-screen-preview { position: relative; width: min(100%, 22rem); margin: 1rem auto; overflow: hidden; background: #08111f; border: 2px solid #2563eb; border-radius: .75rem; box-shadow: 0 1rem 2.5rem rgba(15,23,42,.2); }
+.firebase-screen-preview video { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: contain; background: #020617; transform: scaleX(-1); }
+.firebase-screen-preview span { display: flex; align-items: center; justify-content: center; gap: .35rem; padding: .45rem .6rem; color: #dbeafe; background: #17345b; font-size: .68rem; font-weight: 700; }
+.firebase-social-dialog { width: min(100%, 38rem); max-height: min(90dvh, 42rem); overflow: auto; }
+.firebase-social-search { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .5rem; }
+.firebase-social-search input { min-height: 2.65rem; color: #111827; background: #fff; border-color: #cbd5e1; }
+.firebase-social-row { display: flex; align-items: center; justify-content: space-between; gap: .75rem; padding: .65rem 0; border-bottom: 1px solid #e5e7eb; }
+.firebase-social-row > span { min-width: 0; display: grid; gap: .2rem; }
+.firebase-social-row strong { color: #1f2937; font-size: .76rem; }
+.firebase-social-row small { overflow-wrap: anywhere; color: #64748b; font: .62rem 'DM Mono', monospace; }
+.firebase-social-row > div { display: flex; gap: .35rem; }
+.firebase-social-row button { min-height: 2.1rem; padding-inline: .7rem; font-size: .68rem; }
+.firebase-social-section { margin-top: 1rem; padding-top: .8rem; border-top: 1px solid #dbe3ee; }
+.inline-copy { margin-left: .25rem; padding: .15rem .35rem; color: #1d4ed8; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: .3rem; font-size: .65rem; font-weight: 700; cursor: pointer; }
+@media (max-width: 520px) { .firebase-social-search { grid-template-columns: 1fr; }.firebase-social-row { align-items: flex-start; flex-direction: column; }.firebase-social-row > div { width: 100%; }.firebase-social-row button { flex: 1; }.firebase-screen-preview { width: calc(100% - 1rem); } }

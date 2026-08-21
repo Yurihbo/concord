@@ -9,6 +9,7 @@ type VoiceMeshOptions = {
   localStream: MediaStream;
   onRemoteStream: (peerId: string, stream: MediaStream) => void;
   onError?: (error: Error) => void;
+  onScreenShareEnded?: () => void;
 };
 
 export class FirebaseVoiceMesh {
@@ -81,8 +82,10 @@ export class FirebaseVoiceMesh {
   }
 
   stopScreen(): void {
+    const hadScreen = Boolean(this.screenStream);
     this.screenStream?.getTracks().forEach((track) => track.stop());
     this.screenStream = null;
+    if (hadScreen) this.options.onScreenShareEnded?.();
   }
 
   dispose(): void {

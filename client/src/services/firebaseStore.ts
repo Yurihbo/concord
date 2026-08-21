@@ -35,6 +35,7 @@ export type FirebaseChannel = { id: string; communityId: string; name: string; k
 export type FirebaseMessage = { id: string; channelId: string; authorId: string; body: string; createdAt?: unknown };
 export type FirebaseVoiceMember = { uid: string; roomId: string; displayName: string; avatarUrl?: string | null; isSpeaking: boolean; muted: boolean; joinedAt?: unknown };
 export type FirebaseFriendship = { id: string; requesterId: string; addresseeId: string; status: "pending" | "accepted" | "declined"; updatedAt?: unknown };
+export type FirebaseCommunityInvite = { id: string; communityId: string; communityName?: string; inviterId: string; inviteeId: string; status: "pending" | "accepted" | "declined"; updatedAt?: unknown };
 export type FirebaseDirectMessage = { id: string; authorId: string; body: string; createdAt?: unknown };
 export type FirebaseVoiceRoom = { id: string; name: string; communityId: string; createdAt?: unknown };
 export type FirebaseSignal = { id: string; from: string; to: string; kind: "offer" | "answer" | "ice"; payload: string; createdAt?: unknown };
@@ -70,7 +71,34 @@ export async function searchProfilesByPublicId(publicId: string): Promise<Fireba
 function friendshipId(firstUid: string, secondUid: string): string { return [firstUid, secondUid].sort().join("__"); }
 
 export async function createFriendRequest(requesterId: string, addresseeId: string): Promise<void> {
-  await setDoc(doc(firebaseDb, "friendRequests", friendshipId(requesterId, addresseeId)), { requesterId, addresseeId, status: "pending", updatedAt: serverTimestamp() });
+  if (!requesterId || !addresseeId || requesterId === addresseeId) throw new Error("Escolha outra conta para enviar a solicitação.");
+  await setDoc(doc(firebaseDb, "friendRequests", friendshipId(requesterId, addresseeId)), { requesterId, addresseeId, status: "pending", updatedAt: serverTimestamp() }, { merge: true });
+}
+
+function communityInviteId(communityId: string, inviteeId: string): string { return `${communityId}__${inviteeId}`; }
+
+export async function createCommunityInvite(communityId: string, communityName: string, inviterId: string, inviteeId: string): Promise<void> {
+  if (inviterId === inviteeId) throw new Error("Você não pode convidar a própria conta.");
+  await setDoc(doc(firebaseDb, "communityInvites", communityInviteId(communityId, inviteeId)), { communityId, communityName, inviterId, inviteeId, status: "pending", updatedAt: serverTimestamp() }, { merge: true });
+}
+
+export async function listCommunityInvites(uid: string): Promise<FirebaseCommunityInvite[]> {
+  const snapshot = await getDocs(query(collection(firebaseDb, "communityInvites"), where("inviteeId", "==", uid), orderBy("updatedAt", "desc"), limit(30)));
+  return snapshot.docs.map((item) => clean(item.id, item.data() as Omit<FirebaseCommunityInvite, "id">));
+}
+
+export function subscribeToCommunityInvites(uid: string, listener: (invites: FirebaseCommunityInvite[]) => void, onError?: (error: Error) => void): Unsubscribe {
+  return onSnapshot(query(collection(firebaseDb, "communityInvites"), where("inviteeId", "==", uid), orderBy("updatedAt", "desc"), limit(30)), (snapshot) => listener(snapshot.docs.map((item) => clean(item.id, item.data() as Omit<FirebaseCommunityInvite, "id">))), (reason) => onError?.(reason instanceof Error ? reason : new Error("Não foi possível sincronizar os convites.")));
+}
+
+export async function respondToCommunityInvite(inviteId: string, uid: string, status: "accepted" | "declined"): Promise<void> {
+  const target = doc(firebaseDb, "communityInvites", inviteId);
+  const snapshot = await getDoc(target);
+  if (!snapshot.exists()) throw new Error("Convite não encontrado.");
+  const invite = snapshot.data() as FirebaseCommunityInvite;
+  if (invite.inviteeId !== uid) throw new Error("Você não pode responder a este convite.");
+  await updateDoc(target, { status, updatedAt: serverTimestamp() });
+  if (status === "accepted") await joinCommunity(invite.communityId, uid);
 }
 
 export async function listFriendships(uid: string): Promise<FirebaseFriendship[]> {

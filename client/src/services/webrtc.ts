@@ -45,11 +45,17 @@ export class ConcordWebRTCService {
     return Math.min(1, average / 48);
   }
 
-  startMicrophoneMeter(): void {
+  async startMicrophoneMeter(): Promise<void> {
     if (!this.localStream) return;
-    this.audioContext = new AudioContext();
+    const AudioContextClass = window.AudioContext ?? (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    if (!AudioContextClass) return;
+    this.audioContext?.close();
+    this.audioContext = new AudioContextClass();
+    if (this.audioContext.state === "suspended") await this.audioContext.resume().catch(() => undefined);
     const source = this.audioContext.createMediaStreamSource(this.localStream);
     this.analyser = this.audioContext.createAnalyser();
+    this.analyser.fftSize = 512;
+    this.analyser.smoothingTimeConstant = 0.72;
     source.connect(this.analyser);
   }
 

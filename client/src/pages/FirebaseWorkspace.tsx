@@ -30,6 +30,9 @@ import {
   setVoiceSpeaking,
   subscribeToChannelMessages,
   subscribeToVoiceMembers,
+  subscribeToCommunityInvites,
+  createCommunityInvite,
+  respondToCommunityInvite,
   upsertVoiceMember,
   type FirebaseChannel,
   type FirebaseCommunity,
@@ -38,6 +41,7 @@ import {
   type FirebaseProfile,
   type FirebaseVoiceMember,
   type FirebaseVoiceRoom,
+  type FirebaseCommunityInvite,
 } from "@/services/firebaseStore";
 
 function initials(name: string) { return name.split(" ").map((part) => part[0]).join("").slice(0, 2).toUpperCase() || "CO"; }
@@ -49,6 +53,25 @@ function CreationDialog({ target, value, error, pending, onChange, onClose, onSu
   const title = target === "community" ? "Criar comunidade" : "Adicionar sala de voz";
   const label = target === "community" ? "Nome da comunidade" : "Nome da sala";
   return <div className="firebase-dialog-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}><section className="firebase-dialog" role="dialog" aria-modal="true" aria-labelledby="firebase-dialog-title"><span className="firebase-kicker">CONCORD / NOVO ESPAÇO</span><h2 id="firebase-dialog-title">{title}</h2><p>{target === "community" ? "Organize seus canais e convide pessoas para conversar." : "Crie até três salas de voz nesta comunidade."}</p><label htmlFor="firebase-creation-name">{label}<Input id="firebase-creation-name" autoFocus value={value} onChange={(event) => onChange(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") onSubmit(); if (event.key === "Escape") onClose(); }} placeholder={target === "community" ? "Ex.: Equipe Concord" : "Ex.: Estúdio aberto"} /></label>{error && <div className="firebase-auth-error" role="alert">{error}</div>}<div className="firebase-dialog-actions"><Button variant="outline" onClick={onClose} disabled={pending}>Cancelar</Button><Button className="primary-cta" onClick={onSubmit} disabled={pending || !value.trim()}>{pending ? "Salvando..." : target === "community" ? "Criar comunidade" : "Criar sala"}</Button></div></section></div>;
+}
+
+type SocialDialogProps = { currentPublicId: string; searchValue: string; results: FirebaseProfile[]; friendships: FirebaseFriendship[]; invites: FirebaseCommunityInvite[]; currentUid: string; community: FirebaseCommunity | null; onSearchValueChange: (value: string) => void; onSearch: () => void; onAddFriend: (target: FirebaseProfile) => void; onInvite: (targetUid: string) => void; onRespondInvite: (invite: FirebaseCommunityInvite, status: "accepted" | "declined") => void; onClose: () => void };
+
+function SocialDialog({ currentPublicId, searchValue, results, friendships, invites, currentUid, community, onSearchValueChange, onSearch, onAddFriend, onInvite, onRespondInvite, onClose }: SocialDialogProps) {
+  const accepted = friendships.filter((item) => item.status === "accepted");
+  return <div className="firebase-dialog-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}><section className="firebase-dialog firebase-social-dialog" role="dialog" aria-modal="true" aria-labelledby="firebase-social-title"><span className="firebase-kicker">CONCORD / CONEXÕES</span><h2 id="firebase-social-title">Amigos e convites</h2><p>Seu código público: <strong>{currentPublicId}</strong> <button className="inline-copy" onClick={() => void navigator.clipboard?.writeText(currentPublicId)}>Copiar</button></p><div className="firebase-social-search"><Input value={searchValue} onChange={(event) => onSearchValueChange(event.target.value.toUpperCase())} onKeyDown={(event) => { if (event.key === "Enter") onSearch(); }} placeholder="Cole um código CON-XXXXXXXX" /><Button className="primary-cta" onClick={onSearch}>Buscar</Button></div>{results.length > 0 && <div className="firebase-social-results">{results.map((target) => <div className="firebase-social-row" key={target.uid}><span><strong>{target.displayName}</strong><small>{target.publicId ?? target.uid}</small></span><Button onClick={() => onAddFriend(target)}>Adicionar</Button></div>)}</div>}{community && accepted.length > 0 && <div className="firebase-social-section"><span className="member-role">CONVIDAR PARA {community.name.toUpperCase()}</span>{accepted.map((friendship) => { const targetUid = friendship.requesterId === currentUid ? friendship.addresseeId : friendship.requesterId; return <div className="firebase-social-row" key={friendship.id}><span><strong>Conexão ativa</strong><small>{targetUid}</small></span><Button variant="outline" onClick={() => onInvite(targetUid)}>Convidar</Button></div>; })}</div>}{invites.filter((invite) => invite.status === "pending").length > 0 && <div className="firebase-social-section"><span className="member-role">CONVITES RECEBIDOS</span>{invites.filter((invite) => invite.status === "pending").map((invite) => <div className="firebase-social-row" key={invite.id}><span><strong>{invite.communityName ?? "Comunidade"}</strong><small>Convite para entrar</small></span><div><Button onClick={() => onRespondInvite(invite, "accepted")}>Aceitar</Button><Button variant="outline" onClick={() => onRespondInvite(invite, "declined")}>Recusar</Button></div></div>)}</div>}<div className="firebase-dialog-actions"><Button variant="outline" onClick={onClose}>Fechar</Button></div></section></div>;
+}
+
+function ScreenPreview({ stream }: { stream: MediaStream }) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    video.srcObject = stream;
+    void video.play().catch(() => undefined);
+    return () => { if (video.srcObject === stream) video.srcObject = null; };
+  }, [stream]);
+  return <div className="firebase-screen-preview" aria-label="Prévia do compartilhamento de tela"><video ref={videoRef} muted playsInline autoPlay /><span><Video size={12} /> Sua tela está sendo compartilhada</span></div>;
 }
 
 export default function FirebaseWorkspace() {
@@ -65,6 +88,8 @@ export default function FirebaseWorkspace() {
   const [search, setSearch] = useState("");
   const [results, setResults] = useState<FirebaseProfile[]>([]);
   const [friendships, setFriendships] = useState<FirebaseFriendship[]>([]);
+  const [invites, setInvites] = useState<FirebaseCommunityInvite[]>([]);
+  const [socialOpen, setSocialOpen] = useState(false);
   const [notice, setNotice] = useState("");
   const [loading, setLoading] = useState(false);
   const [creationTarget, setCreationTarget] = useState<"community" | "room" | null>(null);
@@ -78,6 +103,8 @@ export default function FirebaseWorkspace() {
   const [voiceStream, setVoiceStream] = useState<MediaStream | null>(null);
   const [muted, setMuted] = useState(false);
   const [screenSharing, setScreenSharing] = useState(false);
+  const [screenPreviewStream, setScreenPreviewStream] = useState<MediaStream | null>(null);
+  const [localSpeaking, setLocalSpeaking] = useState(false);
   const [directFriendId, setDirectFriendId] = useState<string | null>(null);
   const [directMessages, setDirectMessages] = useState<import("@/services/firebaseStore").FirebaseDirectMessage[]>([]);
   const [directBody, setDirectBody] = useState("");
@@ -98,6 +125,11 @@ export default function FirebaseWorkspace() {
   useEffect(() => {
     if (!auth.user) return;
     return subscribeToFriendships(auth.user.uid, setFriendships, (error) => setNotice(error.message));
+  }, [auth.user]);
+
+  useEffect(() => {
+    if (!auth.user) return;
+    return subscribeToCommunityInvites(auth.user.uid, setInvites, (error) => setNotice(error.message));
   }, [auth.user]);
 
   useEffect(() => {
@@ -133,13 +165,15 @@ export default function FirebaseWorkspace() {
   useEffect(() => {
     if (!community || !voiceRoomId || !auth.user) return;
     void meshRef.current?.syncMembers(members);
-    voiceService.startMicrophoneMeter();
+    void voiceService.startMicrophoneMeter();
     const timer = window.setInterval(() => {
-      const isSpeaking = voiceService.getMicrophoneLevel() > 0.08;
+      const isSpeaking = !muted && voiceService.getMicrophoneLevel() > 0.045;
+      setLocalSpeaking(isSpeaking);
       void setVoiceSpeaking(community.id, auth.user!.uid, isSpeaking).catch(() => undefined);
     }, 180);
-    return () => { window.clearInterval(timer); };
-  }, [auth.user, community, voiceRoomId, voiceService]);
+    return () => { window.clearInterval(timer); setLocalSpeaking(false); };
+
+  }, [auth.user, community, voiceRoomId, voiceService, muted]);
 
   useEffect(() => () => voiceService.dispose(), [voiceService]);
 
@@ -168,10 +202,25 @@ export default function FirebaseWorkspace() {
     catch (error) { setNotice(error instanceof Error ? error.message : "Não foi possível responder à solicitação."); }
   };
 
+  const searchProfiles = async () => {
+    const code = search.trim().toUpperCase();
+    if (!code) return;
+    try { const found = await searchProfilesByPublicId(code); setResults(found); if (!found.length) setNotice("Nenhuma conta encontrada com esse código."); } catch (error) { setNotice(error instanceof Error ? error.message : "Não foi possível buscar a conta."); }
+  };
+
+  const inviteFriend = async (targetUid: string) => {
+    if (!community) { setNotice("Selecione uma comunidade antes de enviar o convite."); return; }
+    try { await createCommunityInvite(community.id, community.name, currentUser.uid, targetUid); setNotice("Convite enviado."); } catch (error) { setNotice(error instanceof Error ? error.message : "Não foi possível enviar o convite."); }
+  };
+
+  const respondInvite = async (invite: FirebaseCommunityInvite, status: "accepted" | "declined") => {
+    try { await respondToCommunityInvite(invite.id, currentUser.uid, status); if (status === "accepted") { const joined = communities.find((item) => item.id === invite.communityId); if (!joined) setCommunities((current) => [...current, { id: invite.communityId, name: invite.communityName ?? "Comunidade", ownerId: invite.inviterId }]); setNotice("Convite aceito."); } } catch (error) { setNotice(error instanceof Error ? error.message : "Não foi possível responder ao convite."); }
+  };
+
   const addFriend = async (target: FirebaseProfile) => {
     try {
       await createFriendRequest(currentUser.uid, target.uid);
-      setNotice("Solicitação enviada.");
+      setNotice("Solicitação enviada para " + (target.publicId ?? target.displayName) + ".");
     } catch (error) { setNotice(error instanceof Error ? error.message : "Não foi possível enviar a solicitação."); }
   };
 
@@ -218,12 +267,13 @@ export default function FirebaseWorkspace() {
     voiceStream.getAudioTracks().forEach((track) => { track.enabled = !nextMuted; });
     await upsertVoiceMember(community.id, { uid: currentUser.uid, roomId: voiceRoomId, displayName: profile?.displayName ?? currentUser.displayName ?? "Conta Concord", avatarUrl: profile?.avatarUrl, isSpeaking: false, muted: nextMuted });
     setMuted(nextMuted);
+    if (nextMuted) setLocalSpeaking(false);
     playTone(nextMuted ? "mute" : "unmute");
   };
 
   const toggleScreen = async () => {
     if (!meshRef.current) return;
-    try { if (screenSharing) { meshRef.current.stopScreen(); setScreenSharing(false); } else { await meshRef.current.shareScreen(); setScreenSharing(true); } }
+    try { if (screenSharing) { meshRef.current.stopScreen(); setScreenSharing(false); setScreenPreviewStream(null); } else { const stream = await meshRef.current.shareScreen(); setScreenPreviewStream(stream); setScreenSharing(true); } }
     catch (error) { setNotice(error instanceof Error ? error.message : "Não foi possível compartilhar a tela."); }
   };
 
@@ -231,13 +281,13 @@ export default function FirebaseWorkspace() {
     if (!community) return;
     const isCurrentRoom = voiceRoomId === room.id;
     try {
-      if (isCurrentRoom) { await removeVoiceMember(community.id, currentUser.uid); meshRef.current?.dispose(); meshRef.current = null; voiceService.dispose(); setVoiceStream(null); setVoiceRoomId(null); setMuted(false); setScreenSharing(false); setRemoteStreams({}); playTone("leave"); setNotice("Você saiu da sala."); }
+      if (isCurrentRoom) { await removeVoiceMember(community.id, currentUser.uid); meshRef.current?.dispose(); meshRef.current = null; voiceService.dispose(); setVoiceStream(null); setVoiceRoomId(null); setMuted(false); setLocalSpeaking(false); setScreenSharing(false); setScreenPreviewStream(null); setRemoteStreams({}); playTone("leave"); setNotice("Você saiu da sala."); }
       else {
         if (voiceRoomId) await removeVoiceMember(community.id, currentUser.uid);
         meshRef.current?.dispose();
         const localStream = await voiceService.captureMicrophone();
         setVoiceStream(localStream);
-        meshRef.current = new FirebaseVoiceMesh({ roomId: room.id, userId: currentUser.uid, localStream, onRemoteStream: (peerId, stream) => setRemoteStreams((current) => ({ ...current, [peerId]: stream })), onError: (error) => setNotice(error.message) });
+        meshRef.current = new FirebaseVoiceMesh({ roomId: room.id, userId: currentUser.uid, localStream, onRemoteStream: (peerId, stream) => setRemoteStreams((current) => ({ ...current, [peerId]: stream })), onError: (error) => setNotice(error.message), onScreenShareEnded: () => { setScreenSharing(false); setScreenPreviewStream(null); } });
         await upsertVoiceMember(community.id, { uid: currentUser.uid, roomId: room.id, displayName: profile?.displayName ?? currentUser.displayName ?? "Conta Concord", avatarUrl: profile?.avatarUrl, isSpeaking: false, muted: false });
         setVoiceRoomId(room.id);
         setMuted(false);
@@ -270,12 +320,13 @@ export default function FirebaseWorkspace() {
     </aside>
 
     <main className="content-area">
-      <header className="content-header"><div className="mobile-nav-actions"><button aria-label="Abrir canais"><Compass size={17} /></button><button aria-label="Abrir amigos"><Users size={17} /></button><button aria-label="Abrir perfil"><Settings size={17} /></button></div><div className="channel-title"><div className="title-symbol"><Hash size={18} /></div><div><h2>{directFriendId ? "Mensagem direta" : channel?.name ?? "geral"}</h2><span>{channel?.kind === "voice" ? "Sala de voz em tempo real." : "Um espaço para começar qualquer conversa."}</span></div></div><div className="header-actions"><button title="Notificações" onClick={() => setNotice("Você está em dia.")}><Bell size={17} /></button><button title="Buscar amigos" onClick={() => setNotice("Use o painel Amigos para buscar por CON-XXXXXXXX.")}><Search size={17} /></button><button title="Abrir membros" onClick={() => setNotice(friendships.filter((item) => item.status === "accepted").length + " conexões ativas.")}><Users size={17} /></button><div className="header-divider" /><button className="profile-chip" onClick={() => setNotice(profile?.publicId ?? "CON-00000000")}><span className="avatar bg-amber-200 text-amber-900"><span>{initials(profile?.displayName ?? currentUser.displayName ?? "Conta")}</span><span className="online-dot" /></span><span>{profile?.displayName ?? currentUser.displayName ?? "Conta Concord"}</span><ChevronDown size={14} /></button></div></header>
+      <header className="content-header"><div className="mobile-nav-actions"><button aria-label="Abrir canais"><Compass size={17} /></button><button aria-label="Abrir amigos"><Users size={17} /></button><button aria-label="Abrir perfil"><Settings size={17} /></button></div><div className="channel-title"><div className="title-symbol"><Hash size={18} /></div><div><h2>{directFriendId ? "Mensagem direta" : channel?.name ?? "geral"}</h2><span>{channel?.kind === "voice" ? "Sala de voz em tempo real." : "Um espaço para começar qualquer conversa."}</span></div></div><div className="header-actions"><button title="Notificações" onClick={() => setNotice("Você está em dia.")}><Bell size={17} /></button><button title="Buscar amigos" onClick={() => setSocialOpen(true)}><Search size={17} /></button><button title="Abrir membros" onClick={() => setNotice(friendships.filter((item) => item.status === "accepted").length + " conexões ativas.")}><Users size={17} /></button><div className="header-divider" /><button className="profile-chip" onClick={() => setNotice(profile?.publicId ?? "CON-00000000")}><span className="avatar bg-amber-200 text-amber-900"><span>{initials(profile?.displayName ?? currentUser.displayName ?? "Conta")}</span><span className="online-dot" /></span><span>{profile?.displayName ?? currentUser.displayName ?? "Conta Concord"}</span><ChevronDown size={14} /></button></div></header>
       {notice && <div className="firebase-notice" role="status">{notice}</div>}
-      {directFriendId ? <><section className="message-area"><div className="channel-intro"><div className="intro-symbol"><MessageCircle size={27} /></div><h1>Conversa privada</h1><p>Mensagens diretas com sua conexão.</p><div className="intro-rule" /></div><div className="message-list">{directMessages.length ? directMessages.map((item) => <article className="message-row" key={item.id}><span className="avatar bg-blue-200 text-blue-900">{initials(item.authorId)}</span><div className="message-copy"><div className="message-author"><strong>{item.authorId === currentUser.uid ? "Você" : item.authorId}</strong><span>@conexão</span><time>agora</time></div><p>{item.body}</p></div></article>) : <div className="empty-state">Nenhuma mensagem nesta conversa ainda.</div>}</div></section><div className="composer-wrap"><div className="composer"><Input value={directBody} onChange={(event) => setDirectBody(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") void sendDirect(); }} placeholder="Mensagem direta" /><button className="send-button" onClick={() => void sendDirect()} aria-label="Enviar mensagem direta"><Send size={17} /></button></div></div></> : channel?.kind === "voice" ? <section className="message-area firebase-voice-original-stage"><div className="channel-intro"><div className="intro-symbol"><Headphones size={27} /></div><h1>{channel.name}</h1><p>{members.length} participante(s) sincronizado(s) pelo Firestore.</p><div className="intro-rule" /></div><div className="firebase-member-grid">{members.length ? members.map((member) => <div className={member.isSpeaking ? "firebase-member speaking" : "firebase-member"} key={member.uid}><span className="avatar bg-blue-200 text-blue-900">{initials(member.displayName)}</span><strong>{member.displayName}</strong></div>) : <div className="empty-state">Ninguém na sala ainda.</div>}</div><div className="call-actions firebase-voice-actions"><button className={muted ? "control-active" : ""} onClick={toggleMute} disabled={!voiceRoomId} aria-label="Mutar microfone"><Mic size={16} /></button><button className={screenSharing ? "control-active" : ""} onClick={() => void toggleScreen()} disabled={!voiceRoomId} aria-label="Compartilhar tela"><Video size={16} /></button><button className="disconnect" onClick={() => { const room = rooms.find((item) => item.id === channel.id); if (room) void toggleVoice(room); }} aria-label="Sair da sala"><PhoneOff size={16} /></button></div></section> : <><section className="message-area"><div className="channel-intro"><div className="intro-symbol"><Hash size={27} /></div><h1>Bem-vindo ao #{channel?.name ?? "geral"}</h1><p>Este é o começo do canal. Um bom lugar para dizer olá.</p><div className="intro-rule" /></div><div className="message-list">{messages.length ? messages.map((item) => <article className="message-row" key={item.id}><span className="avatar bg-blue-200 text-blue-900">{initials(item.authorId)}</span><div className="message-copy"><div className="message-author"><strong>{item.authorId === currentUser.uid ? "Você" : "Concord"}</strong><span>@concord</span><time>agora</time></div><p>{item.body}</p></div></article>) : <article className="message-row"><span className="avatar bg-blue-100 text-blue-900">CO</span><div className="message-copy"><div className="message-author"><strong>Concord</strong><span>@concord</span><time>agora</time></div><p>Bem-vindo ao Concord. Esta é a primeira mensagem deste canal.</p></div></article>}</div></section><div className="composer-wrap"><div className="composer"><button aria-label="Mais opções"><Plus size={19} /></button><Input value={body} onChange={(event) => setBody(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") void sendMessage(); }} placeholder={"Mensagem em #" + (channel?.name ?? "geral")} /><button onClick={() => void sendMessage()} className="send-button" aria-label="Enviar mensagem"><Send size={17} /></button></div><span className="composer-hint">Enter para enviar <span>•</span> Shift + Enter para nova linha</span></div></>}
+      {directFriendId ? <><section className="message-area"><div className="channel-intro"><div className="intro-symbol"><MessageCircle size={27} /></div><h1>Conversa privada</h1><p>Mensagens diretas com sua conexão.</p><div className="intro-rule" /></div><div className="message-list">{directMessages.length ? directMessages.map((item) => <article className="message-row" key={item.id}><span className="avatar bg-blue-200 text-blue-900">{initials(item.authorId)}</span><div className="message-copy"><div className="message-author"><strong>{item.authorId === currentUser.uid ? "Você" : item.authorId}</strong><span>@conexão</span><time>agora</time></div><p>{item.body}</p></div></article>) : <div className="empty-state">Nenhuma mensagem nesta conversa ainda.</div>}</div></section><div className="composer-wrap"><div className="composer"><Input value={directBody} onChange={(event) => setDirectBody(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") void sendDirect(); }} placeholder="Mensagem direta" /><button className="send-button" onClick={() => void sendDirect()} aria-label="Enviar mensagem direta"><Send size={17} /></button></div></div></> : channel?.kind === "voice" ? <section className="message-area firebase-voice-original-stage"><div className="channel-intro"><div className="intro-symbol"><Headphones size={27} /></div><h1>{channel.name}</h1><p>{members.length} participante(s) sincronizado(s) pelo Firestore.</p><div className="intro-rule" /></div><div className="firebase-member-grid">{members.length ? members.map((member) => <div className={member.isSpeaking || (member.uid === currentUser.uid && localSpeaking) ? "firebase-member speaking" : "firebase-member"} key={member.uid}><span className={member.isSpeaking || (member.uid === currentUser.uid && localSpeaking) ? "avatar bg-blue-200 text-blue-900 speaking-avatar" : "avatar bg-blue-200 text-blue-900"}>{initials(member.displayName)}</span><strong>{member.displayName}</strong></div>) : <div className="empty-state">Ninguém na sala ainda.</div>}</div>{screenPreviewStream && <ScreenPreview stream={screenPreviewStream} />}<div className="call-actions firebase-voice-actions"><button className={muted ? "control-active" : ""} onClick={toggleMute} disabled={!voiceRoomId} aria-label="Mutar microfone"><Mic size={16} /></button><button className={screenSharing ? "control-active" : ""} onClick={() => void toggleScreen()} disabled={!voiceRoomId} aria-label="Compartilhar tela"><Video size={16} /></button><button className="disconnect" onClick={() => { const room = rooms.find((item) => item.id === channel.id); if (room) void toggleVoice(room); }} aria-label="Sair da sala"><PhoneOff size={16} /></button></div></section> : <><section className="message-area"><div className="channel-intro"><div className="intro-symbol"><Hash size={27} /></div><h1>Bem-vindo ao #{channel?.name ?? "geral"}</h1><p>Este é o começo do canal. Um bom lugar para dizer olá.</p><div className="intro-rule" /></div><div className="message-list">{messages.length ? messages.map((item) => <article className="message-row" key={item.id}><span className="avatar bg-blue-200 text-blue-900">{initials(item.authorId)}</span><div className="message-copy"><div className="message-author"><strong>{item.authorId === currentUser.uid ? "Você" : "Concord"}</strong><span>@concord</span><time>agora</time></div><p>{item.body}</p></div></article>) : <article className="message-row"><span className="avatar bg-blue-100 text-blue-900">CO</span><div className="message-copy"><div className="message-author"><strong>Concord</strong><span>@concord</span><time>agora</time></div><p>Bem-vindo ao Concord. Esta é a primeira mensagem deste canal.</p></div></article>}</div></section><div className="composer-wrap"><div className="composer"><button aria-label="Mais opções"><Plus size={19} /></button><Input value={body} onChange={(event) => setBody(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") void sendMessage(); }} placeholder={"Mensagem em #" + (channel?.name ?? "geral")} /><button onClick={() => void sendMessage()} className="send-button" aria-label="Enviar mensagem"><Send size={17} /></button></div><span className="composer-hint">Enter para enviar <span>•</span> Shift + Enter para nova linha</span></div></>}
     </main>
 
     <aside className="member-sidebar"><div className="member-heading"><span>MEMBROS — {friendships.filter((item) => item.status === "accepted").length}</span><button onClick={() => setNotice("Membros sincronizados pelo Firebase.")} aria-label="Mais opções"><MoreHorizontal size={17} /></button></div><div className="member-group"><span className="member-role">CONEXÕES</span>{friendships.filter((item) => item.status === "accepted").map((item) => <button className="member-card" key={item.id} onClick={() => setDirectFriendId(item.requesterId === currentUser.uid ? item.addresseeId : item.requesterId)}><span className="avatar bg-blue-200 text-blue-900"><Users size={13} /></span><div><strong>Conexão ativa</strong><span>Disponível</span></div></button>)}{!friendships.filter((item) => item.status === "accepted").length && <div className="empty-state">Nenhuma conexão aceita.</div>}</div>{voiceRoomId && <div className="call-dock"><div className="call-status"><span className="call-pulse" /><div><strong>{rooms.find((room) => room.id === voiceRoomId)?.name ?? "Sala de voz"}</strong><span>{members.length || 1} pessoa(s) na sala</span></div><button onClick={() => setNotice("Convite de sala disponível quando houver conexões.")} aria-label="Convidar"><UserPlus size={15} /></button></div><div className="call-actions"><button className={muted ? "control-active" : ""} onClick={toggleMute} aria-label="Mutar microfone"><Mic size={16} /></button><button className={screenSharing ? "control-active" : ""} onClick={() => void toggleScreen()} aria-label="Compartilhar tela"><Video size={16} /></button><button className="disconnect" onClick={() => { const room = rooms.find((item) => item.id === voiceRoomId); if (room) void toggleVoice(room); }} aria-label="Sair da call"><X size={16} /></button></div></div>}</aside>
     {creationTarget && <CreationDialog target={creationTarget} value={creationName} error={creationError} pending={creationPending} onChange={setCreationName} onClose={closeCreationDialog} onSubmit={() => void submitCreation()} />}
+    {socialOpen && <SocialDialog currentPublicId={profile?.publicId ?? "CON-00000000"} searchValue={search} results={results} friendships={friendships} invites={invites} currentUid={currentUser.uid} community={community} onSearchValueChange={setSearch} onSearch={() => void searchProfiles()} onAddFriend={(target) => void addFriend(target)} onInvite={(targetUid) => void inviteFriend(targetUid)} onRespondInvite={(invite, status) => void respondInvite(invite, status)} onClose={() => setSocialOpen(false)} />}
   </div>;
 }

@@ -90,5 +90,12 @@ service cloud.firestore {
         allow update, delete: if signedIn() && resource.data.authorId == request.auth.uid;
       }
     }
+
+    match /communityInvites/{inviteId} {
+      allow read: if signedIn() && (resource.data.inviteeId == request.auth.uid || resource.data.inviterId == request.auth.uid);
+      allow create: if signedIn() && request.resource.data.inviterId == request.auth.uid;
+      allow update: if signedIn() && resource.data.inviteeId == request.auth.uid;
+      allow delete: if false;
+    }
   }
 }

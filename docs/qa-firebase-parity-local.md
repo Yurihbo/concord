@@ -13,3 +13,7 @@ Ainda não foi submetida uma criação real de comunidade nem iniciado áudio/te
 ## Diagnóstico dos cliques publicados
 
 No domínio publicado, o botão de Notificações atualizou o conteúdo para `Você está em dia.` e o botão `Criar comunidade` abriu o diálogo acessível. Portanto, não há uma falha global de eventos no bundle atual. A conta validada está sem comunidade e sem sala; os controles de sala só aparecem depois de criar uma comunidade e uma sala de voz. A afirmação de que nenhum botão funciona pode estar relacionada a uma versão antiga em cache, a outro usuário/URL ou ao fato de os controles dependerem de uma comunidade existente.
+
+## Voz, tela e painel social — validação local
+
+O build Firebase foi validado com TypeScript, 21 testes Vitest e `pnpm build:pages`. As capturas desktop e mobile mostram a estrutura original sem sobreposição; o CSS inclui borda verde para fala, cartão de prévia espelhada da tela e painel social responsivo. A confirmação de nível de áudio, seletor nativo de tela e gravação real de amizades/convites ainda depende de hardware, permissões e sessão Firebase publicada.

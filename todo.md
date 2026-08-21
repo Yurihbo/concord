@@ -236,3 +236,9 @@
 - [x] Impedir que criação de comunidade ou sala permaneça indefinidamente em `Salvando...` (timeout de 15 segundos e estado liberado em erro)
 - [x] Exibir timeout e diagnóstico acionável quando Firestore não responder (mensagem orienta conexão, Firestore Database e regras)
 - [x] Corrigir o contrato/regras Firestore responsável por bloquear a criação de comunidade e salas (regras do repositório alinhadas ao frontend; falta publicar no Firebase Console)
+- [x] Detectar fala real do microfone e sincronizar o indicador verde do avatar na sala (AudioContext retomado, limiar local e estado Firestore sincronizado)
+- [x] Exibir miniatura confirmatória e espelhada do compartilhamento de tela para o próprio usuário (prévia `<video>` local e encerramento sincronizado)
+- [x] Implementar busca e solicitação de amizade por código público da conta
+- [x] Implementar aceite/recusa e estado de solicitações de amizade por código
+- [x] Implementar convites para comunidades e aceite de convite por usuários autorizados
+- [ ] Validar os novos fluxos em desktop/mobile e no build publicado

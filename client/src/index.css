@@ -172,3 +172,21 @@ a { color: inherit; text-decoration: none; }
 .voice-avatar-speaking { border-color: #35e878 !important; box-shadow: 0 0 0 2px rgba(53, 232, 120, .24), 0 0 10px rgba(53, 232, 120, .75); color: #f0fff5; }
 .call-member-speaking { border: 2px solid #35e878 !important; box-shadow: 0 0 0 2px rgba(53, 232, 120, .2), 0 0 12px rgba(53, 232, 120, .7); color: #153b24; }
 @media (prefers-reduced-motion: reduce) { .speaking-ring { animation: none; } }
+
+.firebase-auth-shell { min-height: 100dvh; display: grid; place-items: center; padding: 2rem 1rem; background: radial-gradient(circle at 15% 15%, rgba(76,120,255,.16), transparent 34%), #f5f7fb; }
+.firebase-auth-card { width: min(100%, 29rem); display: grid; gap: .85rem; padding: 2rem; color: #111827; background: rgba(255,255,255,.96); border: 1px solid rgba(15,23,42,.1); border-radius: 1.25rem; box-shadow: 0 24px 70px rgba(15,23,42,.14); }
+.firebase-auth-brand { display: flex; align-items: center; gap: .6rem; margin-bottom: .5rem; color: #0f172a; font-weight: 800; letter-spacing: .18em; }
+.firebase-auth-mark { display: grid; place-items: center; width: 2.25rem; height: 2.25rem; color: white; background: #1d4ed8; border-radius: .75rem; }
+.firebase-auth-card h1 { margin: 0; color: #0f172a; font-size: clamp(1.8rem, 5vw, 2.35rem); letter-spacing: -.04em; }
+.firebase-auth-card p { margin: 0 0 .55rem; color: #475569; line-height: 1.55; }
+.firebase-auth-card label { display: grid; gap: .4rem; color: #1e293b; font-size: .78rem; font-weight: 700; }
+.firebase-auth-card input { min-height: 2.75rem; color: #0f172a; background: #fff; border-color: #cbd5e1; }
+.firebase-google-button, .firebase-email-button { width: 100%; justify-content: center; min-height: 2.75rem; }
+.firebase-google-button { color: #0f172a; background: #fff; border: 1px solid #cbd5e1; }
+.firebase-google-button:hover { background: #f8fafc; }
+.firebase-divider { display: flex; align-items: center; gap: .75rem; color: #64748b; font-size: .75rem; }
+.firebase-divider::before, .firebase-divider::after { content: ""; height: 1px; flex: 1; background: #e2e8f0; }
+.firebase-auth-error { padding: .7rem .8rem; color: #991b1b; background: #fef2f2; border: 1px solid #fecaca; border-radius: .65rem; font-size: .78rem; line-height: 1.4; }
+.firebase-mode-toggle { justify-self: center; color: #1d4ed8; background: transparent; border: 0; font-size: .8rem; font-weight: 700; cursor: pointer; }
+.firebase-mode-toggle:hover { text-decoration: underline; }
+@media (max-width: 480px) { .firebase-auth-shell { padding: 1rem; } .firebase-auth-card { padding: 1.35rem; border-radius: 1rem; } }

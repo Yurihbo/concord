@@ -1,0 +1,72 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isSelf(userId) {
+      return signedIn() && request.auth.uid == userId;
+    }
+
+    function isCommunityMember(communityId) {
+      return signedIn() && exists(/databases/$(database)/documents/communities/$(communityId)/members/$(request.auth.uid));
+    }
+
+    match /users/{userId} {
+      allow read: if signedIn();
+      allow create: if isSelf(userId);
+      allow update: if isSelf(userId);
+      allow delete: if false;
+    }
+
+    match /communities/{communityId} {
+      allow read: if isCommunityMember(communityId);
+      allow create: if signedIn();
+      allow update: if isCommunityMember(communityId);
+      allow delete: if false;
+
+      match /members/{userId} {
+        allow read: if isCommunityMember(communityId);
+        allow create: if isSelf(userId) || isCommunityMember(communityId);
+        allow update: if isSelf(userId) || isCommunityMember(communityId);
+        allow delete: if isSelf(userId) || isCommunityMember(communityId);
+      }
+
+      match /channels/{channelId} {
+        allow read, write: if isCommunityMember(communityId);
+      }
+
+      match /voiceRooms/{roomId} {
+        allow read, write: if isCommunityMember(communityId);
+      }
+
+      match /voiceMembers/{userId} {
+        allow read: if isCommunityMember(communityId);
+        allow create, update, delete: if isSelf(userId);
+      }
+
+      match /messages/{messageId} {
+        allow read: if isCommunityMember(communityId);
+        allow create: if isCommunityMember(communityId) && request.resource.data.authorId == request.auth.uid;
+        allow update, delete: if isSelf(resource.data.authorId);
+      }
+
+      match /signaling/{signalId} {
+        allow read, write: if isCommunityMember(communityId) && (request.resource.data.from == request.auth.uid || request.resource.data.to == request.auth.uid);
+      }
+    }
+
+    match /friendRequests/{requestId} {
+      allow read: if signedIn() && (resource.data.fromId == request.auth.uid || resource.data.toId == request.auth.uid);
+      allow create: if signedIn() && request.resource.data.fromId == request.auth.uid;
+      allow update: if signedIn() && (resource.data.fromId == request.auth.uid || resource.data.toId == request.auth.uid);
+      allow delete: if signedIn() && (resource.data.fromId == request.auth.uid || resource.data.toId == request.auth.uid);
+    }
+
+    match /directThreads/{threadId}/messages/{messageId} {
+      allow read, create: if signedIn() && request.resource.data.authorId == request.auth.uid;
+      allow update, delete: if signedIn() && resource.data.authorId == request.auth.uid;
+    }
+  }
+}

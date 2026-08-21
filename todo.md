@@ -187,3 +187,27 @@
 - [x] Diferenciar bloqueio de ambiente/iframe de cancelamento voluntário do seletor nativo
 - [x] Cobrir NotAllowedError e AbortError nos testes do compartilhamento de tela (serviço preserva os erros; suíte passou)
 - [ ] Validar a nova orientação e salvar checkpoint (aguardando reteste manual)
+- [x] Mapear dependências de servidor, tRPC, OAuth, banco e WebRTC incompatíveis com GitHub Pages
+- [x] Definir arquitetura de backend externo para autenticação, persistência e tempo real (Firebase Auth, Firestore e listeners; WebRTC permanece ponto a ponto)
+- [x] Adaptar base path, build estático, roteamento SPA e fallback 404 para GitHub Pages
+- [x] Separar configuração pública e segredos do frontend estático
+- [ ] Preservar ou substituir chamadas, salas, amizades e atividade de voz com serviços compatíveis
+- [x] Documentar workflow de publicação e variáveis necessárias no GitHub Pages
+- [ ] Validar build estático e salvar checkpoint da adaptação
+- [x] Escolher e configurar o provedor externo para auth, banco e realtime da opção B (Firebase escolhido)
+- [x] Modelar migração de usuários, comunidades, canais, mensagens, amizades, DMs e salas de voz
+- [ ] Migrar login e sessão para frontend estático sem segredos expostos
+- [ ] Migrar procedures tRPC para API/realtime externo mantendo contratos da UI
+- [ ] Preservar WebRTC, signaling, atividade de voz, sons e compartilhamento de tela
+- [ ] Configurar base path e GitHub Actions para publicar o frontend no GitHub Pages
+- [ ] Validar produção, documentação, variáveis e workflow completo
+- [x] Usar Firebase Auth como provedor de login do frontend estático (serviço e painel inicial criados)
+- [ ] Usar Firestore para usuários, comunidades, canais, mensagens, amizades, DMs e salas de voz
+- [ ] Usar listeners/realtime do Firestore para roster, atividade de voz e sinalização WebRTC
+- [x] Criar regras de segurança do Firestore sem expor credenciais administrativas
+- [ ] Substituir cliente tRPC por serviços Firebase preservando os contratos da interface
+- [x] Configurar Firebase web app, variáveis VITE_* públicas e domínios autorizados (configuração validada sem dados de teste)
+- [x] Configurar GitHub Actions e base path para GitHub Pages (workflow e `/concord/` validados)
+- [ ] Validar login, amigos, mensagens, salas, sons e WebRTC na publicação estática
+- [x] Definir método de login Firebase para a versão GitHub Pages: Google, e-mail/senha ou ambos (Google e e-mail/senha)
+- [x] Habilitar o provedor de autenticação escolhido no Firebase Console e configurar domínios autorizados (Google e e-mail/senha confirmados pelo usuário)

@@ -179,3 +179,7 @@
 - [x] Sincronizar screenSharing com o fim automático da trilha de display
 - [ ] Revalidar iniciar, cancelar, encerrar pelo botão e encerrar pela UI do navegador no teste principal (aguardando reteste do usuário)
 - [ ] Salvar checkpoint novo após a correção final do compartilhamento
+- [x] Corrigir cancelamento imediato do seletor de tela ao clicar no botão
+- [x] Diferenciar cancelamento voluntário de bloqueio/permissão do navegador
+- [x] Garantir que o botão acione getDisplayMedia em gesto direto e preserve feedback de erro útil
+- [x] Testar novamente a seleção de tela e salvar checkpoint (19 testes automatizados aprovados; reteste manual pendente)

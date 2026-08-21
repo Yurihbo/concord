@@ -13,7 +13,7 @@ describe("screen sharing", () => {
     const service = new ConcordWebRTCService();
 
     await expect(service.shareScreen()).resolves.toBe(stream);
-    expect(getDisplayMedia).toHaveBeenCalledWith({ video: true, audio: false });
+    expect(getDisplayMedia).toHaveBeenCalledWith({ video: true });
     expect(service.getState()).toBe("sharing");
     ended?.();
     expect(track.stop).toHaveBeenCalledTimes(1);

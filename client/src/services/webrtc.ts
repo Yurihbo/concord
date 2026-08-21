@@ -68,7 +68,7 @@ export class ConcordWebRTCService {
   async shareScreen(): Promise<MediaStream> {
     if (!navigator.mediaDevices?.getDisplayMedia) throw new Error("Compartilhamento de tela não é suportado neste navegador.");
     try {
-      this.screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false });
+      this.screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
     } catch (error) {
       this.screenStream = null;
       throw error;

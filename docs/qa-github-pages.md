@@ -17,3 +17,7 @@ O artefato `github-pages` do run `32447985123` foi baixado e extraído localment
 ## Aplicação publicada acessível
 
 Em 21 de agosto de 2026, o healthcheck passou a retornar HTTP 200 e o navegador carregou o título `Concord — Comunicação simples e intencional` em `https://yurihbo.github.io/concord/`. A tela, porém, permaneceu branca, sem elementos interativos detectados; o console do navegador não exibiu mensagens. É necessário verificar requisições e o conteúdo do HTML/JavaScript publicado antes de iniciar o QA funcional Firebase.
+
+## React carregando e rota publicada
+
+Após o run `32449373278` terminar com sucesso, o domínio passou a retornar o HTML do Concord. A validação em `https://yurihbo.github.io/concord/?version=527905c2` detectou o elemento React `#root` e o 404 interno estilizado do Concord, em vez da tela branca. Isso confirma que o JavaScript agora executa; o próximo diagnóstico deve corrigir o roteamento/base path ou testar a URL sem query antes do QA de login.

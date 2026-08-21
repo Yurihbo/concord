@@ -76,15 +76,19 @@ service cloud.firestore {
     }
 
     match /friendRequests/{requestId} {
-      allow read: if signedIn() && (resource.data.fromId == request.auth.uid || resource.data.toId == request.auth.uid);
-      allow create: if signedIn() && request.resource.data.fromId == request.auth.uid;
-      allow update: if signedIn() && (resource.data.fromId == request.auth.uid || resource.data.toId == request.auth.uid);
-      allow delete: if signedIn() && (resource.data.fromId == request.auth.uid || resource.data.toId == request.auth.uid);
+      allow read: if signedIn();
+      allow create: if signedIn() && request.resource.data.requesterId == request.auth.uid;
+      allow update, delete: if signedIn() && (resource.data.requesterId == request.auth.uid || resource.data.addresseeId == request.auth.uid);
     }
 
-    match /directThreads/{threadId}/messages/{messageId} {
-      allow read, create: if signedIn() && request.resource.data.authorId == request.auth.uid;
-      allow update, delete: if signedIn() && resource.data.authorId == request.auth.uid;
+    match /directThreads/{threadId} {
+      allow read: if signedIn() && request.auth.uid in resource.data.participants;
+      allow create, update: if signedIn() && request.auth.uid in request.resource.data.participants;
+      match /messages/{messageId} {
+        allow read: if signedIn() && exists(/databases/$(database)/documents/directThreads/$(threadId)) && request.auth.uid in get(/databases/$(database)/documents/directThreads/$(threadId)).data.participants;
+        allow create: if signedIn() && request.resource.data.authorId == request.auth.uid && exists(/databases/$(database)/documents/directThreads/$(threadId)) && request.auth.uid in get(/databases/$(database)/documents/directThreads/$(threadId)).data.participants;
+        allow update, delete: if signedIn() && resource.data.authorId == request.auth.uid;
+      }
     }
   }
 }

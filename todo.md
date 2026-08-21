@@ -235,4 +235,4 @@
 - [ ] Confirmar no domínio publicado as ações com a sessão real do usuário
 - [x] Impedir que criação de comunidade ou sala permaneça indefinidamente em `Salvando...` (timeout de 15 segundos e estado liberado em erro)
 - [x] Exibir timeout e diagnóstico acionável quando Firestore não responder (mensagem orienta conexão, Firestore Database e regras)
-- [ ] Corrigir o contrato/regras Firestore responsável por bloquear a criação de comunidade e salas
+- [x] Corrigir o contrato/regras Firestore responsável por bloquear a criação de comunidade e salas (regras do repositório alinhadas ao frontend; falta publicar no Firebase Console)

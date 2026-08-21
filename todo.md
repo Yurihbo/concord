@@ -242,3 +242,11 @@
 - [x] Implementar aceite/recusa e estado de solicitações de amizade por código
 - [x] Implementar convites para comunidades e aceite de convite por usuários autorizados
 - [ ] Validar os novos fluxos em desktop/mobile e no build publicado
+- [ ] Alinhar as Rules publicadas no Console com o contrato atual, incluindo `communityInvites` e leitura segura de mensagens diretas
+- [ ] Confirmar que a mensagem `Missing or insufficient permissions` desaparece após publicar as Rules alinhadas
+- [ ] Corrigir a entrega em tempo real das solicitações de amizade para a conta destinatária
+- [x] Criar aba Amigos com lista, solicitações pendentes, aceite/recusa e busca por código
+- [x] Organizar a aba Chat como área principal com painel de membros direito retraível
+- [x] Criar abas Perfil e Configurações com edição de perfil e configuração de voz
+- [x] Conectar os botões superiores às abas reais em vez de pop-ups informativos
+- [ ] Validar a navegação e o fluxo de amizade usando duas contas Firebase

@@ -13,3 +13,7 @@ Após a alteração manual, a API passou a reportar `build_type: workflow`, e os
 ## Inspeção do artefato
 
 O artefato `github-pages` do run `32447985123` foi baixado e extraído localmente. Ele contém `index.html`, `404.html`, `manifest.json`, `sw.js`, `concord-icon.svg` e `assets/` diretamente na raiz do artefato; ambos os HTML têm 368.214 bytes. Portanto, não há diretório extra nem ausência de arquivo no pacote enviado ao GitHub Pages.
+
+## Aplicação publicada acessível
+
+Em 21 de agosto de 2026, o healthcheck passou a retornar HTTP 200 e o navegador carregou o título `Concord — Comunicação simples e intencional` em `https://yurihbo.github.io/concord/`. A tela, porém, permaneceu branca, sem elementos interativos detectados; o console do navegador não exibiu mensagens. É necessário verificar requisições e o conteúdo do HTML/JavaScript publicado antes de iniciar o QA funcional Firebase.

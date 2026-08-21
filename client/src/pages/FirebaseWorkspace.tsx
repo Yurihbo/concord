@@ -43,12 +43,12 @@ import {
 function initials(name: string) { return name.split(" ").map((part) => part[0]).join("").slice(0, 2).toUpperCase() || "CO"; }
 function currentUserId(user: { uid: string } | null): string { return user?.uid ?? ""; }
 
-type CreationDialogProps = { target: "community" | "room"; value: string; onChange: (value: string) => void; onClose: () => void; onSubmit: () => void };
+type CreationDialogProps = { target: "community" | "room"; value: string; error: string; pending: boolean; onChange: (value: string) => void; onClose: () => void; onSubmit: () => void };
 
-function CreationDialog({ target, value, onChange, onClose, onSubmit }: CreationDialogProps) {
+function CreationDialog({ target, value, error, pending, onChange, onClose, onSubmit }: CreationDialogProps) {
   const title = target === "community" ? "Criar comunidade" : "Adicionar sala de voz";
   const label = target === "community" ? "Nome da comunidade" : "Nome da sala";
-  return <div className="firebase-dialog-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}><section className="firebase-dialog" role="dialog" aria-modal="true" aria-labelledby="firebase-dialog-title"><span className="firebase-kicker">CONCORD / NOVO ESPAÇO</span><h2 id="firebase-dialog-title">{title}</h2><p>{target === "community" ? "Organize seus canais e convide pessoas para conversar." : "Crie até três salas de voz nesta comunidade."}</p><label htmlFor="firebase-creation-name">{label}<Input id="firebase-creation-name" autoFocus value={value} onChange={(event) => onChange(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") onSubmit(); if (event.key === "Escape") onClose(); }} placeholder={target === "community" ? "Ex.: Equipe Concord" : "Ex.: Estúdio aberto"} /></label><div className="firebase-dialog-actions"><Button variant="outline" onClick={onClose}>Cancelar</Button><Button className="primary-cta" onClick={onSubmit} disabled={!value.trim()}>{target === "community" ? "Criar comunidade" : "Criar sala"}</Button></div></section></div>;
+  return <div className="firebase-dialog-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}><section className="firebase-dialog" role="dialog" aria-modal="true" aria-labelledby="firebase-dialog-title"><span className="firebase-kicker">CONCORD / NOVO ESPAÇO</span><h2 id="firebase-dialog-title">{title}</h2><p>{target === "community" ? "Organize seus canais e convide pessoas para conversar." : "Crie até três salas de voz nesta comunidade."}</p><label htmlFor="firebase-creation-name">{label}<Input id="firebase-creation-name" autoFocus value={value} onChange={(event) => onChange(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") onSubmit(); if (event.key === "Escape") onClose(); }} placeholder={target === "community" ? "Ex.: Equipe Concord" : "Ex.: Estúdio aberto"} /></label>{error && <div className="firebase-auth-error" role="alert">{error}</div>}<div className="firebase-dialog-actions"><Button variant="outline" onClick={onClose} disabled={pending}>Cancelar</Button><Button className="primary-cta" onClick={onSubmit} disabled={pending || !value.trim()}>{pending ? "Salvando..." : target === "community" ? "Criar comunidade" : "Criar sala"}</Button></div></section></div>;
 }
 
 export default function FirebaseWorkspace() {
@@ -69,6 +69,8 @@ export default function FirebaseWorkspace() {
   const [loading, setLoading] = useState(false);
   const [creationTarget, setCreationTarget] = useState<"community" | "room" | null>(null);
   const [creationName, setCreationName] = useState("");
+  const [creationError, setCreationError] = useState("");
+  const [creationPending, setCreationPending] = useState(false);
   const [voiceService] = useState(() => new ConcordWebRTCService());
   const [voiceRoomId, setVoiceRoomId] = useState<string | null>(null);
   const meshRef = useRef<FirebaseVoiceMesh | null>(null);
@@ -177,13 +179,16 @@ export default function FirebaseWorkspace() {
     if (target === "room" && !community) { setNotice("Crie ou selecione uma comunidade antes de adicionar uma sala."); return; }
     setCreationTarget(target);
     setCreationName("");
+    setCreationError("");
   };
 
-  const closeCreationDialog = () => { setCreationTarget(null); setCreationName(""); };
+  const closeCreationDialog = () => { setCreationTarget(null); setCreationName(""); setCreationError(""); };
 
   const submitCreation = async () => {
     const name = creationName.trim();
-    if (!creationTarget || !name) return;
+    if (!creationTarget || !name || creationPending) return;
+    setCreationError("");
+    setCreationPending(true);
     try {
       if (creationTarget === "community") {
         const id = await createCommunity(currentUser.uid, name);
@@ -196,7 +201,8 @@ export default function FirebaseWorkspace() {
         setNotice("Sala de voz criada.");
       }
       closeCreationDialog();
-    } catch (error) { setNotice(error instanceof Error ? error.message : "Não foi possível concluir a criação."); }
+    } catch (error) { const message = error instanceof Error ? error.message : "Não foi possível concluir a criação."; setCreationError(message); setNotice(message); }
+    finally { setCreationPending(false); }
   };
 
   const playTone = (kind: "join" | "leave" | "mute" | "unmute") => {
@@ -270,6 +276,6 @@ export default function FirebaseWorkspace() {
     </main>
 
     <aside className="member-sidebar"><div className="member-heading"><span>MEMBROS — {friendships.filter((item) => item.status === "accepted").length}</span><button onClick={() => setNotice("Membros sincronizados pelo Firebase.")} aria-label="Mais opções"><MoreHorizontal size={17} /></button></div><div className="member-group"><span className="member-role">CONEXÕES</span>{friendships.filter((item) => item.status === "accepted").map((item) => <button className="member-card" key={item.id} onClick={() => setDirectFriendId(item.requesterId === currentUser.uid ? item.addresseeId : item.requesterId)}><span className="avatar bg-blue-200 text-blue-900"><Users size={13} /></span><div><strong>Conexão ativa</strong><span>Disponível</span></div></button>)}{!friendships.filter((item) => item.status === "accepted").length && <div className="empty-state">Nenhuma conexão aceita.</div>}</div>{voiceRoomId && <div className="call-dock"><div className="call-status"><span className="call-pulse" /><div><strong>{rooms.find((room) => room.id === voiceRoomId)?.name ?? "Sala de voz"}</strong><span>{members.length || 1} pessoa(s) na sala</span></div><button onClick={() => setNotice("Convite de sala disponível quando houver conexões.")} aria-label="Convidar"><UserPlus size={15} /></button></div><div className="call-actions"><button className={muted ? "control-active" : ""} onClick={toggleMute} aria-label="Mutar microfone"><Mic size={16} /></button><button className={screenSharing ? "control-active" : ""} onClick={() => void toggleScreen()} aria-label="Compartilhar tela"><Video size={16} /></button><button className="disconnect" onClick={() => { const room = rooms.find((item) => item.id === voiceRoomId); if (room) void toggleVoice(room); }} aria-label="Sair da call"><X size={16} /></button></div></div>}</aside>
-    {creationTarget && <CreationDialog target={creationTarget} value={creationName} onChange={setCreationName} onClose={closeCreationDialog} onSubmit={() => void submitCreation()} />}
+    {creationTarget && <CreationDialog target={creationTarget} value={creationName} error={creationError} pending={creationPending} onChange={setCreationName} onClose={closeCreationDialog} onSubmit={() => void submitCreation()} />}
   </div>;
 }

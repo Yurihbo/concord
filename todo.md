@@ -226,3 +226,10 @@
 - [x] Comparar a publicação Firebase com a interface original e mapear diferenças de estrutura, tipografia, espaçamento, navegação e estados vazios
 - [x] Alinhar o workspace Firebase ao layout original de quatro áreas, incluindo trilho de servidores, canais, conversa, membros e painel do usuário
 - [x] Reproduzir na publicação a hierarquia visual e os controles do workspace original sem remover os recursos Firebase (bundle Firebase recompilado e prévia local desktop/mobile alinhada)
+- [x] Diagnosticar por que os botões do workspace publicado não disparam ações após o login (diálogo permanecia aberto porque seu fechamento era bloqueado durante o salvamento)
+- [ ] Corrigir a falha global de inicialização/eventos no bundle Firebase publicado
+- [ ] Retestar botões de comunidade, salas, mensagens, microfone, saída e tela no domínio
+- [ ] Reproduzir a falha de cliques na sessão publicada do usuário após recarregamento forçado
+- [x] Exibir erros de Firestore/Auth diretamente no estado visual da ação que falhar (erro e estado Salvando... agora aparecem dentro do diálogo)
+- [ ] Verificar e corrigir regras/índices Firebase que impeçam criação de comunidade, canais ou salas
+- [ ] Confirmar no domínio publicado as ações com a sessão real do usuário

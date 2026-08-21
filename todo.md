@@ -150,3 +150,9 @@
 - [x] Resetar o estado publicado ao entrar em uma nova sala e desligar atividade no canal anterior
 - [ ] Adicionar teste comportamental para atualização real de isSpeaking e troca entre salas
 - [ ] Validar uma sala ativa com dois participantes e indicador verde sincronizado quando houver dispositivos disponíveis
+- [x] Remover o painel central de informações da call e manter a experiência na lateral direita
+- [x] Adicionar efeito sonoro de entrada na sala para o usuário e demais participantes
+- [x] Adicionar efeito sonoro de saída da sala para o usuário e demais participantes
+- [x] Testar sons, polling de participantes, desktop/mobile e salvar checkpoint
+- [ ] Validar funcionalmente os sons de entrada e saída de participantes em uma sala de voz ativa e registrar evidência
+- [ ] Revalidar o polling de participantes após entradas e saídas reais e registrar evidência específica

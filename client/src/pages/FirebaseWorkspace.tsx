@@ -223,10 +223,12 @@ export default function FirebaseWorkspace() {
 
   const toggleVoice = async (room: FirebaseVoiceRoom) => {
     if (!community) return;
-    const existing = members.find((member) => member.uid === currentUser.uid && member.roomId === room.id);
+    const isCurrentRoom = voiceRoomId === room.id;
     try {
-      if (existing) { await removeVoiceMember(community.id, currentUser.uid); meshRef.current?.dispose(); meshRef.current = null; voiceService.dispose(); setVoiceStream(null); setVoiceRoomId(null); setMuted(false); setScreenSharing(false); playTone("leave"); setNotice("Você saiu da sala."); }
+      if (isCurrentRoom) { await removeVoiceMember(community.id, currentUser.uid); meshRef.current?.dispose(); meshRef.current = null; voiceService.dispose(); setVoiceStream(null); setVoiceRoomId(null); setMuted(false); setScreenSharing(false); setRemoteStreams({}); playTone("leave"); setNotice("Você saiu da sala."); }
       else {
+        if (voiceRoomId) await removeVoiceMember(community.id, currentUser.uid);
+        meshRef.current?.dispose();
         const localStream = await voiceService.captureMicrophone();
         setVoiceStream(localStream);
         meshRef.current = new FirebaseVoiceMesh({ roomId: room.id, userId: currentUser.uid, localStream, onRemoteStream: (peerId, stream) => setRemoteStreams((current) => ({ ...current, [peerId]: stream })), onError: (error) => setNotice(error.message) });

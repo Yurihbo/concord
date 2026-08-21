@@ -162,4 +162,12 @@
 - [x] Executar e comprovar no relatório a suíte de polling e sons de entrada/saída
 - [x] Cobrir o reset de atividade no fluxo de troca de salas com teste executável
 - [x] Adicionar e executar teste específico de getVoiceSwitchResetChannel na troca de salas
-- [ ] Salvar checkpoint novo após a suíte automatizada final com 14 testes
+- [x] Salvar checkpoint novo após a suíte automatizada final com 15 testes (c05ea17e)
+- [x] Corrigir som de entrada da sala de voz
+- [x] Corrigir som de saída da sala de voz
+- [x] Adicionar som de mute e desmute do microfone
+- [x] Garantir desbloqueio e reprodução confiável do AudioContext no primeiro gesto
+- [x] Testar os quatro eventos sonoros e salvar checkpoint
+- [x] Adicionar teste mockado do player verificando start/stop para join, leave, mute e unmute
+- [x] Fortalecer o desbloqueio do AudioContext com tratamento explícito de falhas
+- [ ] Validar os quatro sons no teste principal com microfone funcional e registrar confirmação do usuário (aguardando reteste após a correção)

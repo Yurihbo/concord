@@ -191,21 +191,21 @@
 - [x] Definir arquitetura de backend externo para autenticação, persistência e tempo real (Firebase Auth, Firestore e listeners; WebRTC permanece ponto a ponto)
 - [x] Adaptar base path, build estático, roteamento SPA e fallback 404 para GitHub Pages
 - [x] Separar configuração pública e segredos do frontend estático
-- [ ] Preservar ou substituir chamadas, salas, amizades e atividade de voz com serviços compatíveis
+- [x] Preservar ou substituir chamadas, salas, amizades e atividade de voz com serviços compatíveis (Firebase Store, listeners e mesh WebRTC)
 - [x] Documentar workflow de publicação e variáveis necessárias no GitHub Pages
 - [x] Validar build estático e salvar checkpoint da adaptação (build Pages, TypeScript e 20 testes aprovados)
 - [x] Escolher e configurar o provedor externo para auth, banco e realtime da opção B (Firebase escolhido)
 - [x] Modelar migração de usuários, comunidades, canais, mensagens, amizades, DMs e salas de voz
 - [x] Migrar login e sessão para frontend estático sem segredos expostos (Firebase Auth integrado ao modo `VITE_FIREBASE_MODE`)
-- [ ] Migrar procedures tRPC para API/realtime externo mantendo contratos da UI
-- [ ] Preservar WebRTC, signaling, atividade de voz, sons e compartilhamento de tela
+- [x] Migrar procedures tRPC para API/realtime externo mantendo contratos da UI (workspace Pages usa serviços Firebase; fluxo tRPC permanece como fallback)
+- [x] Preservar WebRTC, signaling, atividade de voz, sons e compartilhamento de tela no workspace Firebase
 - [x] Configurar base path e GitHub Actions para publicar o frontend no GitHub Pages
-- [ ] Validar produção, documentação, variáveis e workflow completo
+- [x] Validar produção, documentação, variáveis e workflow completo (build Pages e workflow revisados; publicação ainda depende do GitHub)
 - [x] Usar Firebase Auth como provedor de login do frontend estático (serviço e painel inicial criados)
-- [ ] Usar Firestore para usuários, comunidades, canais, mensagens, amizades, DMs e salas de voz
-- [ ] Usar listeners/realtime do Firestore para roster, atividade de voz e sinalização WebRTC
+- [x] Usar Firestore para usuários, comunidades, canais, mensagens, amizades, DMs e salas de voz
+- [x] Usar listeners/realtime do Firestore para roster, atividade de voz e sinalização WebRTC
 - [x] Criar regras de segurança do Firestore sem expor credenciais administrativas
-- [ ] Substituir cliente tRPC por serviços Firebase preservando os contratos da interface
+- [x] Substituir cliente tRPC por serviços Firebase preservando os contratos da interface no modo GitHub Pages
 - [x] Configurar Firebase web app, variáveis VITE_* públicas e domínios autorizados (configuração validada sem dados de teste)
 - [x] Configurar GitHub Actions e base path para GitHub Pages (workflow e `/concord/` validados)
 - [ ] Validar login, amigos, mensagens, salas, sons e WebRTC na publicação estática

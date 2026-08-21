@@ -251,3 +251,12 @@ a { color: inherit; text-decoration: none; }
 .firebase-friend-list { margin-top: 1rem; border-top: 1px solid #edf1f6; }
 .firebase-friend-list > div { color: #526176; font-size: .7rem; }
 @media (max-width: 900px) { .firebase-workspace { grid-template-columns: 62px minmax(0,1fr); } .firebase-channel-sidebar, .firebase-right-panel { display: none; } .firebase-sidebar-user > div { display: none; } .firebase-chat-header { padding-inline: 1rem; } .firebase-message-list { padding-inline: 1rem; } .firebase-composer { padding-inline: 1rem; } }
+
+.firebase-request { display: grid; gap: .5rem; padding: .7rem; margin: .6rem 0; color: #334155; background: #f8fafc; border: 1px solid #dbe3ee; border-radius: .6rem; font-size: .68rem; }
+.firebase-request > div { display: flex; gap: .4rem; }
+.firebase-request button { padding: .35rem .5rem; color: #1d4ed8; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: .35rem; font-size: .62rem; font-weight: 700; }
+.firebase-request button:last-child { color: #64748b; background: #fff; border-color: #cbd5e1; }
+
+.firebase-voice-controls { display: flex; flex-wrap: wrap; justify-content: center; gap: .55rem; }
+.firebase-voice-controls button { min-height: 2.55rem; }
+@media (max-width: 480px) { .firebase-voice-controls { flex-direction: column; width: min(100%, 18rem); } .firebase-voice-controls button { width: 100%; } }

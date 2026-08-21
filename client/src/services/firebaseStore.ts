@@ -78,6 +78,16 @@ export async function listFriendships(uid: string): Promise<FirebaseFriendship[]
   return rows.map((item) => clean(item.id, item.data() as Omit<FirebaseFriendship, "id">));
 }
 
+export function subscribeToFriendships(uid: string, listener: (friendships: FirebaseFriendship[]) => void, onError?: (error: Error) => void): Unsubscribe {
+  let sent: FirebaseFriendship[] = [];
+  let received: FirebaseFriendship[] = [];
+  const emit = () => listener([...sent, ...received].filter((item, index, rows) => rows.findIndex((candidate) => candidate.id === item.id) === index));
+  const handleError = (reason: unknown) => onError?.(reason instanceof Error ? reason : new Error("Não foi possível sincronizar suas amizades."));
+  const sentUnsubscribe = onSnapshot(query(collection(firebaseDb, "friendRequests"), where("requesterId", "==", uid)), (snapshot) => { sent = snapshot.docs.map((item) => clean(item.id, item.data() as Omit<FirebaseFriendship, "id">)); emit(); }, handleError);
+  const receivedUnsubscribe = onSnapshot(query(collection(firebaseDb, "friendRequests"), where("addresseeId", "==", uid)), (snapshot) => { received = snapshot.docs.map((item) => clean(item.id, item.data() as Omit<FirebaseFriendship, "id">)); emit(); }, handleError);
+  return () => { sentUnsubscribe(); receivedUnsubscribe(); };
+}
+
 export async function respondToFriendRequest(requestId: string, uid: string, status: "accepted" | "declined"): Promise<void> {
   const target = doc(firebaseDb, "friendRequests", requestId);
   const snapshot = await getDoc(target);
@@ -104,6 +114,12 @@ export async function listCommunities(uid: string): Promise<FirebaseCommunity[]>
 export async function listVoiceRooms(communityId: string): Promise<FirebaseVoiceRoom[]> {
   const snapshot = await getDocs(query(communityCollection(communityId, "voiceRooms"), orderBy("createdAt", "asc")));
   return snapshot.docs.map((item) => clean(item.id, item.data() as Omit<FirebaseVoiceRoom, "id">));
+}
+
+export function subscribeToVoiceRooms(communityId: string, listener: (rooms: FirebaseVoiceRoom[]) => void, onError?: (error: Error) => void): Unsubscribe {
+  return onSnapshot(query(communityCollection(communityId, "voiceRooms"), orderBy("createdAt", "asc")), (snapshot) => {
+    listener(snapshot.docs.map((item) => clean(item.id, item.data() as Omit<FirebaseVoiceRoom, "id">)));
+  }, (reason) => onError?.(reason instanceof Error ? reason : new Error("Não foi possível sincronizar as salas de voz.")));
 }
 
 export async function createVoiceRoom(communityId: string, name: string): Promise<string> {

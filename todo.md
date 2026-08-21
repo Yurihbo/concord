@@ -200,7 +200,7 @@
 - [x] Migrar procedures tRPC para API/realtime externo mantendo contratos da UI (workspace Pages usa serviços Firebase; fluxo tRPC permanece como fallback)
 - [x] Preservar WebRTC, signaling, atividade de voz, sons e compartilhamento de tela no workspace Firebase
 - [x] Configurar base path e GitHub Actions para publicar o frontend no GitHub Pages
-- [x] Validar produção, documentação, variáveis e workflow completo (build Pages aprovado; ordem pnpm do workflow corrigida após diagnóstico remoto)
+- [x] Validar produção, documentação, variáveis e workflow completo (build Pages, TypeScript e 21 testes aprovados; ordem e versão do pnpm corrigidas no workflow após diagnóstico remoto)
 - [x] Usar Firebase Auth como provedor de login do frontend estático (serviço e painel inicial criados)
 - [x] Usar Firestore para usuários, comunidades, canais, mensagens, amizades, DMs e salas de voz
 - [x] Usar listeners/realtime do Firestore para roster, atividade de voz e sinalização WebRTC

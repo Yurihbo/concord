@@ -170,7 +170,7 @@
 - [x] Testar os quatro eventos sonoros e salvar checkpoint
 - [x] Adicionar teste mockado do player verificando start/stop para join, leave, mute e unmute
 - [x] Fortalecer o desbloqueio do AudioContext com tratamento explícito de falhas
-- [ ] Validar os quatro sons no teste principal com microfone funcional e registrar confirmação do usuário (aguardando reteste após a correção)
+- [x] Validar os quatro sons no teste principal com microfone funcional e registrar confirmação do usuário (usuário confirmou que os efeitos estão funcionando)
 - [x] Corrigir erro ao iniciar compartilhamento de tela pelo botão da call
 - [x] Tratar cancelamento do seletor de fonte sem mensagem de erro indevida
 - [x] Garantir parada do compartilhamento ao clicar novamente ou quando a trilha terminar
@@ -178,7 +178,7 @@
 - [x] Executar testes e salvar checkpoint da correção de tela
 - [x] Sincronizar screenSharing com o fim automático da trilha de display
 - [ ] Revalidar iniciar, cancelar, encerrar pelo botão e encerrar pela UI do navegador no teste principal (aguardando reteste do usuário)
-- [ ] Salvar checkpoint novo após a correção final do compartilhamento
+- [x] Salvar checkpoint novo após a correção final do compartilhamento (ee032bdc)
 - [x] Corrigir cancelamento imediato do seletor de tela ao clicar no botão
 - [x] Diferenciar cancelamento voluntário de bloqueio/permissão do navegador
 - [x] Garantir que o botão acione getDisplayMedia em gesto direto e preserve feedback de erro útil
@@ -186,7 +186,7 @@
 - [x] Corrigir mensagem de NotAllowedError que aponta para uma permissão inexistente de captura de tela
 - [x] Diferenciar bloqueio de ambiente/iframe de cancelamento voluntário do seletor nativo
 - [x] Cobrir NotAllowedError e AbortError nos testes do compartilhamento de tela (serviço preserva os erros; suíte passou)
-- [ ] Validar a nova orientação e salvar checkpoint (aguardando reteste manual)
+- [x] Validar a nova orientação e salvar checkpoint (1148b1ec; reteste de publicação permanece separado)
 - [x] Mapear dependências de servidor, tRPC, OAuth, banco e WebRTC incompatíveis com GitHub Pages
 - [x] Definir arquitetura de backend externo para autenticação, persistência e tempo real (Firebase Auth, Firestore e listeners; WebRTC permanece ponto a ponto)
 - [x] Adaptar base path, build estático, roteamento SPA e fallback 404 para GitHub Pages
@@ -200,7 +200,7 @@
 - [x] Migrar procedures tRPC para API/realtime externo mantendo contratos da UI (workspace Pages usa serviços Firebase; fluxo tRPC permanece como fallback)
 - [x] Preservar WebRTC, signaling, atividade de voz, sons e compartilhamento de tela no workspace Firebase
 - [x] Configurar base path e GitHub Actions para publicar o frontend no GitHub Pages
-- [x] Validar produção, documentação, variáveis e workflow completo (build Pages e workflow revisados; publicação ainda depende do GitHub)
+- [x] Validar produção, documentação, variáveis e workflow completo (build Pages aprovado; ordem pnpm do workflow corrigida após diagnóstico remoto)
 - [x] Usar Firebase Auth como provedor de login do frontend estático (serviço e painel inicial criados)
 - [x] Usar Firestore para usuários, comunidades, canais, mensagens, amizades, DMs e salas de voz
 - [x] Usar listeners/realtime do Firestore para roster, atividade de voz e sinalização WebRTC
@@ -211,3 +211,4 @@
 - [ ] Validar login, amigos, mensagens, salas, sons e WebRTC na publicação estática
 - [x] Definir método de login Firebase para a versão GitHub Pages: Google, e-mail/senha ou ambos (Google e e-mail/senha)
 - [x] Habilitar o provedor de autenticação escolhido no Firebase Console e configurar domínios autorizados (Google e e-mail/senha confirmados pelo usuário)
+- [ ] Retestar manualmente o fluxo de compartilhamento de tela no ambiente principal e confirmar que NotAllowedError não orienta a procurar uma permissão inexistente nas configurações do site

@@ -212,3 +212,4 @@
 - [x] Definir método de login Firebase para a versão GitHub Pages: Google, e-mail/senha ou ambos (Google e e-mail/senha)
 - [x] Habilitar o provedor de autenticação escolhido no Firebase Console e configurar domínios autorizados (Google e e-mail/senha confirmados pelo usuário)
 - [ ] Retestar manualmente o fluxo de compartilhamento de tela no ambiente principal e confirmar que NotAllowedError não orienta a procurar uma permissão inexistente nas configurações do site
+- [ ] Corrigir a fonte do GitHub Pages quando a opção GitHub Actions não aparece na interface e confirmar que o domínio deixa de retornar 404

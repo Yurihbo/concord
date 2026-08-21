@@ -212,6 +212,6 @@
 - [x] Definir método de login Firebase para a versão GitHub Pages: Google, e-mail/senha ou ambos (Google e e-mail/senha)
 - [x] Habilitar o provedor de autenticação escolhido no Firebase Console e configurar domínios autorizados (Google e e-mail/senha confirmados pelo usuário)
 - [ ] Retestar manualmente o fluxo de compartilhamento de tela no ambiente principal e confirmar que NotAllowedError não orienta a procurar uma permissão inexistente nas configurações do site
-- [ ] Corrigir a fonte do GitHub Pages quando a opção GitHub Actions não aparece na interface e confirmar que o domínio deixa de retornar 404
+- [x] Corrigir a fonte do GitHub Pages quando a opção GitHub Actions não aparece na interface e confirmar que o domínio deixa de retornar 404 (fonte workflow aplicada; login Firebase carregado no domínio)
 - [x] Corrigir tela branca do modo Firebase quando variáveis públicas do GitHub Actions estiverem ausentes, exibindo diagnóstico visível e preservando o fluxo de login quando configurado (21 testes, TypeScript e builds com/sem configuração aprovados)
 - [x] Corrigir o roteamento Wouter para respeitar o base path `/concord/` no GitHub Pages e evitar 404 interno na raiz publicada (TypeScript, 21 testes e build aprovados)

@@ -21,3 +21,7 @@ Em 21 de agosto de 2026, o healthcheck passou a retornar HTTP 200 e o navegador 
 ## React carregando e rota publicada
 
 Após o run `32449373278` terminar com sucesso, o domínio passou a retornar o HTML do Concord. A validação em `https://yurihbo.github.io/concord/?version=527905c2` detectou o elemento React `#root` e o 404 interno estilizado do Concord, em vez da tela branca. Isso confirma que o JavaScript agora executa; o próximo diagnóstico deve corrigir o roteamento/base path ou testar a URL sem query antes do QA de login.
+
+## Rota raiz corrigida
+
+Após o run `32449526129` terminar com sucesso, a URL `https://yurihbo.github.io/concord/?version=2dc04045` carregou a tela real de login Firebase, com Google, e-mail, senha e criação de conta. O 404 interno foi resolvido pelo uso da base `/concord/` no Wouter; o white screen também não ocorre mais na publicação configurada.

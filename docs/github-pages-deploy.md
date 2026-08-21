@@ -50,3 +50,9 @@ pnpm test
 ```
 
 A publicação não deve ser feita por comandos locais nesta migração; o push para `main` aciona o workflow do GitHub Actions.
+
+## 5. Erro `auth/api-key-not-valid`
+
+Se o site publicado mostrar o cartão vermelho `Firebase: Error (auth/api-key-not-valid-please-pass-a-valid-api-key.)`, o frontend está preservando corretamente o estado de erro e o problema está na variável pública usada pelo workflow. A variável `VITE_FIREBASE_API_KEY` do GitHub Actions precisa ser a chave Web do mesmo projeto Firebase indicado por `VITE_FIREBASE_PROJECT_ID`; não use `BUILT_IN_FORGE_API_KEY`, `JWT_SECRET` ou qualquer credencial administrativa.
+
+O workflow valida a chave antes do build. Uma chave válida deve responder com `MISSING_ID_TOKEN` ao endpoint `accounts:lookup` quando o corpo estiver vazio; uma chave inválida interrompe o deploy com uma mensagem de configuração, sem imprimir o valor da chave. Depois de atualizar as variáveis públicas `VITE_FIREBASE_API_KEY`, `VITE_FIREBASE_AUTH_DOMAIN`, `VITE_FIREBASE_PROJECT_ID`, `VITE_FIREBASE_STORAGE_BUCKET`, `VITE_FIREBASE_MESSAGING_SENDER_ID`, `VITE_FIREBASE_APP_ID` e `VITE_FIREBASE_MEASUREMENT_ID`, execute novamente o workflow.

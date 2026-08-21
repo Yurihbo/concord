@@ -29,6 +29,19 @@ jobs:
           cache: pnpm
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+      - name: Validate Firebase public API key
+        env:
+          VITE_FIREBASE_API_KEY: ${{ vars.VITE_FIREBASE_API_KEY }}
+        run: |
+          response=$(curl --silent --show-error --request POST "https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${VITE_FIREBASE_API_KEY}" --header "content-type: application/json" --data '{}')
+          if echo "$response" | grep -q "API key not valid"; then
+            echo "The GitHub Actions variable VITE_FIREBASE_API_KEY is invalid. Update the public Firebase variables before deploying."
+            exit 1
+          fi
+          if ! echo "$response" | grep -q "MISSING_ID_TOKEN"; then
+            echo "Firebase API key validation did not return the expected response. Check the public Firebase variables."
+            exit 1
+          fi
       - name: Build static frontend
         run: pnpm build:pages
         env:

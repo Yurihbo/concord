@@ -15,8 +15,10 @@ export class ConcordWebRTCService {
   private analyser: AnalyserNode | null = null;
   private state: CallState = "idle";
   private onStateChange?: (state: CallState) => void;
+  private onScreenShareEnded?: () => void;
 
   setStateListener(listener: (state: CallState) => void): void { this.onStateChange = listener; }
+  setScreenShareEndedListener(listener?: () => void): void { this.onScreenShareEnded = listener; }
   getState(): CallState { return this.state; }
   private updateState(state: CallState): void { this.state = state; this.onStateChange?.(state); }
 
@@ -65,7 +67,21 @@ export class ConcordWebRTCService {
 
   async shareScreen(): Promise<MediaStream> {
     if (!navigator.mediaDevices?.getDisplayMedia) throw new Error("Compartilhamento de tela não é suportado neste navegador.");
-    this.screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
+    try {
+      this.screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false });
+    } catch (error) {
+      this.screenStream = null;
+      throw error;
+    }
+    const videoTrack = this.screenStream.getVideoTracks()[0];
+    if (!videoTrack) {
+      this.screenStream.getTracks().forEach((track) => track.stop());
+      this.screenStream = null;
+      throw new Error("Nenhuma fonte de tela foi selecionada.");
+    }
+    videoTrack.addEventListener("ended", () => {
+      if (this.screenStream?.getVideoTracks().includes(videoTrack)) { this.stopScreenShare(); this.onScreenShareEnded?.(); }
+    }, { once: true });
     this.updateState("sharing");
     return this.screenStream;
   }
@@ -138,5 +154,6 @@ export class ConcordWebRTCService {
     this.analyser = null;
     this.audioContext = null;
     this.updateState("idle");
+    this.onScreenShareEnded = undefined;
   }
 }

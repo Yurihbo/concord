@@ -171,3 +171,11 @@
 - [x] Adicionar teste mockado do player verificando start/stop para join, leave, mute e unmute
 - [x] Fortalecer o desbloqueio do AudioContext com tratamento explícito de falhas
 - [ ] Validar os quatro sons no teste principal com microfone funcional e registrar confirmação do usuário (aguardando reteste após a correção)
+- [x] Corrigir erro ao iniciar compartilhamento de tela pelo botão da call
+- [x] Tratar cancelamento do seletor de fonte sem mensagem de erro indevida
+- [x] Garantir parada do compartilhamento ao clicar novamente ou quando a trilha terminar
+- [x] Validar permissões, compatibilidade e feedback visual do compartilhamento (fluxo automatizado e feedback de cancelamento implementados)
+- [x] Executar testes e salvar checkpoint da correção de tela
+- [x] Sincronizar screenSharing com o fim automático da trilha de display
+- [ ] Revalidar iniciar, cancelar, encerrar pelo botão e encerrar pela UI do navegador no teste principal (aguardando reteste do usuário)
+- [ ] Salvar checkpoint novo após a correção final do compartilhamento

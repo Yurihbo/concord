@@ -32,7 +32,7 @@ No repositório GitHub, abra **Settings → Secrets and variables → Actions �
 
 ## 3. GitHub Pages
 
-Em **Settings → Pages**, selecione **GitHub Actions** como fonte. O arquivo `.github/workflows/deploy-pages.yml` compila `build:pages`, copia `index.html` para `404.html` para preservar o roteamento SPA e publica `dist/public`.
+Em **Settings → Pages**, selecione **GitHub Actions** como fonte — não `Deploy from a branch`. O arquivo `.github/workflows/deploy-pages.yml` compila `build:pages`, copia `index.html` para `404.html` para preservar o roteamento SPA e publica `dist/public`. Se a API de Pages mostrar `build_type: legacy` e `source.branch: main`, a fonte ainda está configurada como branch; nesse estado, o workflow pode terminar verde, mas o domínio continuará exibindo 404 até a fonte ser alterada para **GitHub Actions**.
 
 O Vite usa `/concord/` como base para o repositório `Yurihbo/concord`. Se o nome do repositório mudar, atualize a condição de base em `vite.config.ts`.
 

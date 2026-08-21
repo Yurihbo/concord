@@ -233,3 +233,6 @@
 - [x] Exibir erros de Firestore/Auth diretamente no estado visual da ação que falhar (erro e estado Salvando... agora aparecem dentro do diálogo)
 - [ ] Verificar e corrigir regras/índices Firebase que impeçam criação de comunidade, canais ou salas
 - [ ] Confirmar no domínio publicado as ações com a sessão real do usuário
+- [x] Impedir que criação de comunidade ou sala permaneça indefinidamente em `Salvando...` (timeout de 15 segundos e estado liberado em erro)
+- [x] Exibir timeout e diagnóstico acionável quando Firestore não responder (mensagem orienta conexão, Firestore Database e regras)
+- [ ] Corrigir o contrato/regras Firestore responsável por bloquear a criação de comunidade e salas

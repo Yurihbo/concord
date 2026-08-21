@@ -47,6 +47,10 @@ function userDoc(uid: string) { return doc(firebaseDb, "users", uid); }
 function communityDoc(id: string) { return doc(firebaseDb, "communities", id); }
 function communityCollection(id: string, child: string) { return collection(firebaseDb, "communities", id, child); }
 
+function withFirestoreTimeout<T>(operation: Promise<T>, label: string, timeoutMs = 15000): Promise<T> {
+  return Promise.race([operation, new Promise<T>((_, reject) => window.setTimeout(() => reject(new Error(`${label} demorou mais de 15 segundos. Verifique a conexão, o Firestore Database e as regras publicadas.`)), timeoutMs))]);
+}
+
 export async function saveProfile(user: User, profile: Partial<FirebaseProfile>): Promise<void> {
   await setDoc(userDoc(user.uid), {
     uid: user.uid,
@@ -112,7 +116,7 @@ export async function listCommunities(uid: string): Promise<FirebaseCommunity[]>
 }
 
 export async function listVoiceRooms(communityId: string): Promise<FirebaseVoiceRoom[]> {
-  const snapshot = await getDocs(query(communityCollection(communityId, "voiceRooms"), orderBy("createdAt", "asc")));
+  const snapshot = await withFirestoreTimeout(getDocs(query(communityCollection(communityId, "voiceRooms"), orderBy("createdAt", "asc"))), "Carregar salas");
   return snapshot.docs.map((item) => clean(item.id, item.data() as Omit<FirebaseVoiceRoom, "id">));
 }
 
@@ -123,18 +127,22 @@ export function subscribeToVoiceRooms(communityId: string, listener: (rooms: Fir
 }
 
 export async function createVoiceRoom(communityId: string, name: string): Promise<string> {
-  const existing = await getDocs(query(communityCollection(communityId, "voiceRooms"), limit(4)));
-  if (existing.size >= 3) throw new Error("Cada comunidade pode ter no máximo 3 salas de voz.");
-  const created = await addDoc(communityCollection(communityId, "voiceRooms"), { communityId, name, createdAt: serverTimestamp() });
-  return created.id;
+  return withFirestoreTimeout((async () => {
+    const existing = await getDocs(query(communityCollection(communityId, "voiceRooms"), limit(4)));
+    if (existing.size >= 3) throw new Error("Cada comunidade pode ter no máximo 3 salas de voz.");
+    const created = await addDoc(communityCollection(communityId, "voiceRooms"), { communityId, name, createdAt: serverTimestamp() });
+    return created.id;
+  })(), "Criar sala de voz");
 }
 
 export async function createCommunity(ownerId: string, name: string, description = ""): Promise<string> {
-  const created = await addDoc(collection(firebaseDb, "communities"), { ownerId, name, description, createdAt: serverTimestamp() });
-  await setDoc(doc(firebaseDb, "communities", created.id, "members", ownerId), { uid: ownerId, role: "owner", joinedAt: serverTimestamp() });
-  await setDoc(doc(firebaseDb, "users", ownerId, "memberships", created.id), { communityId: created.id, role: "owner", joinedAt: serverTimestamp() });
-  await addDoc(communityCollection(created.id, "channels"), { communityId: created.id, name: "geral", kind: "text", category: "texto", createdAt: serverTimestamp() });
-  return created.id;
+  return withFirestoreTimeout((async () => {
+    const created = await addDoc(collection(firebaseDb, "communities"), { ownerId, name, description, createdAt: serverTimestamp() });
+    await setDoc(doc(firebaseDb, "communities", created.id, "members", ownerId), { uid: ownerId, role: "owner", joinedAt: serverTimestamp() });
+    await setDoc(doc(firebaseDb, "users", ownerId, "memberships", created.id), { communityId: created.id, role: "owner", joinedAt: serverTimestamp() });
+    await addDoc(communityCollection(created.id, "channels"), { communityId: created.id, name: "geral", kind: "text", category: "texto", createdAt: serverTimestamp() });
+    return created.id;
+  })(), "Criar comunidade");
 }
 
 export async function joinCommunity(communityId: string, uid: string): Promise<void> {

@@ -32,6 +32,12 @@ describe("voice rooms", () => {
     expect(typeof caller.communities.participants).toBe("function");
     expect(typeof caller.communities.join).toBe("function");
     expect(typeof caller.communities.leave).toBe("function");
+    expect(typeof caller.communities.activity).toBe("function");
+  });
+
+  it("exposes the speaking-state mutation for synchronized voice activity", () => {
+    const caller = appRouter.createCaller(createContext());
+    expect(caller.communities.activity).toBeDefined();
   });
 
   it("keeps voice-room creation behind the protected community contract", () => {

@@ -163,3 +163,12 @@ a { color: inherit; text-decoration: none; }
 .profile-chip { min-width: 0; }
 .profile-chip span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 @media (max-width: 760px) { .voice-sidebar-dock { margin: 0 8px 7px; padding: 8px; }.voice-sidebar-dock-actions button { height: 34px; }.channel-sidebar.mobile-open .voice-sidebar-dock { margin-bottom: 8px; } }
+
+/* Voice activity indicator */
+.avatar { position: relative; }
+.speaking-ring { position: absolute; inset: -3px; border: 2px solid #35e878; border-radius: 999px; box-shadow: 0 0 0 2px rgba(53, 232, 120, .18), 0 0 14px rgba(53, 232, 120, .72); pointer-events: none; animation: speaking-pulse 900ms ease-in-out infinite alternate; }
+@keyframes speaking-pulse { from { opacity: .72; transform: scale(.98); } to { opacity: 1; transform: scale(1.04); } }
+.voice-avatar { position: relative; }
+.voice-avatar-speaking { border-color: #35e878 !important; box-shadow: 0 0 0 2px rgba(53, 232, 120, .24), 0 0 10px rgba(53, 232, 120, .75); color: #f0fff5; }
+.call-member-speaking { border: 2px solid #35e878 !important; box-shadow: 0 0 0 2px rgba(53, 232, 120, .2), 0 0 12px rgba(53, 232, 120, .7); color: #153b24; }
+@media (prefers-reduced-motion: reduce) { .speaking-ring { animation: none; } }

@@ -3,7 +3,7 @@ import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
-import { addCallSignal, createCall, createChannelMessage, createCommunity, createDirectMessage, createFriendRequest, createVoiceChannel, getOrCreateDirectThread, joinVoiceChannel, leaveVoiceChannel, listCallSignals, listCalls, listChannelMessages, listChannels, listCommunitiesForUser, listDirectMessages, listFriendships, listVoiceChannels, listVoiceParticipants, searchUsersByPublicId, setUserPresence, updateCall, updateFriendship, updateUserProfile } from "./db";
+import { addCallSignal, createCall, createChannelMessage, createCommunity, createDirectMessage, createFriendRequest, createVoiceChannel, getOrCreateDirectThread, joinVoiceChannel, leaveVoiceChannel, updateVoiceActivity, listCallSignals, listCalls, listChannelMessages, listChannels, listCommunitiesForUser, listDirectMessages, listFriendships, listVoiceChannels, listVoiceParticipants, searchUsersByPublicId, setUserPresence, updateCall, updateFriendship, updateUserProfile } from "./db";
 
 const nonEmpty = z.string().trim().min(1).max(200);
 
@@ -33,6 +33,7 @@ export const appRouter = router({
     participants: protectedProcedure.input(z.object({ channelId: z.number().int().positive() })).query(({ input }) => listVoiceParticipants(input.channelId)),
     join: protectedProcedure.input(z.object({ channelId: z.number().int().positive() })).mutation(({ ctx, input }) => joinVoiceChannel(ctx.user.id, input.channelId)),
     leave: protectedProcedure.input(z.object({ channelId: z.number().int().positive() })).mutation(({ ctx, input }) => leaveVoiceChannel(ctx.user.id, input.channelId)),
+    activity: protectedProcedure.input(z.object({ channelId: z.number().int().positive(), isSpeaking: z.boolean() })).mutation(({ ctx, input }) => updateVoiceActivity(ctx.user.id, input.channelId, input.isSpeaking)),
   }),
   messages: router({
     list: protectedProcedure.input(z.object({ channelId: z.number().int().positive(), limit: z.number().int().min(1).max(100).optional() })).query(({ input }) => listChannelMessages(input.channelId, input.limit)),

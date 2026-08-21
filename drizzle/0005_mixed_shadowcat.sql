@@ -1,0 +1,1 @@
+ALTER TABLE `voiceMembers` ADD `isSpeaking` boolean DEFAULT false NOT NULL;

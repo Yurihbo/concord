@@ -105,6 +105,13 @@ export async function joinVoiceChannel(userId: number, channelId: number) {
   return listVoiceParticipants(channelId);
 }
 
+export async function updateVoiceActivity(userId: number, channelId: number, isSpeaking: boolean) {
+  const db = await getDb();
+  if (!db) throw new Error("Database unavailable");
+  await db.update(voiceMembers).set({ isSpeaking, lastSeenAt: new Date() }).where(and(eq(voiceMembers.channelId, channelId), eq(voiceMembers.userId, userId)));
+  return { success: true } as const;
+}
+
 export async function leaveVoiceChannel(userId: number, channelId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database unavailable");

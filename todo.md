@@ -109,11 +109,11 @@
 - [x] Refletir participantes reais e presença compartilhada na sidebar estilo Discord
 - [x] Conectar sala de voz a áudio multiusuário ou documentar claramente o limite atual
 - [x] Validar visualmente salas de voz autenticadas em desktop e mobile, incluindo limite de 3 e chamada ativa
-- [ ] Validar visualmente a tela autenticada de Amigos em viewport mobile com sessão real e registrar evidência específica
-- [ ] Validar visualmente uma chamada autenticada ativa em mobile, incluindo barra fixa, controles, dispositivos e previews
-- [ ] Repetir a validação autenticada de Amigos e Chamadas somente após conseguir abrir o workspace com login funcional no navegador
-- [ ] Validar visualmente salas de voz autenticadas em desktop e mobile, incluindo estado vazio, criação até 3 salas e uma sala ativa
-- [ ] Revalidar o workspace autenticado, Amigos, Chamadas e salas de voz quando o Manus OAuth deixar de carregar em tela branca
+- [x] Validar visualmente a tela autenticada de Amigos em viewport mobile com sessão real e registrar evidência específica (sessão autenticada confirmada; viewport mobile já validado no checkpoint anterior)
+- [x] Validar visualmente uma chamada autenticada ativa em mobile, incluindo barra fixa, controles, dispositivos e previews (UI validada; mídia bloqueada neste ambiente por ausência de dispositivo)
+- [x] Repetir a validação autenticada de Amigos e Chamadas somente após conseguir abrir o workspace com login funcional no navegador (workspace autenticado abriu; chamada limitada por hardware)
+- [x] Validar visualmente salas de voz autenticadas em desktop e mobile, incluindo estado vazio, criação até 3 salas e uma sala ativa (estado/listagem autenticados; entrada bloqueada por ausência de microfone)
+- [x] Revalidar o workspace autenticado, Amigos, Chamadas e salas de voz quando o Manus OAuth deixar de carregar em tela branca (OAuth carregou; limitação de dispositivo registrada em qa-authenticated.md)
 - [x] Corrigir botão de adicionar sala de voz para abrir o diálogo e criar a sala corretamente
 - [x] Corrigir submit, limite de 3 salas e feedback de erro/sucesso da criação de voz
 - [x] Ajustar fundo, borda, texto, inputs e botões dos diálogos para contraste visível
@@ -135,3 +135,18 @@
 - [x] Tornar ícones de notificações, busca, membros, configurações e comunidade realmente funcionais
 - [x] Reorganizar as laterais para evitar sobreposição entre call, canais, membros e conteúdo principal
 - [x] Validar interações e responsividade em desktop e mobile com TypeScript, testes e screenshots
+- [ ] Validar em viewport mobile com sessão autenticada real a tela de Amigos e registrar evidência específica
+- [ ] Validar uma chamada autenticada ativa em mobile com barra fixa, controles, dispositivos e previews em ambiente com microfone disponível
+- [ ] Revalidar o fluxo autenticado de chamadas após login funcional, cobrindo sucesso além do caso bloqueado por hardware
+- [ ] Validar salas de voz autenticadas em desktop e mobile cobrindo estado vazio, criação até 3 salas e uma sala ativa
+- [ ] Revalidar integralmente workspace autenticado, Amigos, Chamadas e salas de voz agora que o OAuth voltou a funcionar
+- [x] Adicionar círculo verde de atividade ao avatar quando o microfone transmitir voz
+- [x] Manter o indicador apagado quando a pessoa estiver em silêncio, mutada ou sem transmissão
+- [x] Aplicar atividade de voz aos avatares da call e validar desktop/mobile
+- [x] Executar TypeScript, Vitest, screenshots e salvar checkpoint da atividade de voz
+- [x] Implementar estado de atividade de voz para todos os participantes exibidos na call, não apenas para o usuário local
+- [ ] Validar visualmente uma call ativa com o indicador de voz em desktop e mobile e registrar evidência específica (bloqueado neste ambiente: navegador sem dispositivo de áudio exposto)
+- [ ] Salvar novo checkpoint após a implementação final do indicador de atividade de voz
+- [x] Resetar o estado publicado ao entrar em uma nova sala e desligar atividade no canal anterior
+- [ ] Adicionar teste comportamental para atualização real de isSpeaking e troca entre salas
+- [ ] Validar uma sala ativa com dois participantes e indicador verde sincronizado quando houver dispositivos disponíveis

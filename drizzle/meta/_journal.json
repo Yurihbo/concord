@@ -36,6 +36,13 @@
       "when": 1787265530145,
       "tag": "0004_black_moon_knight",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "5",
+      "when": 1787273120701,
+      "tag": "0005_mixed_shadowcat",
+      "breakpoints": true
     }
   ]
 }

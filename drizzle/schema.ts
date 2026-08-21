@@ -1,4 +1,4 @@
-import { int, mysqlEnum, mysqlTable, text, timestamp, varchar } from "drizzle-orm/mysql-core";
+import { boolean, int, mysqlEnum, mysqlTable, text, timestamp, varchar } from "drizzle-orm/mysql-core";
 
 export const users = mysqlTable("users", {
   id: int("id").autoincrement().primaryKey(),
@@ -110,6 +110,7 @@ export const voiceMembers = mysqlTable("voiceMembers", {
   userId: int("userId").notNull(),
   joinedAt: timestamp("joinedAt").defaultNow().notNull(),
   lastSeenAt: timestamp("lastSeenAt").defaultNow().onUpdateNow().notNull(),
+  isSpeaking: boolean("isSpeaking").default(false).notNull(),
 });
 
 export type User = typeof users.$inferSelect;

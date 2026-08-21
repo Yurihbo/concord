@@ -133,6 +133,7 @@ export async function createCommunity(ownerId: string, name: string, description
   const created = await addDoc(collection(firebaseDb, "communities"), { ownerId, name, description, createdAt: serverTimestamp() });
   await setDoc(doc(firebaseDb, "communities", created.id, "members", ownerId), { uid: ownerId, role: "owner", joinedAt: serverTimestamp() });
   await setDoc(doc(firebaseDb, "users", ownerId, "memberships", created.id), { communityId: created.id, role: "owner", joinedAt: serverTimestamp() });
+  await addDoc(communityCollection(created.id, "channels"), { communityId: created.id, name: "geral", kind: "text", category: "texto", createdAt: serverTimestamp() });
   return created.id;
 }
 

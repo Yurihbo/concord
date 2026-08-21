@@ -218,3 +218,8 @@
 - [x] Diagnosticar a mensagem `auth/api-key-not-valid` no GitHub Pages mantendo visível o cartão de erro mostrado pelo usuário (causa localizada na variável pública do workflow; cartão preservado)
 - [x] Corrigir a variável pública Firebase usada no workflow sem expor a chave no código ou no repositório (variáveis públicas cadastradas; workflow 32532435848 aprovado)
 - [ ] Validar novamente login, build e testes após a correção da configuração Firebase
+- [ ] Auditar a paridade publicada do workspace Firebase com a versão original, incluindo arquivos e ações ausentes
+- [ ] Corrigir criação de comunidade/grupo e os diálogos para que sejam caixas acessíveis dentro do layout, não pop-ups deslocados
+- [ ] Corrigir criação e seleção de salas de voz no workspace Firebase publicado
+- [ ] Corrigir controles de entrada/saída da sala, microfone e compartilhamento de tela no workspace Firebase publicado
+- [ ] Validar layout desktop/mobile e os fluxos publicados após a correção de paridade

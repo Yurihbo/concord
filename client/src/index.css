@@ -268,3 +268,22 @@ a { color: inherit; text-decoration: none; }
 .firebase-config-card p { color: #bfd0e8; font-size: .92rem; line-height: 1.65; }
 .firebase-config-card code { display: block; overflow-wrap: anywhere; margin: 1rem 0; padding: .85rem 1rem; color: #bae6fd; background: #07111f; border: 1px solid #29496d; border-radius: .55rem; font: .72rem 'DM Mono', monospace; }
 .firebase-config-help { margin-bottom: 0; color: #91a8c5 !important; font-size: .78rem !important; }
+
+.firebase-dialog-backdrop { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; padding: 1rem; background: rgba(7,17,31,.62); backdrop-filter: blur(6px); }
+.firebase-dialog { width: min(100%, 28rem); padding: 1.35rem; color: #334155; background: #fff; border: 1px solid #cbd5e1; border-radius: .85rem; box-shadow: 0 1.5rem 4rem rgba(15,23,42,.28); }
+.firebase-dialog h2 { margin: .5rem 0 .35rem; color: #172033; font-size: 1.15rem; }
+.firebase-dialog p { margin: 0 0 1rem; color: #64748b; font-size: .78rem; line-height: 1.55; }
+.firebase-dialog label { display: grid; gap: .45rem; color: #334155; font-size: .72rem; font-weight: 700; }
+.firebase-dialog label input { min-height: 2.75rem; color: #111827; background: #fff; border-color: #cbd5e1; }
+.firebase-dialog-actions { display: flex; justify-content: flex-end; gap: .55rem; margin-top: 1.15rem; }
+.firebase-dialog-actions button { min-height: 2.5rem; }
+.firebase-channel-list .voice-label { margin-top: 1.25rem; }
+.firebase-channel-list .voice-label button { display: grid; place-items: center; width: 1.65rem; height: 1.65rem; border-radius: .4rem; }
+.firebase-channel-list .voice-label button:hover, .firebase-channel-list .voice-label button:focus-visible { color: #fff; background: #2563eb; }
+.firebase-channel-list > button.voice { cursor: pointer; }
+.firebase-channel-list > button.voice:disabled { cursor: not-allowed; opacity: .55; }
+@media (max-width: 900px) { .firebase-dialog-backdrop { align-items: end; padding: .75rem; } .firebase-dialog { width: 100%; } .firebase-channel-sidebar, .firebase-right-panel { display: none; } }
+.firebase-no-community { display: grid; gap: .55rem; margin: .35rem 0 1.35rem; padding: .9rem; color: #cbd5e1; background: #142338; border: 1px solid #29415f; border-radius: .65rem; }
+.firebase-no-community strong { color: #f1f5f9; font-size: .75rem; }
+.firebase-no-community p { margin: 0; color: #91a8c5; font-size: .66rem; line-height: 1.45; }
+.firebase-no-community .primary-cta { min-height: 2.15rem; justify-content: center; font-size: .66rem; }

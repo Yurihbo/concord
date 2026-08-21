@@ -183,3 +183,7 @@
 - [x] Diferenciar cancelamento voluntário de bloqueio/permissão do navegador
 - [x] Garantir que o botão acione getDisplayMedia em gesto direto e preserve feedback de erro útil
 - [x] Testar novamente a seleção de tela e salvar checkpoint (19 testes automatizados aprovados; reteste manual pendente)
+- [x] Corrigir mensagem de NotAllowedError que aponta para uma permissão inexistente de captura de tela
+- [x] Diferenciar bloqueio de ambiente/iframe de cancelamento voluntário do seletor nativo
+- [x] Cobrir NotAllowedError e AbortError nos testes do compartilhamento de tela (serviço preserva os erros; suíte passou)
+- [ ] Validar a nova orientação e salvar checkpoint (aguardando reteste manual)

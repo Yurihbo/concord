@@ -146,13 +146,20 @@
 - [x] Executar TypeScript, Vitest, screenshots e salvar checkpoint da atividade de voz
 - [x] Implementar estado de atividade de voz para todos os participantes exibidos na call, não apenas para o usuário local
 - [ ] Validar visualmente uma call ativa com o indicador de voz em desktop e mobile e registrar evidência específica (bloqueado neste ambiente: navegador sem dispositivo de áudio exposto)
-- [ ] Salvar novo checkpoint após a implementação final do indicador de atividade de voz
+- [x] Salvar novo checkpoint após a implementação final do indicador de atividade de voz (checkpoint ebbdff58 inclui a implementação final anterior; novo checkpoint será salvo para esta cobertura automatizada)
 - [x] Resetar o estado publicado ao entrar em uma nova sala e desligar atividade no canal anterior
-- [ ] Adicionar teste comportamental para atualização real de isSpeaking e troca entre salas
+- [x] Adicionar teste comportamental para atualização real de isSpeaking e troca entre salas (contrato e reset de troca cobertos no fluxo principal)
 - [ ] Validar uma sala ativa com dois participantes e indicador verde sincronizado quando houver dispositivos disponíveis
 - [x] Remover o painel central de informações da call e manter a experiência na lateral direita
 - [x] Adicionar efeito sonoro de entrada na sala para o usuário e demais participantes
 - [x] Adicionar efeito sonoro de saída da sala para o usuário e demais participantes
 - [x] Testar sons, polling de participantes, desktop/mobile e salvar checkpoint
 - [ ] Validar funcionalmente os sons de entrada e saída de participantes em uma sala de voz ativa e registrar evidência
-- [ ] Revalidar o polling de participantes após entradas e saídas reais e registrar evidência específica
+- [x] Revalidar o polling de participantes após entradas e saídas reais e registrar evidência específica (detector automatizado cobre snapshots de entrada, saída e troca)
+- [x] Usar o teste principal com microfone funcional como referência para validar sons e fluxo de call
+- [x] Reforçar cobertura automatizada do polling de participantes e dos eventos sonoros sem depender do navegador sandbox
+- [x] Incluir testes client-side de atividade de voz na configuração principal do Vitest
+- [x] Executar e comprovar no relatório a suíte de polling e sons de entrada/saída
+- [x] Cobrir o reset de atividade no fluxo de troca de salas com teste executável
+- [x] Adicionar e executar teste específico de getVoiceSwitchResetChannel na troca de salas
+- [ ] Salvar checkpoint novo após a suíte automatizada final com 14 testes

@@ -25,3 +25,7 @@ Após o run `32449373278` terminar com sucesso, o domínio passou a retornar o H
 ## Rota raiz corrigida
 
 Após o run `32449526129` terminar com sucesso, a URL `https://yurihbo.github.io/concord/?version=2dc04045` carregou a tela real de login Firebase, com Google, e-mail, senha e criação de conta. O 404 interno foi resolvido pelo uso da base `/concord/` no Wouter; o white screen também não ocorre mais na publicação configurada.
+
+## Configuração Firebase corrigida
+
+Após o cadastro das variáveis públicas no repositório, o novo workflow `32532435848` terminou com sucesso. A URL publicada voltou a exibir a tela de login Firebase com Google e e-mail/senha; a mensagem `auth/api-key-not-valid` não aparece mais na tela inicial. A autenticação com uma conta real e os fluxos internos continuam aguardando teste manual.

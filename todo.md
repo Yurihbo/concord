@@ -216,5 +216,5 @@
 - [x] Corrigir tela branca do modo Firebase quando variáveis públicas do GitHub Actions estiverem ausentes, exibindo diagnóstico visível e preservando o fluxo de login quando configurado (21 testes, TypeScript e builds com/sem configuração aprovados)
 - [x] Corrigir o roteamento Wouter para respeitar o base path `/concord/` no GitHub Pages e evitar 404 interno na raiz publicada (TypeScript, 21 testes e build aprovados)
 - [x] Diagnosticar a mensagem `auth/api-key-not-valid` no GitHub Pages mantendo visível o cartão de erro mostrado pelo usuário (causa localizada na variável pública do workflow; cartão preservado)
-- [ ] Corrigir a variável pública Firebase usada no workflow sem expor a chave no código ou no repositório
+- [x] Corrigir a variável pública Firebase usada no workflow sem expor a chave no código ou no repositório (variáveis públicas cadastradas; workflow 32532435848 aprovado)
 - [ ] Validar novamente login, build e testes após a correção da configuração Firebase

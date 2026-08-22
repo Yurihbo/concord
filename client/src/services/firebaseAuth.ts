@@ -60,7 +60,6 @@ export async function ensureFirebaseProfile(user: User, input: FirebaseProfileIn
     displayName,
     publicId,
     avatarUrl: input.avatarUrl ?? user.photoURL ?? null,
-    presence: "online",
     updatedAt: serverTimestamp(),
   }, { merge: true });
 }

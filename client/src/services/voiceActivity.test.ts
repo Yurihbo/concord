@@ -1,7 +1,8 @@
-import { describe, expect, it, vi } from "vitest";
-import { getVoiceParticipantEvents, getVoiceSwitchResetChannel, getVoiceToneProfile, playVoiceToneOnContext } from "./voiceActivity";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { getVoiceParticipantEvents, getVoiceSwitchResetChannel, getVoiceToneProfile, playVoiceToneOnContext, startDirectCallRingtone } from "./voiceActivity";
 
 describe("voice participant activity events", () => {
+  afterEach(() => { vi.useRealTimers(); vi.unstubAllGlobals(); });
   it("does not emit a sound on the first roster snapshot", () => {
     expect(getVoiceParticipantEvents(null, new Set([7]))).toEqual([]);
   });
@@ -39,5 +40,19 @@ describe("voice participant activity events", () => {
     for (const kind of ["join", "leave", "mute", "unmute"] as const) playVoiceToneOnContext(context, kind);
     expect(start).toHaveBeenCalledTimes(4);
     expect(stop).toHaveBeenCalledTimes(4);
+  });
+
+  it("starts a repeating incoming-call ringtone and stops it cleanly", async () => {
+    vi.useFakeTimers();
+    const oscillator = { type: "", frequency: { setValueAtTime: vi.fn(), exponentialRampToValueAtTime: vi.fn() }, connect: vi.fn(), start: vi.fn(), stop: vi.fn() };
+    const gain = { gain: { setValueAtTime: vi.fn(), exponentialRampToValueAtTime: vi.fn() }, connect: vi.fn() };
+    const context = { currentTime: 0, destination: {}, createOscillator: vi.fn(() => oscillator), createGain: vi.fn(() => gain), resume: vi.fn().mockResolvedValue(undefined), close: vi.fn().mockResolvedValue(undefined) };
+    class FakeAudioContext { currentTime = context.currentTime; destination = context.destination; createOscillator = context.createOscillator; createGain = context.createGain; resume = context.resume; close = context.close; }
+    vi.stubGlobal("window", { AudioContext: FakeAudioContext, setTimeout, setInterval, clearTimeout, clearInterval });
+    const stop = startDirectCallRingtone();
+    await vi.advanceTimersByTimeAsync(2600);
+    expect(context.createOscillator).toHaveBeenCalled();
+    stop();
+    expect(context.close).toHaveBeenCalledTimes(1);
   });
 });

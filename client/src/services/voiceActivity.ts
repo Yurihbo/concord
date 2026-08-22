@@ -21,6 +21,24 @@ export function playVoiceToneOnContext(context: Pick<AudioContext, "currentTime"
   oscillator.stop(start + duration + 0.05);
 }
 
+export function startDirectCallRingtone(): () => void {
+  const AudioContextClass = window.AudioContext ?? (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+  if (!AudioContextClass) return () => undefined;
+  const context = new AudioContextClass();
+  const playBurst = () => {
+    void context.resume().catch(() => undefined).finally(() => {
+      playVoiceToneOnContext(context, "join");
+      window.setTimeout(() => playVoiceToneOnContext(context, "join"), 240);
+    });
+  };
+  playBurst();
+  const timer = window.setInterval(playBurst, 2600);
+  return () => {
+    window.clearInterval(timer);
+    void context.close().catch(() => undefined);
+  };
+}
+
 export function getVoiceParticipantEvents(previousIds: ReadonlySet<number> | null, currentIds: ReadonlySet<number>): VoiceParticipantEvent[] {
   if (!previousIds) return [];
   const events: VoiceParticipantEvent[] = [];

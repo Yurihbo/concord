@@ -227,7 +227,7 @@
 - [x] Alinhar o workspace Firebase ao layout original de quatro áreas, incluindo trilho de servidores, canais, conversa, membros e painel do usuário
 - [x] Reproduzir na publicação a hierarquia visual e os controles do workspace original sem remover os recursos Firebase (bundle Firebase recompilado e prévia local desktop/mobile alinhada)
 - [x] Diagnosticar por que os botões do workspace publicado não disparam ações após o login (diálogo permanecia aberto porque seu fechamento era bloqueado durante o salvamento)
-- [ ] Corrigir a falha global de inicialização/eventos no bundle Firebase publicado
+- [x] Corrigir a falha global de inicialização/eventos no bundle Firebase publicado
 - [ ] Retestar botões de comunidade, salas, mensagens, microfone, saída e tela no domínio
 - [ ] Reproduzir a falha de cliques na sessão publicada do usuário após recarregamento forçado
 - [x] Exibir erros de Firestore/Auth diretamente no estado visual da ação que falhar (erro e estado Salvando... agora aparecem dentro do diálogo)
@@ -258,7 +258,15 @@
 - [ ] Validar os novos fluxos entre duas contas no desktop e mobile publicados
 - [x] Corrigir o crash React #310 introduzido pela integração de chamadas diretas (hooks agora seguem ordem estável antes dos retornos de autenticação)
 - [x] Garantir que listeners Firebase e streams WebRTC não atualizem estado em ciclo de renderização inválido
-- [ ] Validar a inicialização publicada sem tela de erro antes de retomar o QA entre contas
+- [x] Validar a inicialização publicada sem tela de erro antes de retomar o QA entre contas
 
 - [x] Corrigir definitivamente a ordem dos hooks Firebase: mover efeitos sociais, presença, chamadas diretas e sinalização antes dos retornos condicionais de autenticação, com guardas para sessão ausente
-- [ ] Revalidar no GitHub Pages o carregamento inicial sem React #310 após o novo checkpoint
+- [x] Revalidar no GitHub Pages o carregamento inicial sem React #310 após o novo checkpoint
+
+- [x] Corrigir entrega da chamada individual para que a conta destinatária receba sinalização e popup de chamada recebida
+- [x] Adicionar som de toque para chamada individual recebida, com desbloqueio no gesto e parada ao aceitar/rejeitar
+- [x] Adicionar ações visíveis de aceitar e rejeitar chamada individual recebida
+- [x] Corrigir convites para grupo para entrega, exibição e resposta na conta destinatária
+- [x] Corrigir presença da lista de amigos para refletir online, ocupado/away e offline sem assumir online
+- [x] Criar testes comportamentais para chamada recebida, resposta, toque, convite de grupo e presença
+- [ ] Validar os fluxos corrigidos com duas contas no GitHub Pages e salvar checkpoint

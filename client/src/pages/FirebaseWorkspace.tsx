@@ -6,7 +6,7 @@ import { FirebaseAuthPanel } from "@/components/FirebaseAuthPanel";
 import { ConcordWebRTCService } from "@/services/webrtc";
 import { FirebaseVoiceMesh } from "@/services/firebaseVoiceMesh";
 import { FirebaseDirectCall } from "@/services/firebaseDirectCall";
-import { playVoiceToneOnContext } from "@/services/voiceActivity";
+import { playVoiceToneOnContext, startDirectCallRingtone } from "@/services/voiceActivity";
 import { subscribeToSignals } from "@/services/firebaseSignaling";
 import { useFirebaseAuth } from "@/hooks/useFirebaseAuth";
 import { hasFirebaseConfig, missingFirebaseConfigKeys } from "@/lib/firebase";
@@ -16,6 +16,7 @@ import {
   createVoiceRoom,
   getProfile,
   getProfiles,
+  subscribeToProfiles,
   createDirectCall,
   updateDirectCall,
   subscribeToDirectCalls,
@@ -145,6 +146,7 @@ export default function FirebaseWorkspace() {
   const [directRemoteStream, setDirectRemoteStream] = useState<MediaStream | null>(null);
   const [pendingDirectSignals, setPendingDirectSignals] = useState<import("@/services/firebaseStore").FirebaseSignal[]>([]);
   const directCallRef = useRef<FirebaseDirectCall | null>(null);
+  const ringtoneStopRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     if (!auth.user) return;
@@ -217,8 +219,8 @@ export default function FirebaseWorkspace() {
   useEffect(() => {
     if (!currentUserId) return;
     const ids = friendships.filter((item) => item.status === "accepted").flatMap((item) => [item.requesterId, item.addresseeId]).filter((uid) => uid !== currentUserId);
-    if (!ids.length) { setFriendProfiles({}); return; }
-    void getProfiles(ids).then((profiles) => setFriendProfiles(Object.fromEntries(profiles.map((item) => [item.uid, item]))));
+    setFriendProfiles({});
+    return subscribeToProfiles(ids, (profiles) => setFriendProfiles(Object.fromEntries(profiles.map((item) => [item.uid, item]))), (error) => setNotice(error.message));
   }, [friendships, currentUserId]);
 
   useEffect(() => {
@@ -227,6 +229,7 @@ export default function FirebaseWorkspace() {
       const incoming = calls[0];
       if (!incoming) return;
       setDirectCallId(incoming.id); setDirectFriendId(incoming.callerId); setDirectCallStatus("ringing");
+      if (!ringtoneStopRef.current) ringtoneStopRef.current = startDirectCallRingtone();
       setNotice("Chamada recebida. Abra a conversa para atender.");
     }, (error) => setNotice(error.message));
   }, [currentUserId]);
@@ -245,10 +248,19 @@ export default function FirebaseWorkspace() {
 
   useEffect(() => {
     if (!currentUserId) return;
-    void setPresence(currentUserId, "online").catch(() => undefined);
-    const onBeforeUnload = () => { void setPresence(currentUserId, "offline"); };
-    window.addEventListener("beforeunload", onBeforeUnload);
-    return () => window.removeEventListener("beforeunload", onBeforeUnload);
+    const updatePresence = () => {
+      const next = document.visibilityState === "visible" ? "online" : "away";
+      void setPresence(currentUserId, next).catch(() => undefined);
+    };
+    const onPageHide = () => { void setPresence(currentUserId, "offline").catch(() => undefined); };
+    updatePresence();
+    document.addEventListener("visibilitychange", updatePresence);
+    window.addEventListener("pagehide", onPageHide);
+    return () => {
+      document.removeEventListener("visibilitychange", updatePresence);
+      window.removeEventListener("pagehide", onPageHide);
+      void setPresence(currentUserId, "offline").catch(() => undefined);
+    };
   }, [currentUserId]);
 
   const acceptedFriendIds = useMemo(() => new Set(friendships.filter((item) => item.status === "accepted").map((item) => item.requesterId === auth.user?.uid ? item.addresseeId : item.requesterId)), [friendships, auth.user?.uid]);
@@ -302,8 +314,11 @@ export default function FirebaseWorkspace() {
     } catch (error) { setNotice(error instanceof Error ? error.message : "Não foi possível iniciar a chamada individual."); }
   };
 
+  const stopDirectCallRingtone = () => { ringtoneStopRef.current?.(); ringtoneStopRef.current = null; };
+
   const acceptDirectCall = async () => {
     if (!directCallId || !directFriendId) return;
+    stopDirectCallRingtone();
     try {
       const local = await navigator.mediaDevices.getUserMedia({ audio: true });
       const service = new FirebaseDirectCall({ callId: directCallId, userId: currentUser.uid, localStream: local, onRemoteStream: () => setDirectCallStatus("connected"), onError: (error) => setNotice(error.message) });
@@ -311,7 +326,14 @@ export default function FirebaseWorkspace() {
     } catch (error) { setNotice(error instanceof Error ? error.message : "Não foi possível atender a chamada."); }
   };
 
+  const rejectDirectCall = async () => {
+    stopDirectCallRingtone();
+    if (directCallId) await updateDirectCall(directCallId, "declined").catch(() => undefined);
+    setDirectCallId(null); setDirectFriendId(null); setDirectCallStatus("ended"); setNotice("Chamada recusada.");
+  };
+
   const endDirectCall = async () => {
+    stopDirectCallRingtone();
     if (directCallId) await updateDirectCall(directCallId, "ended").catch(() => undefined);
     directCallRef.current?.stop(); directCallRef.current = null; directLocalStream?.getTracks().forEach((track) => track.stop()); directRemoteStream?.getTracks().forEach((track) => track.stop()); setDirectLocalStream(null); setDirectRemoteStream(null); setDirectCallId(null); setDirectCallStatus("ended");
   };
@@ -436,6 +458,7 @@ export default function FirebaseWorkspace() {
     </main>
 
     <aside className={membersOpen ? "member-sidebar" : "member-sidebar collapsed"}><div className="member-heading"><span>MEMBROS — {friendships.filter((item) => item.status === "accepted").length}</span><button onClick={() => setNotice("Membros sincronizados pelo Firebase.")} aria-label="Mais opções"><MoreHorizontal size={17} /></button></div><div className="member-group"><span className="member-role">CONEXÕES</span>{friendships.filter((item) => item.status === "accepted").map((item) => <button className="member-card" key={item.id} onClick={() => setDirectFriendId(item.requesterId === currentUser.uid ? item.addresseeId : item.requesterId)}><span className="avatar bg-blue-200 text-blue-900"><Users size={13} /></span><div><strong>{friendProfiles[item.requesterId === currentUser.uid ? item.addresseeId : item.requesterId]?.displayName ?? "Conexão"}</strong><span>{friendProfiles[item.requesterId === currentUser.uid ? item.addresseeId : item.requesterId]?.presence === "online" ? "Online" : friendProfiles[item.requesterId === currentUser.uid ? item.addresseeId : item.requesterId]?.presence === "away" ? "Ocupado" : "Indisponível"}</span></div></button>)}{!friendships.filter((item) => item.status === "accepted").length && <div className="empty-state">Nenhuma conexão aceita.</div>}</div>{voiceRoomId && <div className="call-dock"><div className="call-status"><span className="call-pulse" /><div><strong>{rooms.find((room) => room.id === voiceRoomId)?.name ?? "Sala de voz"}</strong><span>{members.length || 1} pessoa(s) na sala</span></div><button onClick={() => setNotice("Convite de sala disponível quando houver conexões.")} aria-label="Convidar"><UserPlus size={15} /></button></div><div className="call-actions"><button className={muted ? "control-active" : ""} onClick={toggleMute} aria-label="Mutar microfone"><Mic size={16} /></button><button className={screenSharing ? "control-active" : ""} onClick={() => void toggleScreen()} aria-label="Compartilhar tela"><Video size={16} /></button><button className="disconnect" onClick={() => { const room = rooms.find((item) => item.id === voiceRoomId); if (room) void toggleVoice(room); }} aria-label="Sair da call"><X size={16} /></button></div></div>}</aside>
+    {directCallStatus === "ringing" && !directCallRef.current && directCallId && <div className="firebase-dialog-backdrop incoming-call-backdrop" role="presentation"><section className="firebase-dialog incoming-call-dialog" role="dialog" aria-modal="true" aria-labelledby="incoming-call-title"><span className="firebase-kicker">CONCORD / CHAMADA RECEBIDA</span><div className="incoming-call-avatar avatar bg-blue-200 text-blue-900">{initials(activeFriend?.displayName ?? "Amigo")}</div><h2 id="incoming-call-title">{activeFriend?.displayName ?? "Seu amigo"} está ligando</h2><p>{activeFriend?.displayName ?? "Seu amigo"} iniciou uma chamada de {directCallStatus === "ringing" ? "áudio" : "áudio"}.</p><div className="firebase-dialog-actions"><Button variant="outline" onClick={() => void rejectDirectCall()}>Rejeitar</Button><Button className="primary-cta" onClick={() => void acceptDirectCall()}><Headphones size={16} /> Aceitar chamada</Button></div></section></div>}
     {creationTarget && <CreationDialog target={creationTarget} value={creationName} error={creationError} pending={creationPending} onChange={setCreationName} onClose={closeCreationDialog} onSubmit={() => void submitCreation()} />}
     {socialOpen && <SocialDialog currentPublicId={profile?.publicId ?? "CON-00000000"} searchValue={search} results={results} friendships={friendships} invites={invites} currentUid={currentUser.uid} community={community} onSearchValueChange={setSearch} onSearch={() => void searchProfiles()} onAddFriend={(target) => void addFriend(target)} onInvite={(targetUid) => void inviteFriend(targetUid)} onRespondInvite={(invite, status) => void respondInvite(invite, status)} onClose={() => setSocialOpen(false)} />}
   </div>;

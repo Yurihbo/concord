@@ -84,12 +84,12 @@ export async function createCommunityInvite(communityId: string, communityName: 
 }
 
 export async function listCommunityInvites(uid: string): Promise<FirebaseCommunityInvite[]> {
-  const snapshot = await getDocs(query(collection(firebaseDb, "communityInvites"), where("inviteeId", "==", uid), orderBy("updatedAt", "desc"), limit(30)));
+  const snapshot = await getDocs(query(collection(firebaseDb, "communityInvites"), where("inviteeId", "==", uid), limit(30)));
   return snapshot.docs.map((item) => clean(item.id, item.data() as Omit<FirebaseCommunityInvite, "id">));
 }
 
 export function subscribeToCommunityInvites(uid: string, listener: (invites: FirebaseCommunityInvite[]) => void, onError?: (error: Error) => void): Unsubscribe {
-  return onSnapshot(query(collection(firebaseDb, "communityInvites"), where("inviteeId", "==", uid), orderBy("updatedAt", "desc"), limit(30)), (snapshot) => listener(snapshot.docs.map((item) => clean(item.id, item.data() as Omit<FirebaseCommunityInvite, "id">))), (reason) => onError?.(reason instanceof Error ? reason : new Error("Não foi possível sincronizar os convites.")));
+  return onSnapshot(query(collection(firebaseDb, "communityInvites"), where("inviteeId", "==", uid), limit(30)), (snapshot) => listener(snapshot.docs.map((item) => clean(item.id, item.data() as Omit<FirebaseCommunityInvite, "id">))), (reason) => onError?.(reason instanceof Error ? reason : new Error("Não foi possível sincronizar os convites.")));
 }
 
 export async function respondToCommunityInvite(inviteId: string, uid: string, status: "accepted" | "declined"): Promise<void> {
@@ -138,6 +138,18 @@ export async function getProfile(uid: string): Promise<FirebaseProfile | null> {
 export async function getProfiles(uids: string[]): Promise<FirebaseProfile[]> {
   const profiles = await Promise.all(Array.from(new Set(uids)).map((uid) => getProfile(uid)));
   return profiles.filter((profile): profile is FirebaseProfile => Boolean(profile));
+}
+
+export function subscribeToProfiles(uids: string[], listener: (profiles: FirebaseProfile[]) => void, onError?: (error: Error) => void): Unsubscribe {
+  const uniqueIds = Array.from(new Set(uids));
+  if (!uniqueIds.length) { listener([]); return () => undefined; }
+  const profiles = new Map<string, FirebaseProfile>();
+  const unsubscribers = uniqueIds.map((uid) => onSnapshot(userDoc(uid), (snapshot) => {
+    if (snapshot.exists()) profiles.set(uid, clean(snapshot.id, snapshot.data() as Omit<FirebaseProfile, "id">));
+    else profiles.delete(uid);
+    listener(Array.from(profiles.values()));
+  }, (reason) => onError?.(reason instanceof Error ? reason : new Error("Não foi possível sincronizar a presença dos amigos."))));
+  return () => unsubscribers.forEach((unsubscribe) => unsubscribe());
 }
 
 export async function setPresence(uid: string, presence: FirebaseProfile["presence"]): Promise<void> {

@@ -250,3 +250,9 @@
 - [x] Criar abas Perfil e Configurações com edição de perfil e configuração de voz
 - [x] Conectar os botões superiores às abas reais em vez de pop-ups informativos
 - [ ] Validar a navegação e o fluxo de amizade usando duas contas Firebase
+- [x] Exibir o nome original do amigo na lista, usando o código apenas na busca
+- [x] Persistir e sincronizar presença online, ocupado e indisponível com bolinha colorida (online/offline implementados; ocupado usa o estado `away` do perfil)
+- [x] Abrir conversa direta pelo amigo, enviar mensagens e apagar a conversa
+- [ ] Iniciar, encerrar e compartilhar tela em chamada individual a partir do chat direto
+- [ ] Criar e enviar convites para chat em grupo, além de adicionar pessoa diretamente
+- [ ] Validar os novos fluxos entre duas contas no desktop e mobile publicados

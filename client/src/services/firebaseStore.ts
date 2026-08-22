@@ -134,6 +134,15 @@ export async function getProfile(uid: string): Promise<FirebaseProfile | null> {
   return snapshot.exists() ? clean(snapshot.id, snapshot.data() as FirebaseProfile) : null;
 }
 
+export async function getProfiles(uids: string[]): Promise<FirebaseProfile[]> {
+  const profiles = await Promise.all(Array.from(new Set(uids)).map((uid) => getProfile(uid)));
+  return profiles.filter((profile): profile is FirebaseProfile => Boolean(profile));
+}
+
+export async function setPresence(uid: string, presence: FirebaseProfile["presence"]): Promise<void> {
+  await updateDoc(userDoc(uid), { presence, updatedAt: serverTimestamp() });
+}
+
 export async function listCommunities(uid: string): Promise<FirebaseCommunity[]> {
   const membershipSnapshot = await getDocs(collection(firebaseDb, "users", uid, "memberships"));
   const communities = await Promise.all(membershipSnapshot.docs.map(async (membership) => {
@@ -225,6 +234,13 @@ export async function sendDirectMessage(firstUid: string, secondUid: string, aut
   const created = await addDoc(collection(firebaseDb, "directThreads", threadId, "messages"), { authorId, body, createdAt: serverTimestamp() });
   await setDoc(doc(firebaseDb, "directThreads", threadId), { participants: [firstUid, secondUid], updatedAt: serverTimestamp() }, { merge: true });
   return created.id;
+}
+
+export async function deleteDirectConversation(firstUid: string, secondUid: string): Promise<void> {
+  const threadId = directThreadId(firstUid, secondUid);
+  const snapshot = await getDocs(collection(firebaseDb, "directThreads", threadId, "messages"));
+  await Promise.all(snapshot.docs.map((item) => deleteDoc(item.ref)));
+  await deleteDoc(doc(firebaseDb, "directThreads", threadId));
 }
 
 export function subscribeToDirectMessages(firstUid: string, secondUid: string, listener: (messages: FirebaseDirectMessage[]) => void, onError?: (error: Error) => void): Unsubscribe {

@@ -259,3 +259,6 @@
 - [x] Corrigir o crash React #310 introduzido pela integração de chamadas diretas (hooks agora seguem ordem estável antes dos retornos de autenticação)
 - [x] Garantir que listeners Firebase e streams WebRTC não atualizem estado em ciclo de renderização inválido
 - [ ] Validar a inicialização publicada sem tela de erro antes de retomar o QA entre contas
+
+- [x] Corrigir definitivamente a ordem dos hooks Firebase: mover efeitos sociais, presença, chamadas diretas e sinalização antes dos retornos condicionais de autenticação, com guardas para sessão ausente
+- [ ] Revalidar no GitHub Pages o carregamento inicial sem React #310 após o novo checkpoint

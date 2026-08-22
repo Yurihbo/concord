@@ -214,6 +214,43 @@ export default function FirebaseWorkspace() {
 
   useEffect(() => () => voiceService.dispose(), [voiceService]);
 
+  useEffect(() => {
+    if (!currentUserId) return;
+    const ids = friendships.filter((item) => item.status === "accepted").flatMap((item) => [item.requesterId, item.addresseeId]).filter((uid) => uid !== currentUserId);
+    if (!ids.length) { setFriendProfiles({}); return; }
+    void getProfiles(ids).then((profiles) => setFriendProfiles(Object.fromEntries(profiles.map((item) => [item.uid, item]))));
+  }, [friendships, currentUserId]);
+
+  useEffect(() => {
+    if (!currentUserId) return;
+    return subscribeToDirectCalls(currentUserId, (calls) => {
+      const incoming = calls[0];
+      if (!incoming) return;
+      setDirectCallId(incoming.id); setDirectFriendId(incoming.callerId); setDirectCallStatus("ringing");
+      setNotice("Chamada recebida. Abra a conversa para atender.");
+    }, (error) => setNotice(error.message));
+  }, [currentUserId]);
+
+  useEffect(() => {
+    if (!directCallId || !currentUserId) return;
+    return subscribeToDirectCallSignals(directCallId, currentUserId, (signals) => setPendingDirectSignals(signals), (error) => setNotice(error.message));
+  }, [directCallId, currentUserId]);
+
+  useEffect(() => {
+    if (!directCallRef.current || !pendingDirectSignals.length) return;
+    const service = directCallRef.current;
+    for (const signal of pendingDirectSignals) void service.handleSignal(signal);
+    setPendingDirectSignals([]);
+  }, [pendingDirectSignals]);
+
+  useEffect(() => {
+    if (!currentUserId) return;
+    void setPresence(currentUserId, "online").catch(() => undefined);
+    const onBeforeUnload = () => { void setPresence(currentUserId, "offline"); };
+    window.addEventListener("beforeunload", onBeforeUnload);
+    return () => window.removeEventListener("beforeunload", onBeforeUnload);
+  }, [currentUserId]);
+
   const acceptedFriendIds = useMemo(() => new Set(friendships.filter((item) => item.status === "accepted").map((item) => item.requesterId === auth.user?.uid ? item.addresseeId : item.requesterId)), [friendships, auth.user?.uid]);
 
   if (auth.loading) return <div className="loading-screen"><span>Preparando seu espaço Firebase...</span></div>;
@@ -253,40 +290,6 @@ export default function FirebaseWorkspace() {
   const respondInvite = async (invite: FirebaseCommunityInvite, status: "accepted" | "declined") => {
     try { await respondToCommunityInvite(invite.id, currentUser.uid, status); if (status === "accepted") { const joined = communities.find((item) => item.id === invite.communityId); if (!joined) setCommunities((current) => [...current, { id: invite.communityId, name: invite.communityName ?? "Comunidade", ownerId: invite.inviterId }]); setNotice("Convite aceito."); } } catch (error) { setNotice(error instanceof Error ? error.message : "Não foi possível responder ao convite."); }
   };
-
-  useEffect(() => {
-    const ids = friendships.filter((item) => item.status === "accepted").flatMap((item) => [item.requesterId, item.addresseeId]).filter((uid) => uid !== currentUser.uid);
-    if (!ids.length) { setFriendProfiles({}); return; }
-    void getProfiles(ids).then((profiles) => setFriendProfiles(Object.fromEntries(profiles.map((item) => [item.uid, item]))));
-  }, [friendships, currentUser.uid]);
-
-  useEffect(() => {
-    return subscribeToDirectCalls(currentUser.uid, (calls) => {
-      const incoming = calls[0];
-      if (!incoming) return;
-      setDirectCallId(incoming.id); setDirectFriendId(incoming.callerId); setDirectCallStatus("ringing");
-      setNotice("Chamada recebida. Abra a conversa para atender.");
-    }, (error) => setNotice(error.message));
-  }, [currentUser.uid]);
-
-  useEffect(() => {
-    if (!directCallId) return;
-    return subscribeToDirectCallSignals(directCallId, currentUser.uid, (signals) => setPendingDirectSignals(signals), (error) => setNotice(error.message));
-  }, [directCallId, currentUser.uid]);
-
-  useEffect(() => {
-    if (!directCallRef.current || !pendingDirectSignals.length) return;
-    const service = directCallRef.current;
-    for (const signal of pendingDirectSignals) void service.handleSignal(signal);
-    setPendingDirectSignals([]);
-  }, [pendingDirectSignals]);
-
-  useEffect(() => {
-    void setPresence(currentUser.uid, "online").catch(() => undefined);
-    const onBeforeUnload = () => { void setPresence(currentUser.uid, "offline"); };
-    window.addEventListener("beforeunload", onBeforeUnload);
-    return () => window.removeEventListener("beforeunload", onBeforeUnload);
-  }, [currentUser.uid]);
 
   const startDirectCall = async (media: "audio" | "screen") => {
     if (!directFriendId) return;

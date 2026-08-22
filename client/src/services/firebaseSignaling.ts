@@ -3,7 +3,6 @@ import {
   collection,
   limit,
   onSnapshot,
-  orderBy,
   query,
   serverTimestamp,
   where,
@@ -18,7 +17,7 @@ export async function publishSignal(callId: string, signal: Omit<FirebaseSignal,
 }
 
 export function subscribeToSignals(callId: string, recipientId: string, listener: (signals: FirebaseSignal[]) => void, onError?: (error: Error) => void): Unsubscribe {
-  return onSnapshot(query(collection(firebaseDb, "calls", callId, "signals"), where("to", "==", recipientId), orderBy("createdAt", "asc"), limit(100)), (snapshot) => {
+  return onSnapshot(query(collection(firebaseDb, "calls", callId, "signals"), where("to", "==", recipientId), limit(100)), (snapshot) => {
     listener(snapshot.docs.map((item) => ({ id: item.id, ...item.data() } as FirebaseSignal)));
   }, (reason) => onError?.(reason instanceof Error ? reason : new Error("Não foi possível sincronizar a sinalização da chamada.")));
 }

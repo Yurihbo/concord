@@ -346,3 +346,17 @@ a { color: inherit; text-decoration: none; }
 .incoming-call-dialog .firebase-dialog-actions { justify-content: center; }
 .incoming-call-dialog .primary-cta { display: inline-flex; align-items: center; gap: .45rem; }
 .incoming-call-avatar { width: 3.7rem; height: 3.7rem; margin: .75rem auto .5rem; display: grid; place-items: center; border-radius: 1rem; font-weight: 800; color: #1e3a8a; background: #bfdbfe; box-shadow: 0 0 0 .35rem rgba(37,99,235,.12); }
+
+.voice-screen-panel { display: grid; gap: .75rem; margin: 1rem 1.4rem 0; padding: .9rem; color: #1f2937; background: #f8fbff; border: 1px solid #bfdbfe; border-radius: .8rem; }
+.voice-screen-panel-heading, .voice-screen-card-heading { display: flex; align-items: center; justify-content: space-between; gap: .75rem; }
+.voice-screen-panel-heading > div, .voice-screen-card-heading > div { display: grid; gap: .18rem; min-width: 0; }
+.voice-screen-panel-heading strong, .voice-screen-card-heading strong { color: #111827; font-size: .78rem; }
+.voice-screen-panel-heading .firebase-kicker { color: #2563eb; }
+.voice-screen-card { display: grid; gap: .65rem; padding: .75rem; background: #fff; border: 1px solid #dbeafe; border-radius: .65rem; }
+.voice-screen-card-heading small { color: #64748b; font-size: .68rem; }
+.voice-screen-card-heading button { flex: 0 0 auto; min-height: 2rem; padding: .35rem .6rem; color: #1d4ed8; background: #eff6ff; border-color: #93c5fd; font-size: .68rem; }
+.voice-screen-waiting, .voice-screen-hidden { padding: 1rem; color: #64748b; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: .55rem; font-size: .72rem; text-align: center; }
+.voice-screen-panel .firebase-screen-preview { width: 100%; margin: 0; }
+.voice-screen-panel .firebase-screen-preview video { max-height: 15rem; }
+.voice-screen-panel + .call-actions { margin-top: 1rem; }
+@media (max-width: 640px) { .voice-screen-panel { margin: .75rem 0 0; } .voice-screen-card-heading { align-items: flex-start; flex-direction: column; } .voice-screen-card-heading button { width: 100%; } }

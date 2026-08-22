@@ -277,3 +277,11 @@
 - [x] Garantir entrega realtime de convites de grupo e resposta da conta destinatária
 - [x] Adicionar testes de permissões/contratos, ciclo de saída e recebimento de chamada
 - [ ] Validar os fluxos corrigidos no GitHub Pages com duas contas e publicar checkpoint
+
+- [x] Corrigir envio e reprodução do áudio remoto entre participantes da mesma sala de voz
+- [x] Garantir que cada peer publique tracks de microfone e receba áudio remoto com elemento de reprodução ativo
+- [x] Sincronizar o estado de compartilhamento de tela no Firestore para todos os participantes da sala
+- [x] Exibir a transmissão de tela remota aos demais participantes com ações para entrar e sair da visualização
+- [x] Remover a transmissão de tela remota ao encerrar, trocar de sala ou sair da visualização
+- [x] Adicionar testes do mesh para áudio remoto e lifecycle da tela compartilhada
+- [ ] Validar áudio e tela entre duas contas no GitHub Pages e salvar checkpoint

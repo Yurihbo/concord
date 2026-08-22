@@ -39,6 +39,7 @@ export type FirebaseCommunityInvite = { id: string; communityId: string; communi
 export type FirebaseDirectMessage = { id: string; authorId: string; body: string; createdAt?: unknown };
 export type FirebaseVoiceRoom = { id: string; name: string; communityId: string; createdAt?: unknown };
 export type FirebaseSignal = { id: string; from: string; to: string; kind: "offer" | "answer" | "ice"; payload: string; createdAt?: unknown };
+export type FirebaseDirectCall = { id: string; callerId: string; calleeId: string; status: "ringing" | "connected" | "ended" | "declined"; media: "audio" | "screen"; createdAt?: unknown; updatedAt?: unknown };
 
 function clean<T extends DocumentData>(id: string, data: T): T & { id: string } {
   return { id, ...data };
@@ -234,6 +235,27 @@ export async function sendDirectMessage(firstUid: string, secondUid: string, aut
   const created = await addDoc(collection(firebaseDb, "directThreads", threadId, "messages"), { authorId, body, createdAt: serverTimestamp() });
   await setDoc(doc(firebaseDb, "directThreads", threadId), { participants: [firstUid, secondUid], updatedAt: serverTimestamp() }, { merge: true });
   return created.id;
+}
+
+export async function createDirectCall(callerId: string, calleeId: string, media: FirebaseDirectCall["media"] = "audio"): Promise<string> {
+  const created = await addDoc(collection(firebaseDb, "calls"), { callerId, calleeId, status: "ringing", media, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
+  return created.id;
+}
+
+export async function updateDirectCall(callId: string, status: FirebaseDirectCall["status"]): Promise<void> {
+  await updateDoc(doc(firebaseDb, "calls", callId), { status, updatedAt: serverTimestamp() });
+}
+
+export function subscribeToDirectCalls(uid: string, listener: (calls: FirebaseDirectCall[]) => void, onError?: (error: Error) => void): Unsubscribe {
+  return onSnapshot(query(collection(firebaseDb, "calls"), where("calleeId", "==", uid), where("status", "==", "ringing"), orderBy("createdAt", "desc"), limit(10)), (snapshot) => listener(snapshot.docs.map((item) => clean(item.id, item.data() as Omit<FirebaseDirectCall, "id">))), (reason) => onError?.(reason instanceof Error ? reason : new Error("Não foi possível sincronizar as chamadas.")));
+}
+
+export async function publishDirectCallSignal(callId: string, signal: Omit<FirebaseSignal, "id" | "createdAt">): Promise<void> {
+  await addDoc(collection(firebaseDb, "calls", callId, "signals"), { ...signal, createdAt: serverTimestamp() });
+}
+
+export function subscribeToDirectCallSignals(callId: string, uid: string, listener: (signals: FirebaseSignal[]) => void, onError?: (error: Error) => void): Unsubscribe {
+  return onSnapshot(query(collection(firebaseDb, "calls", callId, "signals"), where("to", "==", uid), orderBy("createdAt", "asc"), limit(100)), (snapshot) => listener(snapshot.docs.map((item) => clean(item.id, item.data() as Omit<FirebaseSignal, "id">))), (reason) => onError?.(reason instanceof Error ? reason : new Error("Não foi possível sincronizar a sinalização da chamada.")));
 }
 
 export async function deleteDirectConversation(firstUid: string, secondUid: string): Promise<void> {

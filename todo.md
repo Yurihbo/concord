@@ -253,6 +253,6 @@
 - [x] Exibir o nome original do amigo na lista, usando o código apenas na busca
 - [x] Persistir e sincronizar presença online, ocupado e indisponível com bolinha colorida (online/offline implementados; ocupado usa o estado `away` do perfil)
 - [x] Abrir conversa direta pelo amigo, enviar mensagens e apagar a conversa
-- [ ] Iniciar, encerrar e compartilhar tela em chamada individual a partir do chat direto
-- [ ] Criar e enviar convites para chat em grupo, além de adicionar pessoa diretamente
+- [x] Iniciar, encerrar e compartilhar tela em chamada individual a partir do chat direto (coleção `calls`, sinalização SDP/ICE e prévia local integradas)
+- [x] Criar e enviar convites para chat em grupo, além de adicionar pessoa diretamente (convites de comunidade/grupo existentes e ação de adicionar por amizade integrada)
 - [ ] Validar os novos fluxos entre duas contas no desktop e mobile publicados

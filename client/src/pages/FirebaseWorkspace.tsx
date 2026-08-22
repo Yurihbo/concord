@@ -141,6 +141,7 @@ export default function FirebaseWorkspace() {
   const [directCallStatus, setDirectCallStatus] = useState<"idle" | "ringing" | "connected" | "ended">("idle");
   const [directLocalStream, setDirectLocalStream] = useState<MediaStream | null>(null);
   const [directRemoteStream, setDirectRemoteStream] = useState<MediaStream | null>(null);
+  const [pendingDirectSignals, setPendingDirectSignals] = useState<import("@/services/firebaseStore").FirebaseSignal[]>([]);
   const directCallRef = useRef<FirebaseDirectCall | null>(null);
 
   useEffect(() => {
@@ -267,9 +268,16 @@ export default function FirebaseWorkspace() {
   }, [currentUser.uid]);
 
   useEffect(() => {
-    if (!directCallId || !directCallRef.current) return;
-    return subscribeToDirectCallSignals(directCallId, currentUser.uid, (signals) => { for (const signal of signals) void directCallRef.current?.handleSignal(signal); }, (error) => setNotice(error.message));
+    if (!directCallId) return;
+    return subscribeToDirectCallSignals(directCallId, currentUser.uid, (signals) => setPendingDirectSignals(signals), (error) => setNotice(error.message));
   }, [directCallId, currentUser.uid]);
+
+  useEffect(() => {
+    if (!directCallRef.current || !pendingDirectSignals.length) return;
+    const service = directCallRef.current;
+    for (const signal of pendingDirectSignals) void service.handleSignal(signal);
+    setPendingDirectSignals([]);
+  }, [pendingDirectSignals]);
 
   useEffect(() => {
     void setPresence(currentUser.uid, "online").catch(() => undefined);
@@ -284,7 +292,7 @@ export default function FirebaseWorkspace() {
       const local = media === "screen" ? await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false }) : await navigator.mediaDevices.getUserMedia({ audio: true });
       const callId = await createDirectCall(currentUser.uid, directFriendId, media);
       const service = new FirebaseDirectCall({ callId, userId: currentUser.uid, localStream: local, onRemoteStream: (stream) => { setDirectRemoteStream(stream); setDirectCallStatus("connected"); }, onError: (error) => setNotice(error.message) });
-      directCallRef.current = service; setDirectLocalStream(local); setDirectRemoteStream(null); setDirectCallId(callId); setDirectCallStatus("ringing");
+      directCallRef.current = service; setPendingDirectSignals([]); setDirectLocalStream(local); setDirectRemoteStream(null); setDirectCallId(callId); setDirectCallStatus("ringing");
       await service.start(directFriendId);
     } catch (error) { setNotice(error instanceof Error ? error.message : "Não foi possível iniciar a chamada individual."); }
   };

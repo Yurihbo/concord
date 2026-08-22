@@ -247,7 +247,7 @@ export async function updateDirectCall(callId: string, status: FirebaseDirectCal
 }
 
 export function subscribeToDirectCalls(uid: string, listener: (calls: FirebaseDirectCall[]) => void, onError?: (error: Error) => void): Unsubscribe {
-  return onSnapshot(query(collection(firebaseDb, "calls"), where("calleeId", "==", uid), where("status", "==", "ringing"), orderBy("createdAt", "desc"), limit(10)), (snapshot) => listener(snapshot.docs.map((item) => clean(item.id, item.data() as Omit<FirebaseDirectCall, "id">))), (reason) => onError?.(reason instanceof Error ? reason : new Error("Não foi possível sincronizar as chamadas.")));
+  return onSnapshot(query(collection(firebaseDb, "calls"), where("calleeId", "==", uid), limit(20)), (snapshot) => listener(snapshot.docs.map((item) => clean(item.id, item.data() as Omit<FirebaseDirectCall, "id">)).filter((item) => item.status === "ringing").sort((a, b) => Number(b.createdAt ?? 0) - Number(a.createdAt ?? 0)).slice(0, 10)), (reason) => onError?.(reason instanceof Error ? reason : new Error("Não foi possível sincronizar as chamadas.")));
 }
 
 export async function publishDirectCallSignal(callId: string, signal: Omit<FirebaseSignal, "id" | "createdAt">): Promise<void> {
@@ -255,7 +255,7 @@ export async function publishDirectCallSignal(callId: string, signal: Omit<Fireb
 }
 
 export function subscribeToDirectCallSignals(callId: string, uid: string, listener: (signals: FirebaseSignal[]) => void, onError?: (error: Error) => void): Unsubscribe {
-  return onSnapshot(query(collection(firebaseDb, "calls", callId, "signals"), where("to", "==", uid), orderBy("createdAt", "asc"), limit(100)), (snapshot) => listener(snapshot.docs.map((item) => clean(item.id, item.data() as Omit<FirebaseSignal, "id">))), (reason) => onError?.(reason instanceof Error ? reason : new Error("Não foi possível sincronizar a sinalização da chamada.")));
+  return onSnapshot(query(collection(firebaseDb, "calls", callId, "signals"), where("to", "==", uid), limit(100)), (snapshot) => listener(snapshot.docs.map((item) => clean(item.id, item.data() as Omit<FirebaseSignal, "id">)).sort((a, b) => Number(a.createdAt ?? 0) - Number(b.createdAt ?? 0))), (reason) => onError?.(reason instanceof Error ? reason : new Error("Não foi possível sincronizar a sinalização da chamada.")));
 }
 
 export async function deleteDirectConversation(firstUid: string, secondUid: string): Promise<void> {

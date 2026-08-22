@@ -259,7 +259,11 @@ export async function updateDirectCall(callId: string, status: FirebaseDirectCal
 }
 
 export function subscribeToDirectCalls(uid: string, listener: (calls: FirebaseDirectCall[]) => void, onError?: (error: Error) => void): Unsubscribe {
-  return onSnapshot(query(collection(firebaseDb, "calls"), where("calleeId", "==", uid), limit(20)), (snapshot) => listener(snapshot.docs.map((item) => clean(item.id, item.data() as Omit<FirebaseDirectCall, "id">)).filter((item) => item.status === "ringing").sort((a, b) => Number(b.createdAt ?? 0) - Number(a.createdAt ?? 0)).slice(0, 10)), (reason) => onError?.(reason instanceof Error ? reason : new Error("Não foi possível sincronizar as chamadas.")));
+  return onSnapshot(query(collection(firebaseDb, "calls"), where("calleeId", "==", uid), limit(20)), (snapshot) => listener(snapshot.docs.map((item) => clean(item.id, item.data() as Omit<FirebaseDirectCall, "id">)).filter((item) => item.status === "ringing").sort((a, b) => String(b.createdAt ?? "").localeCompare(String(a.createdAt ?? ""))).slice(0, 10)), (reason) => onError?.(reason instanceof Error ? reason : new Error("Não foi possível sincronizar as chamadas.")));
+}
+
+export function subscribeToDirectCall(callId: string, listener: (call: FirebaseDirectCall | null) => void, onError?: (error: Error) => void): Unsubscribe {
+  return onSnapshot(doc(firebaseDb, "calls", callId), (snapshot) => listener(snapshot.exists() ? clean(snapshot.id, snapshot.data() as Omit<FirebaseDirectCall, "id">) : null), (reason) => onError?.(reason instanceof Error ? reason : new Error("Não foi possível sincronizar o estado da chamada.")));
 }
 
 export async function publishDirectCallSignal(callId: string, signal: Omit<FirebaseSignal, "id" | "createdAt">): Promise<void> {

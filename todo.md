@@ -270,3 +270,10 @@
 - [x] Corrigir presença da lista de amigos para refletir online, ocupado/away e offline sem assumir online
 - [x] Criar testes comportamentais para chamada recebida, resposta, toque, convite de grupo e presença
 - [ ] Validar os fluxos corrigidos com duas contas no GitHub Pages e salvar checkpoint
+
+- [x] Corrigir saída da chamada individual e da sala para limpar estado, streams, presença e controles em todas as contas
+- [x] Corrigir criação e entrega da chamada recebida, popup de aceite/recusa e toque entre duas contas
+- [x] Corrigir permissões Firestore de `calls`, `signals` e `communityInvites` para eliminar `missing or insufficient permissions`
+- [x] Garantir entrega realtime de convites de grupo e resposta da conta destinatária
+- [x] Adicionar testes de permissões/contratos, ciclo de saída e recebimento de chamada
+- [ ] Validar os fluxos corrigidos no GitHub Pages com duas contas e publicar checkpoint

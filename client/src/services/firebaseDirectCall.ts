@@ -14,7 +14,7 @@ export class FirebaseDirectCall {
     const peer = new RTCPeerConnection({ iceServers: [{ urls: "stun:stun.l.google.com:19302" }] });
     this.options.localStream.getTracks().forEach((track) => peer.addTrack(track, this.options.localStream));
     peer.ontrack = (event) => this.options.onRemoteStream(event.streams[0] ?? new MediaStream([event.track]));
-    peer.onicecandidate = (event) => { if (event.candidate) void publishDirectCallSignal(this.options.callId, { from: this.options.userId, to: peerId, kind: "ice", payload: JSON.stringify({ candidate: event.candidate.toJSON() }) }); };
+    peer.onicecandidate = (event) => { if (event.candidate) void publishDirectCallSignal(this.options.callId, { from: this.options.userId, to: peerId, kind: "ice", payload: JSON.stringify({ candidate: event.candidate.toJSON() }) }).catch((reason) => this.options.onError?.(reason instanceof Error ? reason : new Error("Não foi possível enviar a sinalização da chamada."))); };
     peer.onconnectionstatechange = () => { if (["failed", "closed"].includes(peer.connectionState)) this.options.onError?.(new Error("A conexão da chamada foi encerrada.")); };
     this.peer = peer;
     return peer;

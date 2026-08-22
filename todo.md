@@ -256,3 +256,6 @@
 - [x] Iniciar, encerrar e compartilhar tela em chamada individual a partir do chat direto (coleção `calls`, sinalização SDP/ICE e prévia local integradas)
 - [x] Criar e enviar convites para chat em grupo, além de adicionar pessoa diretamente (convites de comunidade/grupo existentes e ação de adicionar por amizade integrada)
 - [ ] Validar os novos fluxos entre duas contas no desktop e mobile publicados
+- [x] Corrigir o crash React #310 introduzido pela integração de chamadas diretas (hooks agora seguem ordem estável antes dos retornos de autenticação)
+- [x] Garantir que listeners Firebase e streams WebRTC não atualizem estado em ciclo de renderização inválido
+- [ ] Validar a inicialização publicada sem tela de erro antes de retomar o QA entre contas

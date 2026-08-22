@@ -102,6 +102,8 @@ function ScreenPreview({ stream }: { stream: MediaStream }) {
 
 export default function FirebaseWorkspace() {
   const auth = useFirebaseAuth();
+  const authUser = auth.user;
+  const currentUserId = authUser?.uid ?? "";
   const [profile, setProfile] = useState<FirebaseProfile | null>(null);
   const [communities, setCommunities] = useState<FirebaseCommunity[]>([]);
   const [community, setCommunity] = useState<FirebaseCommunity | null>(null);
@@ -184,7 +186,7 @@ export default function FirebaseWorkspace() {
 
   useEffect(() => {
     if (!directFriendId) { setDirectMessages([]); return; }
-    return subscribeToDirectMessages(currentUserId(auth.user), directFriendId, setDirectMessages, (error) => setNotice(error.message));
+    return subscribeToDirectMessages(authUser?.uid ?? "", directFriendId, setDirectMessages, (error) => setNotice(error.message));
   }, [auth.user, directFriendId]);
 
   useEffect(() => {
@@ -215,8 +217,8 @@ export default function FirebaseWorkspace() {
   const acceptedFriendIds = useMemo(() => new Set(friendships.filter((item) => item.status === "accepted").map((item) => item.requesterId === auth.user?.uid ? item.addresseeId : item.requesterId)), [friendships, auth.user?.uid]);
 
   if (auth.loading) return <div className="loading-screen"><span>Preparando seu espaço Firebase...</span></div>;
-  if (!auth.user) return <FirebaseAuthPanel />;
-  const currentUser = auth.user;
+  if (!authUser) return <FirebaseAuthPanel />;
+  const currentUser = authUser;
 
   const sendDirect = async () => {
     if (!directFriendId || !directBody.trim()) return;

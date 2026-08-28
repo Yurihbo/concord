@@ -1,4 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
 @import "tw-animate-css";
 
@@ -455,3 +456,135 @@ a { color: inherit; text-decoration: none; }
 .header-actions button { position: relative; }
 .header-unread-dot { position: absolute; top: 5px; right: 5px; width: 7px; height: 7px; border: 1px solid #fff; border-radius: 999px; background: #dc2626; }
 @media (max-width: 760px) { .talking-label { font-size: 8px; }.firebase-member.call-member-speaking { box-shadow: 0 0 0 2px rgba(53,232,120,.18); } }
+
+/* Concord cyberpunk visual system */
+:root {
+  --background: #050a16;
+  --foreground: #e8f4ff;
+  --card: #0b1426;
+  --card-foreground: #e8f4ff;
+  --popover: #0b1426;
+  --popover-foreground: #e8f4ff;
+  --primary: #27d7ff;
+  --primary-foreground: #04101b;
+  --secondary: #13264a;
+  --secondary-foreground: #c5eaff;
+  --muted: #0d1b31;
+  --muted-foreground: #7e9bb8;
+  --accent: #10294b;
+  --accent-foreground: #67e6ff;
+  --border: rgba(89, 180, 255, .18);
+  --input: rgba(89, 180, 255, .24);
+  --ring: #27d7ff;
+}
+body { background: #050a16; color: #e8f4ff; font-family: 'Space Grotesk', 'Manrope', sans-serif; }
+.app-shell { position: relative; isolation: isolate; grid-template-columns: 76px 264px minmax(480px, 1fr) 252px; background: radial-gradient(circle at 63% 12%, rgba(0, 180, 255, .13), transparent 27%), radial-gradient(circle at 20% 82%, rgba(38, 62, 189, .13), transparent 30%), #050a16; color: #e8f4ff; }
+.app-shell::before { content: ''; position: absolute; z-index: -1; inset: 0; pointer-events: none; opacity: .22; background-image: linear-gradient(rgba(74, 184, 255, .07) 1px, transparent 1px), linear-gradient(90deg, rgba(74, 184, 255, .07) 1px, transparent 1px); background-size: 42px 42px; mask-image: linear-gradient(to bottom, black, transparent 78%); }
+.server-rail { background: linear-gradient(180deg, #061124, #08182d 55%, #050b18); border-right: 1px solid rgba(57, 179, 255, .2); box-shadow: 12px 0 40px rgba(0, 130, 255, .08); }
+.rail-divider { background: rgba(91, 203, 255, .22); }
+.server-icon { color: #6e8eac; background: rgba(14, 39, 72, .8); border: 1px solid transparent; box-shadow: inset 0 1px rgba(255,255,255,.04); }
+.server-icon:hover, .server-icon.selected { color: #e9fbff; border-color: rgba(39, 215, 255, .5); box-shadow: 0 0 18px rgba(39,215,255,.2), inset 0 0 14px rgba(39,215,255,.08); }
+.home-server.selected, .friends-server.selected { background: linear-gradient(135deg, #1676ca, #1fcae8); color: #03111d; }
+.friends-server { color: #68e2ff; background: rgba(15, 77, 119, .45); }
+.community-icon.selected { box-shadow: 0 0 0 2px #35dfff, 0 0 20px rgba(39,215,255,.45); }
+.add-server { color: #4be7b0; background: rgba(12, 66, 63, .62); }
+.channel-sidebar { background: linear-gradient(180deg, rgba(8, 24, 46, .98), rgba(6, 17, 34, .98)); color: #a9c5dc; border-right: 1px solid rgba(89, 180, 255, .12); }
+.community-header { border-bottom-color: rgba(89, 180, 255, .16); background: rgba(10, 31, 58, .62); }
+.community-header strong { color: #effaff; letter-spacing: .02em; }
+.community-header span, .group-label { color: #6c91b2; }
+.channel-scroll { padding: 22px 13px; }
+.discover-link { color: #72e9ff; background: linear-gradient(100deg, rgba(11, 87, 139, .55), rgba(22, 50, 105, .45)); border: 1px solid rgba(39, 215, 255, .2); box-shadow: inset 0 0 18px rgba(39,215,255,.06); }
+.channel-link { color: #86a7c3; border: 1px solid transparent; }
+.channel-link:hover, .channel-link.active { color: #effcff; background: linear-gradient(90deg, rgba(22, 104, 167, .42), rgba(27, 54, 105, .5)); border-color: rgba(52, 205, 255, .24); box-shadow: inset 3px 0 #2cdcff, 0 0 15px rgba(39, 215, 255, .08); }
+.channel-link.active svg { color: #42ddff; }
+.voice-link { color: #72d9ed; background: rgba(10, 45, 70, .48); }
+.side-tip { border-color: rgba(39, 215, 255, .22); color: #85b8d4; background: linear-gradient(145deg, rgba(11, 42, 76, .72), rgba(10, 25, 52, .8)); box-shadow: 0 0 24px rgba(0, 156, 255, .08); }
+.side-tip strong { color: #b7efff; }
+.user-panel { border-top-color: rgba(89, 180, 255, .16); background: rgba(4, 15, 30, .92); }
+.user-meta strong { color: #dff5ff; }
+.user-meta span { color: #45dfff; }
+.content-area { position: relative; background: linear-gradient(135deg, rgba(7, 19, 38, .98), rgba(5, 13, 28, .98)); }
+.content-area::after { content: ''; position: absolute; inset: 69px 0 0; pointer-events: none; opacity: .35; background: radial-gradient(circle at 80% 18%, rgba(0, 183, 255, .11), transparent 30%); }
+.content-header { position: relative; z-index: 1; height: 76px; padding: 0 27px; border-bottom-color: rgba(89, 180, 255, .18); background: rgba(7, 22, 42, .9); box-shadow: 0 8px 28px rgba(0,0,0,.15); }
+.title-symbol, .intro-symbol { color: #50e6ff; background: linear-gradient(145deg, rgba(12, 97, 147, .55), rgba(24, 52, 112, .75)); border: 1px solid rgba(65, 219, 255, .3); box-shadow: 0 0 20px rgba(39,215,255,.12), inset 0 0 14px rgba(39,215,255,.08); }
+.channel-title h2, .channel-intro h1 { color: #effaff; }
+.channel-title span, .channel-intro p { color: #7f9db9; }
+.header-actions { color: #8eb3ce; }
+.header-actions button:hover { color: #4ce4ff; }
+.header-divider { background: rgba(89, 180, 255, .2); }
+.profile-chip { color: #b1cee1 !important; }
+.message-area { position: relative; z-index: 1; padding-top: 36px; }
+.intro-rule { background: linear-gradient(90deg, rgba(53,214,255,.38), transparent); }
+.message-row:hover { background: rgba(19, 67, 110, .3); }
+.message-author strong { color: #cceeff; }
+.message-author span, .message-author time { color: #7191ae; }
+.message-copy p { color: #a8c4d9; }
+.composer-wrap { position: relative; z-index: 1; }
+.composer { border-color: rgba(89, 180, 255, .28); background: rgba(7, 27, 51, .88); box-shadow: 0 0 26px rgba(0, 131, 255, .1), inset 0 0 14px rgba(39,215,255,.03); }
+.composer input { color: #dff5ff; background: transparent; }
+.composer input::placeholder { color: #6688a5; }
+.composer > button:first-child:hover { color: #4ce4ff; background: rgba(39,215,255,.1); }
+.composer .send-button, .primary-cta { color: #03131e; background: linear-gradient(135deg, #37e3ff, #1986e9); box-shadow: 0 0 20px rgba(39,215,255,.24); }
+.member-sidebar { border-left-color: rgba(89, 180, 255, .16); background: linear-gradient(180deg, rgba(8, 24, 46, .92), rgba(5, 15, 30, .96)); }
+.member-heading, .member-role { color: #6f94b1; }
+.member-card { color: #c2deed; }
+.member-card:hover { background: rgba(22, 93, 145, .3); }
+.member-card span { color: #7799b4; }
+.call-dock, .voice-sidebar-dock { border-color: rgba(62, 211, 255, .24); background: linear-gradient(145deg, rgba(11, 42, 72, .94), rgba(6, 22, 43, .98)); box-shadow: 0 0 30px rgba(0, 146, 255, .15); }
+.call-status strong, .voice-sidebar-dock-title strong { color: #e8fbff; }
+.call-status span, .voice-sidebar-dock-title span { color: #7ca3bf; }
+.call-actions button, .voice-sidebar-dock-actions button { border-color: rgba(89, 180, 255, .2); color: #9cc1d7; background: rgba(9, 35, 65, .82); }
+.call-actions button:hover, .voice-sidebar-dock-actions button:hover { color: #4de4ff; background: rgba(17, 87, 132, .6); border-color: rgba(39,215,255,.4); }
+.call-actions .disconnect, .voice-sidebar-dock-actions .leave-call { color: #ff8b9b; background: rgba(101, 24, 55, .35); border-color: rgba(255, 101, 137, .26); }
+.firebase-voice-original-stage { background: radial-gradient(circle at 50% 8%, rgba(0, 192, 255, .12), transparent 32%); }
+.firebase-member { border-color: rgba(89, 180, 255, .18) !important; background: rgba(8, 31, 59, .7) !important; box-shadow: inset 0 0 20px rgba(0, 143, 255, .05); }
+.firebase-member:hover { border-color: rgba(39, 215, 255, .5) !important; transform: translateY(-2px); }
+.firebase-member.call-member-speaking { border-color: #39f39c !important; box-shadow: 0 0 0 2px rgba(57,243,156,.2), 0 0 23px rgba(57,243,156,.35), inset 0 0 18px rgba(57,243,156,.08); background: rgba(10, 65, 60, .72) !important; }
+.voice-chat-redirect { position: relative; z-index: 1; display: flex; align-items: center; gap: 10px; max-width: 800px; margin: 22px auto 0; padding: 13px 15px; border: 1px solid rgba(39, 215, 255, .2); border-radius: 12px; color: #94bad1; background: rgba(7, 35, 66, .78); font-size: 11px; }
+.voice-chat-redirect svg { color: #40ddff; flex: 0 0 auto; }
+.voice-chat-redirect button { margin-left: auto; border: 1px solid rgba(39,215,255,.3); border-radius: 7px; padding: 6px 10px; color: #72eaff; background: rgba(20, 91, 137, .5); font-size: 10px; font-weight: 700; }
+.voice-chat-redirect button:hover { background: rgba(30, 130, 175, .7); }
+.firebase-dialog-backdrop { background: rgba(1, 8, 20, .78); backdrop-filter: blur(12px); }
+.firebase-dialog, .workspace-panel { border-color: rgba(66, 206, 255, .22); background: linear-gradient(145deg, rgba(10, 34, 64, .98), rgba(5, 17, 36, .98)); box-shadow: 0 0 42px rgba(0, 130, 255, .2); }
+.firebase-dialog h2, .workspace-panel h1 { color: #edfbff; }
+.firebase-dialog p, .workspace-panel p, .workspace-muted { color: #86a8c0; }
+.firebase-dialog input, .workspace-panel input { border-color: rgba(89, 180, 255, .25); color: #e6f8ff; background: rgba(2, 15, 31, .72); }
+.settings-card, .friend-tile, .call-history, .device-controls, .account-results { border-color: rgba(89, 180, 255, .2); color: #c7e1ee; background: rgba(8, 30, 57, .75); }
+/* Reusable tab treatment for friends and channel controls */
+.friends-tabs > button.active { color: #4de4ff; border-bottom-color: #37dcff; text-shadow: 0 0 12px rgba(39,215,255,.4); }
+.friends-tabs { border-bottom-color: rgba(89, 180, 255, .2); }
+.friends-tabs span { color: #9ed8ed; background: rgba(39, 141, 190, .28); }
+@media (max-width: 1120px) { .app-shell { grid-template-columns: 70px 228px minmax(400px, 1fr); } .member-sidebar { display: none; } }
+@media (max-width: 760px) { .app-shell { display: block; min-height: 100vh; height: auto; background: #050a16; } .server-rail { display: none; } .channel-sidebar { min-height: 100vh; } .content-area { min-height: 100vh; } .content-header { padding: 0 15px; } .header-actions .profile-chip { display: none; } .voice-chat-redirect { margin-left: 15px; margin-right: 15px; flex-wrap: wrap; } .voice-chat-redirect button { margin-left: 26px; } }
+@media (prefers-reduced-motion: no-preference) { .server-icon, .channel-link, .firebase-member, .primary-cta { transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease, background .18s ease; } }
+
+/* Call controls: clear hierarchy for direct and group sessions */
+.firebase-voice-actions { position: relative; max-width: 800px; margin: 24px auto 0; padding: 30px 12px 12px; border: 1px solid rgba(70, 207, 255, .2); border-radius: 14px; background: rgba(5, 24, 47, .78); box-shadow: 0 0 25px rgba(0, 150, 255, .1); }
+.firebase-voice-actions::before { content: 'CONTROLES DA CHAMADA'; position: absolute; top: 10px; left: 13px; color: #6f9dbb; font: 9px 'DM Mono', monospace; letter-spacing: .12em; }
+.firebase-voice-actions button { min-width: 84px; height: 36px; border-radius: 9px; }
+.firebase-voice-actions .join-call-button { display: flex; align-items: center; justify-content: center; gap: 8px; flex: 1; color: #03131e; background: linear-gradient(135deg, #39e5ff, #1c8ee8); border: 0; font-weight: 800; }
+.direct-chat-toolbar { border-bottom-color: rgba(70, 207, 255, .18) !important; background: rgba(8, 28, 53, .55) !important; }
+.direct-call-actions { padding: 5px; border: 1px solid rgba(70, 207, 255, .18); border-radius: 10px; background: rgba(3, 17, 34, .6); }
+.direct-call-button { color: #a8d7e9 !important; background: rgba(13, 58, 91, .7) !important; border-color: rgba(66, 206, 255, .23) !important; }
+.direct-call-button:hover { color: #061522 !important; background: #43defe !important; }
+.direct-call-screen-active { color: #03131e !important; background: #47e1ff !important; box-shadow: 0 0 18px rgba(39,215,255,.35); }
+.direct-call-end { color: #ff9aaa !important; background: rgba(119, 24, 57, .45) !important; border-color: rgba(255, 101, 137, .3) !important; }
+.direct-utility-actions { padding-left: 8px; border-left-color: rgba(89, 180, 255, .2) !important; }
+.channel-group .group-label svg, .group-label button { color: #46dfff; }
+.channel-group .group-label button:hover { filter: drop-shadow(0 0 7px #29d9ff); }
+
+/* Cyberpunk landing layer */
+.landing-shell { background: radial-gradient(circle at 78% 18%, rgba(18, 126, 193, .18), transparent 24%), radial-gradient(circle at 18% 88%, rgba(34, 58, 177, .2), transparent 28%), #040915; }
+.landing-shell::after { content: ''; position: absolute; inset: 0; pointer-events: none; opacity: .16; background: repeating-linear-gradient(0deg, transparent 0 3px, rgba(74, 210, 255, .055) 4px); mix-blend-mode: screen; }
+.landing-nav, .landing-hero, .principles, .experience-strip, .landing-footer { z-index: 2; }
+.brand-lockup { text-shadow: 0 0 18px rgba(39, 215, 255, .35); }
+.nav-login { border-color: rgba(39, 215, 255, .35); color: #b9f4ff; background: rgba(10, 43, 74, .55); box-shadow: 0 0 18px rgba(39, 215, 255, .1); }
+.nav-login:hover { color: #061421; background: #40ddff; }
+.hero-copy h1 { text-shadow: 0 0 30px rgba(39, 215, 255, .13); }
+.hero-copy h1 em { color: #46e5ff; text-shadow: 0 0 20px rgba(39, 215, 255, .48); }
+.preview-window { border-color: rgba(61, 214, 255, .32); box-shadow: 0 33px 70px rgba(0,0,0,.42), 0 0 0 11px rgba(39,215,255,.045), 0 0 55px rgba(0,156,255,.13); }
+.preview-top { border-bottom-color: rgba(61, 214, 255, .18); }
+.preview-dots i:first-child { background: #3ce4ff; box-shadow: 0 0 8px #3ce4ff; }
+.preview-rail { background: #040d1c; }
+.preview-sidebar { background: #09172c; }
+.preview-chat { background: #071426; }

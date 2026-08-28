@@ -1032,3 +1032,118 @@ button:not(:disabled):not([data-no-neon]):active { transform: translateY(0) scal
   .firebase-dialog { max-height: calc(100dvh - 1.5rem); overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
   .firebase-dialog-backdrop { overflow-y: auto; align-items: end; }
 }
+
+/* Concord theme for voice settings */
+.app-shell.firebase-original-shell .settings-workspace-panel {
+  color: #e6f8ff;
+  background:
+    radial-gradient(circle at 85% 8%, rgba(39, 215, 255, .09), transparent 30rem),
+    linear-gradient(145deg, #061426, #071b35 58%, #04101f);
+}
+.app-shell.firebase-original-shell .settings-workspace-panel .workspace-panel-heading {
+  border-bottom-color: rgba(84, 203, 255, .24);
+}
+.app-shell.firebase-original-shell .settings-workspace-panel .workspace-panel-heading h1 {
+  color: #f0fbff;
+  text-shadow: 0 0 .9rem rgba(70, 229, 255, .12);
+}
+.app-shell.firebase-original-shell .settings-workspace-panel .workspace-panel-heading p,
+.app-shell.firebase-original-shell .settings-workspace-panel .voice-settings-card-heading small,
+.app-shell.firebase-original-shell .settings-workspace-panel .settings-card small,
+.app-shell.firebase-original-shell .settings-workspace-panel .voice-toggle-row small,
+.app-shell.firebase-original-shell .settings-workspace-panel .mic-level-card small {
+  color: #9fc1d8 !important;
+}
+.app-shell.firebase-original-shell .settings-workspace-panel .settings-grid {
+  width: min(100%, 46rem);
+}
+.app-shell.firebase-original-shell .settings-workspace-panel .settings-card,
+.app-shell.firebase-original-shell .settings-workspace-panel .voice-settings-card,
+.app-shell.firebase-original-shell .settings-workspace-panel .mic-level-card {
+  color: #e6f8ff;
+  background: linear-gradient(145deg, rgba(11, 45, 77, .96), rgba(7, 27, 53, .98)) !important;
+  border-color: rgba(86, 215, 255, .3) !important;
+  box-shadow: 0 .7rem 1.8rem rgba(0, 0, 0, .2), 0 0 1.3rem rgba(39, 215, 255, .04) inset;
+}
+.app-shell.firebase-original-shell .settings-workspace-panel .settings-card:hover {
+  background: linear-gradient(145deg, rgba(15, 61, 98, .98), rgba(8, 34, 65, .98)) !important;
+  border-color: rgba(92, 234, 255, .58) !important;
+  box-shadow: 0 .8rem 2rem rgba(0, 0, 0, .25), 0 0 1.1rem rgba(39, 215, 255, .1);
+}
+.app-shell.firebase-original-shell .settings-workspace-panel .settings-card.static:hover,
+.app-shell.firebase-original-shell .settings-workspace-panel .voice-settings-card:hover {
+  background: linear-gradient(145deg, rgba(11, 45, 77, .96), rgba(7, 27, 53, .98)) !important;
+}
+.app-shell.firebase-original-shell .settings-workspace-panel .settings-card strong,
+.app-shell.firebase-original-shell .settings-workspace-panel .voice-toggle-row strong,
+.app-shell.firebase-original-shell .settings-workspace-panel .mic-level-card strong {
+  color: #effcff !important;
+}
+.app-shell.firebase-original-shell .settings-workspace-panel .voice-settings-card-heading > svg,
+.app-shell.firebase-original-shell .settings-workspace-panel .settings-card > svg:first-child {
+  color: #55e5ff !important;
+  filter: drop-shadow(0 0 .45rem rgba(39, 215, 255, .35));
+}
+.app-shell.firebase-original-shell .settings-workspace-panel .voice-settings-fields label {
+  color: #bfe9f8;
+}
+.app-shell.firebase-original-shell .settings-workspace-panel .voice-settings-fields select {
+  color: #e9fbff;
+  background: #082846;
+  border-color: rgba(92, 224, 255, .38);
+  box-shadow: 0 0 0 .1rem rgba(2, 19, 35, .24) inset;
+}
+.app-shell.firebase-original-shell .settings-workspace-panel .voice-settings-fields select:focus {
+  border-color: #5ceaff;
+  outline: 2px solid rgba(92, 234, 255, .22);
+  outline-offset: 1px;
+}
+.app-shell.firebase-original-shell .settings-workspace-panel .voice-settings-fields option {
+  color: #e9fbff;
+  background: #082846;
+}
+.app-shell.firebase-original-shell .settings-workspace-panel .voice-toggle-row {
+  border-top-color: rgba(105, 220, 255, .2);
+}
+.app-shell.firebase-original-shell .settings-workspace-panel .voice-toggle-row input {
+  accent-color: #46e5ff;
+}
+.app-shell.firebase-original-shell .settings-workspace-panel .settings-refresh-button {
+  color: #03131e;
+  background: #5ceaff;
+  border-color: #9ff6ff;
+  box-shadow: 0 0 .9rem rgba(39, 215, 255, .2);
+}
+.app-shell.firebase-original-shell .settings-workspace-panel .settings-refresh-button:hover,
+.app-shell.firebase-original-shell .settings-workspace-panel .settings-refresh-button:focus-visible {
+  background: #9ff6ff;
+  outline: 2px solid rgba(159, 246, 255, .35);
+  outline-offset: 2px;
+}
+.app-shell.firebase-original-shell .settings-workspace-panel .mic-level-card {
+  background: rgba(3, 19, 35, .66) !important;
+  border-color: rgba(105, 220, 255, .2) !important;
+}
+.app-shell.firebase-original-shell .settings-workspace-panel .mic-level-card span {
+  color: #5ceaff;
+}
+.app-shell.firebase-original-shell .settings-workspace-panel .mic-level-track {
+  background: #0a3b5d;
+  box-shadow: 0 0 0 .1rem rgba(92, 234, 255, .08) inset;
+}
+.app-shell.firebase-original-shell .settings-workspace-panel .pwa-settings-card .pwa-install-button {
+  color: #03131e;
+  background: #5ceaff;
+  border-color: #9ff6ff;
+}
+.app-shell.firebase-original-shell .settings-workspace-panel .pwa-settings-card .pwa-install-button:hover {
+  background: #9ff6ff;
+}
+@media (max-width: 520px) {
+  .app-shell.firebase-original-shell .settings-workspace-panel {
+    padding: 1rem .8rem calc(1.5rem + env(safe-area-inset-bottom));
+  }
+  .app-shell.firebase-original-shell .settings-workspace-panel .settings-card {
+    padding: .85rem;
+  }
+}

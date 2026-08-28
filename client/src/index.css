@@ -667,3 +667,28 @@ button:not(:disabled):not([data-no-neon]):active { transform: translateY(0) scal
 .call-member-card { cursor: default; }
 .call-member-card:hover { background: rgba(16, 45, 76, .78); }
 .call-member-card .avatar { overflow: hidden; }
+
+
+/* Aba de perfil: mesma linguagem cyberpunk do workspace, com fundo mais profundo e alto contraste. */
+.profile-workspace-panel { color: #d9efff; background: linear-gradient(135deg, #071426 0%, #06101f 100%); }
+.profile-workspace-panel .workspace-panel-heading { border-bottom-color: rgba(89, 180, 255, .2); }
+.profile-workspace-panel .workspace-panel-heading h1 { color: #f0fbff; }
+.profile-workspace-panel .workspace-panel-heading p { color: #9fc1d8; }
+.profile-workspace-panel .workspace-panel-heading > svg { color: #55e5ff; filter: drop-shadow(0 0 10px rgba(39, 215, 255, .25)); }
+.profile-workspace-panel .profile-edit-card { background: linear-gradient(145deg, rgba(11, 35, 61, .96), rgba(6, 20, 37, .98)); border-color: rgba(89, 180, 255, .24); box-shadow: 0 1.2rem 2.5rem rgba(0, 0, 0, .24), inset 0 0 1.5rem rgba(39, 215, 255, .03); }
+.profile-workspace-panel .profile-edit-card label, .profile-workspace-panel .profile-field-label { color: #d9efff; }
+.profile-workspace-panel .profile-edit-card input { color: #f2fbff; background: rgba(4, 16, 31, .92); border-color: rgba(109, 191, 239, .38); }
+.profile-workspace-panel .profile-edit-card input:focus { border-color: #45dfff; box-shadow: 0 0 0 3px rgba(69, 223, 255, .13); }
+.profile-workspace-panel .profile-edit-card input[readonly] { color: #a7c9de; background: rgba(4, 16, 31, .58); }
+.profile-workspace-panel .profile-avatar-preview { background: linear-gradient(135deg, rgba(14, 56, 88, .82), rgba(7, 26, 49, .9)); border-color: rgba(82, 211, 255, .24); }
+.profile-workspace-panel .profile-avatar-preview strong { color: #f1fbff; }
+.profile-workspace-panel .profile-avatar-preview span { color: #a7c7dc; }
+.profile-workspace-panel .profile-avatar-image { border-color: rgba(159, 226, 255, .38); background: #103b61; box-shadow: 0 .7rem 1.5rem rgba(0, 0, 0, .3), 0 0 1.2rem rgba(39, 215, 255, .12); }
+.profile-workspace-panel .profile-code { background: rgba(8, 43, 73, .72); border-color: rgba(80, 211, 255, .28); }
+.profile-workspace-panel .profile-code span { color: #a9cadd; }
+.profile-workspace-panel .profile-code strong { color: #56e7ff; }
+.profile-workspace-panel .avatar-preset { background: #0b2947; border-color: rgba(101, 182, 230, .18); }
+.profile-workspace-panel .avatar-preset:hover { border-color: #5fdfff; box-shadow: 0 0 1rem rgba(39, 215, 255, .13); }
+.profile-workspace-panel .avatar-preset.selected { border-color: #4be4ff; box-shadow: 0 0 0 3px rgba(75, 228, 255, .15), 0 0 1.1rem rgba(39, 215, 255, .18); }
+.profile-workspace-panel .avatar-upload-button { color: #61e9ff !important; background: rgba(8, 55, 86, .76); border-color: rgba(79, 218, 255, .35); }
+.profile-workspace-panel .avatar-upload-button:hover { background: rgba(14, 77, 113, .9); border-color: #61e9ff; }

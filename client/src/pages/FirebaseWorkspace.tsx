@@ -58,6 +58,7 @@ import {
 } from "@/services/firebaseStore";
 
 function initials(name: string) { return name.split(" ").map((part) => part[0]).join("").slice(0, 2).toUpperCase() || "CO"; }
+function assetUrl(path: string): string { return `${import.meta.env.BASE_URL}${path.replace(/^\/+/, "")}`; }
 function hasVideoTrack(stream: MediaStream | null): stream is MediaStream { return Boolean(stream?.getVideoTracks().length); }
 function currentUserId(user: { uid: string } | null): string { return user?.uid ?? ""; }
 
@@ -107,12 +108,12 @@ function FriendsPanel({ currentUid, searchValue, results, friendships, friendPro
 }
 
 const presetAvatars = [
-  { name: "Calic Fary", url: "/assets/calic-fary.png" },
-  { name: "Draco Mage", url: "/assets/draco-mage.png" },
-  { name: "Druid Elf", url: "/assets/druid-elf.png" },
-  { name: "Human Mage", url: "/assets/human-mage.png" },
-  { name: "Thief Khajit", url: "/assets/thief-khajit.png" },
-  { name: "Warrior Orc", url: "/assets/warrior-orc.png" },
+  { name: "Calic Fary", url: assetUrl("assets/calic-fary.png") },
+  { name: "Draco Mage", url: assetUrl("assets/draco-mage.png") },
+  { name: "Druid Elf", url: assetUrl("assets/druid-elf.png") },
+  { name: "Human Mage", url: assetUrl("assets/human-mage.png") },
+  { name: "Thief Khajit", url: assetUrl("assets/thief-khajit.png") },
+  { name: "Warrior Orc", url: assetUrl("assets/warrior-orc.png") },
 ];
 
 function ProfilePanel({ profile, email, onSave, onUpload }: { profile: FirebaseProfile | null; email: string; onSave: (displayName: string, avatarUrl: string) => void; onUpload: (file: File) => Promise<string> }) {
@@ -134,7 +135,7 @@ function ProfilePanel({ profile, email, onSave, onUpload }: { profile: FirebaseP
     }
     event.target.value = "";
   };
-  return <section className="workspace-panel"><div className="workspace-panel-heading"><div><span className="firebase-kicker">CONCORD / PERFIL</span><h1>Seu perfil</h1><p>Personalize o nome e a imagem que aparecem para suas conexões.</p></div><Settings size={27} /></div><div className="profile-edit-card"><div className="profile-avatar-preview"><div className="profile-avatar-image">{avatarUrl ? <img src={avatarUrl} alt="Prévia do avatar" /> : <span>{initials(displayName || "Conta")}</span>}</div><div><strong>Imagem do perfil</strong><span>Escolha um avatar pronto ou envie sua própria imagem.</span></div></div><div className="profile-avatar-section"><span className="profile-field-label">Avatares prontos</span><div className="avatar-preset-grid">{presetAvatars.map((avatar) => <button type="button" className={avatarUrl === avatar.url ? "avatar-preset selected" : "avatar-preset"} key={avatar.url} onClick={() => setAvatarUrl(avatar.url)} aria-label={`Usar avatar ${avatar.name}`}><img src={avatar.url} alt={avatar.name} /></button>)}</div><label className="avatar-upload-button"><Upload size={15} /> Enviar imagem própria<input type="file" accept="image/png,image/jpeg,image/webp,image/gif" onChange={chooseFile} /></label></div><label>Nome de exibição<Input value={displayName} onChange={(event) => setDisplayName(event.target.value)} maxLength={40} /></label><label>E-mail<Input value={email} readOnly /></label><div className="profile-code"><span>Seu código público</span><strong>{profile?.publicId ?? "CON-00000000"}</strong></div><Button className="primary-cta" onClick={() => onSave(displayName.trim(), avatarUrl)} disabled={!displayName.trim()}>Salvar perfil</Button></div></section>;
+  return <section className="workspace-panel profile-workspace-panel"><div className="workspace-panel-heading"><div><span className="firebase-kicker">CONCORD / PERFIL</span><h1>Seu perfil</h1><p>Personalize o nome e a imagem que aparecem para suas conexões.</p></div><Settings size={27} /></div><div className="profile-edit-card"><div className="profile-avatar-preview"><div className="profile-avatar-image">{avatarUrl ? <img src={avatarUrl} alt="Prévia do avatar" /> : <span>{initials(displayName || "Conta")}</span>}</div><div><strong>Imagem do perfil</strong><span>Escolha um avatar pronto ou envie sua própria imagem.</span></div></div><div className="profile-avatar-section"><span className="profile-field-label">Avatares prontos</span><div className="avatar-preset-grid">{presetAvatars.map((avatar) => <button type="button" className={avatarUrl === avatar.url ? "avatar-preset selected" : "avatar-preset"} key={avatar.url} onClick={() => setAvatarUrl(avatar.url)} aria-label={`Usar avatar ${avatar.name}`}><img src={avatar.url} alt={avatar.name} /></button>)}</div><label className="avatar-upload-button"><Upload size={15} /> Enviar imagem própria<input type="file" accept="image/png,image/jpeg,image/webp,image/gif" onChange={chooseFile} /></label></div><label>Nome de exibição<Input value={displayName} onChange={(event) => setDisplayName(event.target.value)} maxLength={40} /></label><label>E-mail<Input value={email} readOnly /></label><div className="profile-code"><span>Seu código público</span><strong>{profile?.publicId ?? "CON-00000000"}</strong></div><Button className="primary-cta" onClick={() => onSave(displayName.trim(), avatarUrl)} disabled={!displayName.trim()}>Salvar perfil</Button></div></section>;
 }
 
 function SettingsPanel({ onVoiceSettings }: { onVoiceSettings: () => void }) {
@@ -845,7 +846,7 @@ export default function FirebaseWorkspace() {
   const activeVoiceRoom = channel?.kind === "voice" ? rooms.find((room) => room.id === channel.id) ?? null : null;
   return <div className="app-shell firebase-original-shell">
     <aside className="server-rail">
-      <div className="rail-brand"><div className="logo-mark logo-mark-sm" aria-label="Concord"><img src="/assets/favicon.png" alt="" /></div></div><div className="rail-divider" />
+      <div className="rail-brand"><div className="logo-mark logo-mark-sm" aria-label="Concord"><img src={assetUrl("assets/favicon.png")} alt="" /></div></div><div className="rail-divider" />
       <button className={activePanel === "chat" ? "server-icon home-server selected" : "server-icon home-server"} aria-label="Início" onClick={() => setActivePanel("chat")}><HomeIcon size={18} /></button><button className={activePanel === "friends" ? "server-icon friends-server selected" : "server-icon friends-server"} aria-label="Amigos" onClick={() => setActivePanel("friends")}><Users size={18} /></button><div className="rail-divider" />
       {communities.map((item) => <button key={item.id} className={community?.id === item.id ? "server-icon community-icon selected" : "server-icon community-icon"} onClick={() => { setCommunity(item); setActivePanel("chat"); }} title={item.name}>{initials(item.name)}</button>)}
       <button className="server-icon add-server" onClick={() => openCreationDialog("community")} aria-label="Criar comunidade"><Plus size={19} /></button><div className="rail-bottom"><button className={activePanel === "settings" ? "server-icon settings-server selected" : "server-icon settings-server"} onClick={() => setActivePanel("settings")} aria-label="Configurações"><Settings size={17} /></button></div>

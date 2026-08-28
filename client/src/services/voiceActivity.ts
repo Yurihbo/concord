@@ -1,24 +1,52 @@
 export type VoiceParticipantEvent = "join" | "leave";
 export type VoiceToneKind = VoiceParticipantEvent | "mute" | "unmute";
 
+type SpatialAudioContext = Pick<AudioContext, "currentTime" | "createOscillator" | "createGain" | "destination"> & {
+  createStereoPanner?: () => StereoPannerNode;
+};
+
 export function getVoiceToneProfile(kind: VoiceToneKind): readonly [number, number, number] {
   return ({ join: [660, 880, 0.16], leave: [420, 280, 0.18], mute: [360, 240, 0.12], unmute: [520, 760, 0.14] } as const)[kind];
 }
 
-export function playVoiceToneOnContext(context: Pick<AudioContext, "currentTime" | "createOscillator" | "createGain" | "destination">, kind: VoiceToneKind): void {
+export function playVoiceToneOnContext(context: SpatialAudioContext, kind: VoiceToneKind, pan = 0): void {
   const [startFrequency, endFrequency, duration] = getVoiceToneProfile(kind);
   const oscillator = context.createOscillator();
   const gain = context.createGain();
   const start = context.currentTime;
+  const safePan = Math.max(-1, Math.min(1, pan));
   oscillator.type = "sine";
   oscillator.frequency.setValueAtTime(startFrequency, start);
   oscillator.frequency.exponentialRampToValueAtTime(endFrequency, start + duration);
   gain.gain.setValueAtTime(0.045, start);
   gain.gain.exponentialRampToValueAtTime(0.001, start + duration + 0.04);
   oscillator.connect(gain);
-  gain.connect(context.destination);
+
+  const panner = context.createStereoPanner?.();
+  if (panner) {
+    panner.pan.setValueAtTime(Math.max(-1, safePan - 0.16), start);
+    panner.pan.linearRampToValueAtTime(Math.min(1, safePan + 0.16), start + duration);
+    gain.connect(panner);
+    panner.connect(context.destination);
+  } else {
+    gain.connect(context.destination);
+  }
+
   oscillator.start(start);
   oscillator.stop(start + duration + 0.05);
+}
+
+export function playVoiceTone(kind: VoiceToneKind, pan = 0): void {
+  if (typeof window === "undefined") return;
+  const AudioContextClass = window.AudioContext ?? (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+  if (!AudioContextClass) return;
+  const context = new AudioContextClass();
+  const play = () => {
+    playVoiceToneOnContext(context, kind, pan);
+    const duration = getVoiceToneProfile(kind)[2];
+    window.setTimeout(() => { void context.close().catch(() => undefined); }, Math.ceil((duration + 0.15) * 1000));
+  };
+  void context.resume().then(play, play);
 }
 
 export function startDirectCallRingtone(): () => void {
@@ -27,8 +55,8 @@ export function startDirectCallRingtone(): () => void {
   const context = new AudioContextClass();
   const playBurst = () => {
     void context.resume().catch(() => undefined).finally(() => {
-      playVoiceToneOnContext(context, "join");
-      window.setTimeout(() => playVoiceToneOnContext(context, "join"), 240);
+      playVoiceToneOnContext(context, "join", 0.12);
+      window.setTimeout(() => playVoiceToneOnContext(context, "join", -0.12), 240);
     });
   };
   playBurst();
@@ -39,7 +67,7 @@ export function startDirectCallRingtone(): () => void {
   };
 }
 
-export function getVoiceParticipantEvents(previousIds: ReadonlySet<number> | null, currentIds: ReadonlySet<number>): VoiceParticipantEvent[] {
+export function getVoiceParticipantEvents<T>(previousIds: ReadonlySet<T> | null, currentIds: ReadonlySet<T>): VoiceParticipantEvent[] {
   if (!previousIds) return [];
   const events: VoiceParticipantEvent[] = [];
   if (Array.from(currentIds).some((id) => !previousIds.has(id))) events.push("join");

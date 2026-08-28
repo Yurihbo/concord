@@ -42,6 +42,17 @@ describe("voice participant activity events", () => {
     expect(stop).toHaveBeenCalledTimes(4);
   });
 
+  it("applies a bounded stereo pan sweep to spatial tones", () => {
+    const oscillator = { type: "", frequency: { setValueAtTime: vi.fn(), exponentialRampToValueAtTime: vi.fn() }, connect: vi.fn(), start: vi.fn(), stop: vi.fn() };
+    const gain = { gain: { setValueAtTime: vi.fn(), exponentialRampToValueAtTime: vi.fn() }, connect: vi.fn() };
+    const panner = { pan: { setValueAtTime: vi.fn(), linearRampToValueAtTime: vi.fn() }, connect: vi.fn() };
+    const context = { currentTime: 0, destination: {}, createOscillator: vi.fn(() => oscillator), createGain: vi.fn(() => gain), createStereoPanner: vi.fn(() => panner) } as unknown as AudioContext;
+    playVoiceToneOnContext(context, "join", 2);
+    expect(panner.pan.setValueAtTime).toHaveBeenCalledWith(0.84, 0);
+    expect(panner.pan.linearRampToValueAtTime).toHaveBeenCalledWith(1, 0.16);
+    expect(panner.connect).toHaveBeenCalledWith(context.destination);
+  });
+
   it("starts a repeating incoming-call ringtone and stops it cleanly", async () => {
     vi.useFakeTimers();
     const oscillator = { type: "", frequency: { setValueAtTime: vi.fn(), exponentialRampToValueAtTime: vi.fn() }, connect: vi.fn(), start: vi.fn(), stop: vi.fn() };

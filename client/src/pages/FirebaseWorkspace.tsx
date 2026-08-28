@@ -6,7 +6,7 @@ import { FirebaseAuthPanel } from "@/components/FirebaseAuthPanel";
 import { ConcordWebRTCService } from "@/services/webrtc";
 import { FirebaseVoiceMesh } from "@/services/firebaseVoiceMesh";
 import { FirebaseDirectCall } from "@/services/firebaseDirectCall";
-import { playVoiceToneOnContext, startDirectCallRingtone } from "@/services/voiceActivity";
+import { getVoiceParticipantEvents, playVoiceTone, startDirectCallRingtone } from "@/services/voiceActivity";
 import { subscribeToSignals } from "@/services/firebaseSignaling";
 import { useFirebaseAuth } from "@/hooks/useFirebaseAuth";
 import { hasFirebaseConfig, missingFirebaseConfigKeys } from "@/lib/firebase";
@@ -210,6 +210,7 @@ export default function FirebaseWorkspace() {
   const [voiceAudioUnlockVersion, setVoiceAudioUnlockVersion] = useState(0);
   const [rooms, setRooms] = useState<FirebaseVoiceRoom[]>([]);
   const [members, setMembers] = useState<FirebaseVoiceMember[]>([]);
+  const voiceRosterIdsRef = useRef<Set<string> | null>(null);
   const [body, setBody] = useState("");
   const [search, setSearch] = useState("");
   const [results, setResults] = useState<FirebaseProfile[]>([]);
@@ -338,9 +339,20 @@ export default function FirebaseWorkspace() {
   }, [auth.user, directFriendId]);
 
   useEffect(() => {
-    if (!community || !channel || channel.kind !== "voice") { setMembers([]); return; }
-    return subscribeToVoiceMembers(community.id, channel.id, setMembers, (error) => setNotice(error.message));
-  }, [community, channel]);
+    if (!community || !channel || channel.kind !== "voice") { setMembers([]); voiceRosterIdsRef.current = null; return; }
+    return subscribeToVoiceMembers(community.id, channel.id, (nextMembers) => {
+      setMembers(nextMembers);
+      const remoteIds = new Set(nextMembers.filter((member) => member.uid !== currentUserId).map((member) => member.uid));
+      const previousIds = voiceRosterIdsRef.current;
+      voiceRosterIdsRef.current = remoteIds;
+      if (!previousIds) return;
+      for (const event of getVoiceParticipantEvents(previousIds, remoteIds)) {
+        const changedId = event === "join" ? Array.from(remoteIds).find((id) => !previousIds.has(id)) : Array.from(previousIds).find((id) => !remoteIds.has(id));
+        const index = changedId ? Array.from(remoteIds.size ? remoteIds : previousIds).indexOf(changedId) : 0;
+        playTone(event, ((index % 3) - 1) * 0.22);
+      }
+    }, (error) => setNotice(error.message));
+  }, [community, channel, currentUserId]);
 
 
   useEffect(() => {
@@ -561,6 +573,7 @@ export default function FirebaseWorkspace() {
       const callId = await createDirectCall(currentUser.uid, directFriendId, media);
       const service = new FirebaseDirectCall({ callId, userId: currentUser.uid, media, localStream: local, onRemoteStream: (stream) => { setDirectRemoteStream(new MediaStream(stream.getTracks())); setDirectCallStatus("connected"); }, onRemoteScreenStream: (stream) => { setDirectRemoteScreenStream(new MediaStream(stream.getTracks())); }, onRemoteScreenEnded: () => setDirectRemoteScreenStream(null), onScreenShareEnded: () => { setDirectScreenStream(null); setDirectScreenSharing(false); }, onError: (error) => setNotice(error.message) });
       directCallRef.current = service; setPendingDirectSignals([]); setDirectLocalStream(local); setDirectScreenStream(media === "screen" ? local : null); setDirectScreenSharing(media === "screen"); setDirectRemoteStream(null); setDirectRemoteScreenStream(null); setDirectScreenVolume(1); setDirectAudioBlocked(false); setDirectCallId(callId); setDirectCallDirection("outgoing"); setDirectCallStatus("ringing");
+      playTone("join", -0.18);
       await service.start(directFriendId);
     } catch (error) { setNotice(error instanceof Error ? error.message : "Não foi possível iniciar a chamada individual."); }
   };
@@ -617,6 +630,7 @@ export default function FirebaseWorkspace() {
         await service.handleSignal(signal);
       }
       await updateDirectCall(directCallId, "connected");
+      playTone("join", 0.18);
       setDirectCallStatus("connected");
     } catch (error) { setNotice(error instanceof Error ? error.message : "Não foi possível atender a chamada."); }
   };
@@ -624,7 +638,7 @@ export default function FirebaseWorkspace() {
   const rejectDirectCall = async () => {
     stopDirectCallRingtone();
     if (directCallId) await updateDirectCall(directCallId, "declined").catch(() => undefined);
-      setDirectCallId(null); setDirectFriendId(null); setDirectCallDirection(null); setDirectCallStatus("ended"); setNotice("Chamada recusada.");
+      setDirectCallId(null); setDirectFriendId(null); setDirectCallDirection(null); setDirectCallStatus("ended"); playTone("leave", 0); setNotice("Chamada recusada.");
   };
 
   const endDirectCall = async () => {
@@ -632,6 +646,7 @@ export default function FirebaseWorkspace() {
     try { if (directCallId) await updateDirectCall(directCallId, "ended"); }
     catch (error) { setNotice(error instanceof Error ? `Chamada encerrada localmente; o Firestore não confirmou a saída: ${error.message}` : "Chamada encerrada localmente; o Firestore não confirmou a saída."); }
     finally {
+      playTone("leave", 0);
       directCallRef.current?.stop(); directCallRef.current = null;
       directLocalStream?.getTracks().forEach((track) => track.stop());
       directScreenStream?.getTracks().forEach((track) => track.stop());
@@ -704,11 +719,8 @@ export default function FirebaseWorkspace() {
     finally { setCreationPending(false); }
   };
 
-  const playTone = (kind: "join" | "leave" | "mute" | "unmute") => {
-    const AudioContextClass = window.AudioContext ?? (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-    if (!AudioContextClass) return;
-    const context = new AudioContextClass();
-    void context.resume().catch(() => undefined).finally(() => playVoiceToneOnContext(context, kind));
+  const playTone = (kind: "join" | "leave" | "mute" | "unmute", pan = 0) => {
+    playVoiceTone(kind, pan);
   };
 
 

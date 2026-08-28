@@ -663,3 +663,7 @@ button:not(:disabled):not([data-no-neon]):active { transform: translateY(0) scal
 .avatar-upload-button input { display: none; }
 .profile-avatar-shell { overflow: hidden; background: #bfdbfe !important; }
 @media (max-width: 560px) { .avatar-preset-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+
+.call-member-card { cursor: default; }
+.call-member-card:hover { background: rgba(16, 45, 76, .78); }
+.call-member-card .avatar { overflow: hidden; }

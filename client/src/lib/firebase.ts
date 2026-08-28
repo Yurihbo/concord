@@ -1,6 +1,6 @@
 import { getApp, getApps, initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
+import { getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
 const firebaseConfig = {
@@ -24,7 +24,13 @@ const safeFirebaseConfig = firebaseConfigReady ? firebaseConfig : {
 
 export const firebaseApp = getApps().length ? getApp() : initializeApp(safeFirebaseConfig);
 export const firebaseAuth = getAuth(firebaseApp);
-export const firebaseDb = getFirestore(firebaseApp);
+export const firebaseDb = (() => {
+  try {
+    return initializeFirestore(firebaseApp, { localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }) });
+  } catch {
+    return getFirestore(firebaseApp);
+  }
+})();
 export const firebaseStorage = getStorage(firebaseApp);
 
 export function hasFirebaseConfig(): boolean {

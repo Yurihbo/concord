@@ -13,6 +13,7 @@ import {
   setDoc,
   updateDoc,
   where,
+  waitForPendingWrites,
   type DocumentData,
   type QueryConstraint,
   type Unsubscribe,
@@ -223,6 +224,10 @@ export function subscribeToChannelMessages(communityId: string, channelId: strin
   return onSnapshot(query(communityCollection(communityId, "messages"), ...constraints), (snapshot) => {
     listener(snapshot.docs.map((item) => clean(item.id, item.data() as Omit<FirebaseMessage, "id">)));
   }, (reason) => onError?.(reason instanceof Error ? reason : new Error("Não foi possível sincronizar as mensagens.")));
+}
+
+export function waitForOfflineMessages(): Promise<void> {
+  return waitForPendingWrites(firebaseDb);
 }
 
 export async function sendVoiceChatMessage(communityId: string, roomId: string, authorId: string, body: string, attachment?: { url: string; name: string; type: string; size: number }, authorName?: string): Promise<string> {

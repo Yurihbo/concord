@@ -1,11 +1,10 @@
-const CACHE_NAME = "concord-shell-v2";
+const CACHE_NAME = "concord-shell-v3";
 const scopeUrl = new URL(self.registration.scope);
 const appUrl = new URL("./", scopeUrl);
 const manifestUrl = new URL("manifest.json", appUrl);
-const iconUrl = new URL("concord-icon.svg", appUrl);
 const icon192Url = new URL("assets/logo-concord-192.png", appUrl);
 const icon512Url = new URL("assets/logo-concord.png", appUrl);
-const APP_SHELL = [appUrl.href, manifestUrl.href, iconUrl.href, icon192Url.href, icon512Url.href];
+const APP_SHELL = [appUrl.href, manifestUrl.href, icon192Url.href, icon512Url.href];
 
 function isBypassedRequest(request) {
   if (request.method !== "GET") return true;

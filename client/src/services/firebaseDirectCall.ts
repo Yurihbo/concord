@@ -20,6 +20,7 @@ type DirectCallOptions = {
  */
 export class FirebaseDirectCall {
   private readonly options: DirectCallOptions;
+  private localStream: MediaStream;
   private peer: RTCPeerConnection | null = null;
   private peerId: string | null = null;
   private videoSender: RTCRtpSender | null = null;
@@ -39,6 +40,7 @@ export class FirebaseDirectCall {
 
   constructor(options: DirectCallOptions) {
     this.options = options;
+    this.localStream = options.localStream;
     if (options.media === "screen") options.localStream.getVideoTracks()[0]?.addEventListener("ended", () => { void this.stopScreenShare(); }, { once: true });
   }
 
@@ -176,7 +178,7 @@ export class FirebaseDirectCall {
       iceCandidatePoolSize: 10,
     });
     this.peerId = peerId;
-    this.options.localStream.getTracks().forEach((track) => peer.addTrack(track, this.options.localStream));
+    this.localStream.getTracks().forEach((track) => peer.addTrack(track, this.localStream));
     this.videoSender = peer.getSenders().find((sender) => sender.track?.kind === "video") ?? null;
     this.videoTransceiver = peer.getTransceivers().find((transceiver) => transceiver.sender === this.videoSender) ?? null;
     if (this.options.media === "screen" && !this.videoSender) {
@@ -252,6 +254,15 @@ export class FirebaseDirectCall {
       this.reportError(reason, "Não foi possível sincronizar a chamada individual.");
       throw reason;
     }
+  }
+
+  async replaceMicrophone(stream: MediaStream): Promise<void> {
+    this.localStream = stream;
+    const audioTrack = stream.getAudioTracks()[0] ?? null;
+    if (!this.peer) return;
+    const sender = this.peer.getSenders().find((candidate) => candidate.track?.kind === "audio");
+    if (sender) await sender.replaceTrack(audioTrack);
+    else if (audioTrack) this.peer.addTrack(audioTrack, stream);
   }
 
   async shareScreen(): Promise<MediaStream> {

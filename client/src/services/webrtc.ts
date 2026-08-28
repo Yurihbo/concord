@@ -27,14 +27,23 @@ export class ConcordWebRTCService {
     return (await navigator.mediaDevices.enumerateDevices()).filter((device) => device.kind === "audioinput" || device.kind === "audiooutput");
   }
 
-  async captureMicrophone(deviceId?: string): Promise<MediaStream> {
+  async captureMicrophone(deviceId?: string, noiseSuppression = true): Promise<MediaStream> {
     if (!navigator.mediaDevices?.getUserMedia) throw new Error("Este navegador não permite acesso ao microfone.");
     this.updateState("requesting");
     try {
-      this.localStream = await navigator.mediaDevices.getUserMedia({ audio: deviceId ? { deviceId: { exact: deviceId } } : true });
+      const previousStream = this.localStream;
+      const audio: MediaTrackConstraints = { echoCancellation: true, noiseSuppression, autoGainControl: true };
+      if (deviceId) audio.deviceId = { exact: deviceId };
+      const nextStream = await navigator.mediaDevices.getUserMedia({ audio });
+      previousStream?.getTracks().forEach((track) => track.stop());
+      this.localStream = nextStream;
       this.updateState("connected");
-      return this.localStream;
+      return nextStream;
     } catch (error) { this.updateState("error"); throw error; }
+  }
+
+  async replaceMicrophone(deviceId?: string, noiseSuppression = true): Promise<MediaStream> {
+    return this.captureMicrophone(deviceId, noiseSuppression);
   }
 
   getMicrophoneLevel(): number {

@@ -35,10 +35,11 @@ export class FirebaseVoiceMesh {
   private readonly offerQueues = new Map<string, Promise<void>>();
   private readonly options: VoiceMeshOptions;
   private readonly sessionId: string;
+  private localStream: MediaStream;
   private screenStream: MediaStream | null = null;
   private stoppingScreen = false;
 
-  constructor(options: VoiceMeshOptions) { this.options = options; this.sessionId = options.sessionId ?? "legacy"; }
+  constructor(options: VoiceMeshOptions) { this.options = options; this.sessionId = options.sessionId ?? "legacy"; this.localStream = options.localStream; }
 
   private reportError(reason: unknown, fallback: string): void {
     this.options.onError?.(reason instanceof Error ? reason : new Error(fallback));
@@ -153,7 +154,7 @@ export class FirebaseVoiceMesh {
     const existing = this.peers.get(peerId);
     if (existing) return existing;
     const peer = new RTCPeerConnection({ iceServers: [{ urls: "stun:stun.l.google.com:19302" }, { urls: "stun:stun1.l.google.com:19302" }, { urls: "stun:stun.cloudflare.com:3478" }], iceCandidatePoolSize: 10 });
-    this.options.localStream.getAudioTracks().forEach((track) => peer.addTrack(track, this.options.localStream));
+    this.localStream.getAudioTracks().forEach((track) => peer.addTrack(track, this.localStream));
     const screenTransceiver = peer.addTransceiver("video", { direction: "sendrecv" });
     this.screenSenders.set(peerId, screenTransceiver.sender);
     peer.ontrack = (event) => this.handleRemoteTrack(peerId, event);
@@ -256,6 +257,15 @@ export class FirebaseVoiceMesh {
     } catch (reason) { this.reportError(reason instanceof Error ? reason : new Error("Não foi possível sincronizar a chamada de voz."), "Não foi possível sincronizar a chamada de voz."); }
   }
 
+  async replaceMicrophone(stream: MediaStream): Promise<void> {
+    this.localStream = stream;
+    const audioTrack = stream.getAudioTracks()[0] ?? null;
+    for (const peer of Array.from(this.peers.values())) {
+      const sender = peer.getSenders().find((candidate: RTCRtpSender) => candidate.track?.kind === "audio");
+      if (sender) await sender.replaceTrack(audioTrack);
+    }
+  }
+
   async shareScreen(): Promise<MediaStream> {
     if (!navigator.mediaDevices?.getDisplayMedia) throw new Error("Este navegador não permite compartilhamento de tela.");
     const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
@@ -334,6 +344,6 @@ export class FirebaseVoiceMesh {
     this.remoteCallStreamIds.clear();
     this.remoteScreenTracks.clear();
     this.remoteScreenStreams.clear();
-    this.options.localStream.getTracks().forEach((track) => track.stop());
+    this.localStream.getTracks().forEach((track) => track.stop());
   }
 }

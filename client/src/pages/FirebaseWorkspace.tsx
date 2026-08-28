@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
-import { Bell, ChevronDown, Compass, GripVertical, Hash, Headphones, Home as HomeIcon, LogOut, MessageCircle, Mic, MoreHorizontal, PhoneOff, Plus, Radio, Search, Send, Settings, Signal, Sparkles, Upload, UserPlus, Users, Video, Volume2, WandSparkles, X } from "lucide-react";
+import { Bell, ChevronDown, Compass, GripVertical, Hash, Headphones, Home as HomeIcon, Link2, LogOut, MessageCircle, Mic, MoreHorizontal, PhoneOff, Plus, Radio, Search, Send, Settings, Signal, Sparkles, Upload, UserPlus, Users, Video, Volume2, WandSparkles, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { FirebaseAuthPanel } from "@/components/FirebaseAuthPanel";
@@ -13,6 +13,7 @@ import { useFirebaseAuth } from "@/hooks/useFirebaseAuth";
 import { hasFirebaseConfig, missingFirebaseConfigKeys } from "@/lib/firebase";
 import {
   createCommunity,
+  joinCommunity,
   createFriendRequest,
   createVoiceRoom,
   countVoiceMembers,
@@ -81,16 +82,33 @@ function qualityLabel(quality: PeerQuality | undefined): string {
   return "Fraca";
 }
 
-async function captureDirectStream(media: "audio" | "screen"): Promise<MediaStream> {
-  if (media === "audio") return navigator.mediaDevices.getUserMedia({ audio: true });
+async function captureDirectStream(media: "audio" | "screen", inputDeviceId?: string, noiseSuppression = true): Promise<MediaStream> {
+  const audio: MediaTrackConstraints = { echoCancellation: true, noiseSuppression, autoGainControl: true };
+  if (inputDeviceId) audio.deviceId = { exact: inputDeviceId };
+  if (media === "audio") return navigator.mediaDevices.getUserMedia({ audio });
   const screen = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
   try {
-    const microphone = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const microphone = await navigator.mediaDevices.getUserMedia({ audio });
     return new MediaStream([...microphone.getAudioTracks(), ...screen.getTracks()]);
   } catch (error) {
     screen.getTracks().forEach((track) => track.stop());
     throw error;
   }
+}
+
+function readVoiceInviteFromLocation(): { communityId: string; roomId: string } | null {
+  if (typeof window === "undefined") return null;
+  const params = new URLSearchParams(window.location.search);
+  const communityId = params.get("voiceCommunity")?.trim();
+  const roomId = params.get("voiceRoom")?.trim();
+  return communityId && roomId ? { communityId, roomId } : null;
+}
+
+function buildVoiceInviteUrl(communityId: string, roomId: string): string {
+  const url = new URL(window.location.href);
+  url.search = new URLSearchParams({ voiceCommunity: communityId, voiceRoom: roomId }).toString();
+  url.hash = "";
+  return url.toString();
 }
 
 type CreationDialogProps = { target: "community" | "room"; value: string; error: string; pending: boolean; onChange: (value: string) => void; onClose: () => void; onSubmit: () => void };
@@ -147,11 +165,13 @@ function ProfilePanel({ profile, email, onSave, onUpload }: { profile: FirebaseP
   return <section className="workspace-panel profile-workspace-panel"><div className="workspace-panel-heading"><div><span className="firebase-kicker">CONCORD / PERFIL</span><h1>Seu perfil</h1><p>Personalize o nome e a imagem que aparecem para suas conexões.</p></div><Settings size={27} /></div><div className="profile-edit-card"><div className="profile-avatar-preview"><div className="profile-avatar-image">{avatarUrl ? <img src={avatarUrl} alt="Prévia do avatar" /> : <span>{initials(displayName || "Conta")}</span>}</div><div><strong>Imagem do perfil</strong><span>Escolha um avatar pronto ou envie sua própria imagem.</span></div></div><div className="profile-avatar-section"><span className="profile-field-label">Avatares prontos</span><div className="avatar-preset-grid">{presetAvatars.map((avatar) => <button type="button" className={avatarUrl === avatar.url ? "avatar-preset selected" : "avatar-preset"} key={avatar.url} onClick={() => setAvatarUrl(avatar.url)} aria-label={`Usar avatar ${avatar.name}`}><img src={avatar.url} alt={avatar.name} /></button>)}</div><label className="avatar-upload-button"><Upload size={15} /> Enviar imagem própria<input type="file" accept="image/png,image/jpeg,image/webp,image/gif" onChange={chooseFile} /></label></div><label>Nome de exibição<Input value={displayName} onChange={(event) => setDisplayName(event.target.value)} maxLength={40} /></label><label>E-mail<Input value={email} readOnly /></label><div className="profile-code"><span>Seu código público</span><strong>{profile?.publicId ?? "CON-00000000"}</strong></div><Button className="primary-cta" onClick={() => onSave(displayName.trim(), avatarUrl)} disabled={!displayName.trim()}>Salvar perfil</Button></div></section>;
 }
 
-function SettingsPanel({ onVoiceSettings }: { onVoiceSettings: () => void }) {
-  return <section className="workspace-panel"><div className="workspace-panel-heading"><div><span className="firebase-kicker">CONCORD / CONFIGURAÇÕES</span><h1>Configurações</h1><p>Controle seu perfil e sua experiência de voz.</p></div><Settings size={27} /></div><div className="settings-grid"><button className="settings-card" onClick={onVoiceSettings}><Mic size={19} /><span><strong>Configuração de voz</strong><small>Reabrir permissão do microfone e revisar o dispositivo de entrada.</small></span><ChevronDown size={16} /></button><div className="settings-card static"><UserPlus size={19} /><span><strong>Privacidade</strong><small>Suas solicitações usam somente o código público da conta.</small></span></div><div className="settings-card pwa-settings-card"><span><strong>Aplicativo Concord</strong><small>Instale o Concord na tela inicial para abrir suas comunidades como um aplicativo.</small></span><PwaInstallButton /></div></div></section>;
+function SettingsPanel({ audioDevices, selectedInput, selectedOutput, noiseSuppression, micLevel, onInputChange, onOutputChange, onNoiseChange, onRefreshDevices }: { audioDevices: MediaDeviceInfo[]; selectedInput: string; selectedOutput: string; noiseSuppression: boolean; micLevel: number; onInputChange: (deviceId: string) => void; onOutputChange: (deviceId: string) => void; onNoiseChange: (enabled: boolean) => void; onRefreshDevices: () => void }) {
+  const inputs = audioDevices.filter((device) => device.kind === "audioinput");
+  const outputs = audioDevices.filter((device) => device.kind === "audiooutput");
+  return <section className="workspace-panel"><div className="workspace-panel-heading"><div><span className="firebase-kicker">CONCORD / CONFIGURAÇÕES</span><h1>Configurações</h1><p>Ajuste sua voz e a forma como você usa o Concord.</p></div><Settings size={27} /></div><div className="settings-grid"><div className="settings-card voice-settings-card"><div className="voice-settings-card-heading"><Mic size={19} /><span><strong>Áudio da chamada</strong><small>O Concord reconhece os dispositivos usados atualmente e permite trocar quando quiser.</small></span><button type="button" className="settings-refresh-button" onClick={onRefreshDevices} aria-label="Atualizar dispositivos de áudio" title="Atualizar dispositivos"><Radio size={15} /></button></div><div className="voice-settings-fields"><label>Entrada de voz<select value={selectedInput} onChange={(event) => onInputChange(event.target.value)}><option value="">Padrão do sistema</option>{selectedInput && !inputs.some((device) => device.deviceId === selectedInput) && <option value={selectedInput}>Microfone atual</option>}{inputs.map((device) => <option key={device.deviceId} value={device.deviceId}>{device.label || "Microfone disponível"}</option>)}</select></label><label>Saída de voz<select value={selectedOutput} onChange={(event) => onOutputChange(event.target.value)}><option value="">Padrão do sistema</option>{selectedOutput && !outputs.some((device) => device.deviceId === selectedOutput) && <option value={selectedOutput}>Saída atual</option>}{outputs.map((device) => <option key={device.deviceId} value={device.deviceId}>{device.label || "Saída disponível"}</option>)}</select></label></div><label className="voice-toggle-row"><span><strong>Supressão de ruído</strong><small>Reduz ruídos contínuos do ambiente durante as chamadas.</small></span><input type="checkbox" checked={noiseSuppression} onChange={(event) => void onNoiseChange(event.target.checked)} /></label><div className="mic-level-card"><div><strong>Nível do microfone</strong><span>{Math.round(micLevel * 100)}%</span></div><div className="mic-level-track" role="progressbar" aria-label="Nível do microfone" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(micLevel * 100)}><i style={{ width: `${Math.round(micLevel * 100)}%` }} /></div><small>Entre em uma call para testar o sinal em tempo real.</small></div></div><div className="settings-card static"><UserPlus size={19} /><span><strong>Privacidade</strong><small>Suas solicitações e convites usam somente os dados necessários para entrar nas comunidades.</small></span></div><div className="settings-card pwa-settings-card"><span><strong>Aplicativo Concord</strong><small>Instale o Concord na tela inicial para abrir suas comunidades como um aplicativo.</small></span><PwaInstallButton /></div></div></section>;
 }
 
-function ScreenPreview({ stream, label = "Sua tela está sendo compartilhada", muted = true, volume = 1 }: { stream: MediaStream; label?: string; muted?: boolean; volume?: number }) {
+function ScreenPreview({ stream, label = "Sua tela está sendo compartilhada", muted = true, volume = 1, outputDeviceId }: { stream: MediaStream; label?: string; muted?: boolean; volume?: number; outputDeviceId?: string }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [playbackBlocked, setPlaybackBlocked] = useState(false);
   const [audioLocked, setAudioLocked] = useState(!muted);
@@ -185,7 +205,8 @@ function ScreenPreview({ stream, label = "Sua tela está sendo compartilhada", m
     if (!video) return;
     video.muted = muted || audioLocked;
     video.volume = volume;
-  }, [muted, volume, audioLocked]);
+    if (outputDeviceId && "setSinkId" in video) void (video as HTMLVideoElement & { setSinkId: (deviceId: string) => Promise<void> }).setSinkId(outputDeviceId).catch(() => undefined);
+  }, [muted, volume, audioLocked, outputDeviceId]);
 
   const showPlaybackAction = playbackBlocked || audioLocked;
   const actionLabel = playbackBlocked ? "Reproduzir tela" : "Ativar áudio da tela";
@@ -194,7 +215,7 @@ function ScreenPreview({ stream, label = "Sua tela está sendo compartilhada", m
 
 type ScreenViewMode = "mini" | "medium" | "full";
 
-function DraggableScreenPanel({ stream, title, label, volume, muted = true, onVolumeChange, onClose }: { stream: MediaStream; title: string; label: string; volume?: number; muted?: boolean; onVolumeChange?: (value: number) => void; onClose?: () => void }) {
+function DraggableScreenPanel({ stream, title, label, volume, muted = true, outputDeviceId, onVolumeChange, onClose }: { stream: MediaStream; title: string; label: string; volume?: number; muted?: boolean; outputDeviceId?: string; onVolumeChange?: (value: number) => void; onClose?: () => void }) {
   const panelRef = useRef<HTMLDivElement>(null);
   const [viewMode, setViewMode] = useState<ScreenViewMode>("mini");
   const dragOffset = useRef({ x: 0, y: 0 });
@@ -231,10 +252,10 @@ function DraggableScreenPanel({ stream, title, label, volume, muted = true, onVo
 
   const modeLabels: Record<ScreenViewMode, string> = { mini: "Mini", medium: "Médio", full: "Tela cheia" };
   const panelStyle = viewMode === "full" ? { inset: 0, left: 0, top: 0, right: 0, bottom: 0 } : position ? { left: position.left, top: position.top, right: "auto" } : undefined;
-  return <div ref={panelRef} className={`${dragging ? "direct-screen-float is-dragging" : "direct-screen-float"} direct-screen-view-${viewMode}`} style={panelStyle}><div className="direct-screen-float-bar" onPointerDown={startDragging}><div className="direct-screen-float-title"><GripVertical size={15} aria-hidden="true" /><span><strong>{title}</strong><small>{label}</small></span></div>{onClose && <button type="button" aria-label="Fechar compartilhamento de tela" onPointerDown={(event) => event.stopPropagation()} onClick={onClose}><X size={15} /></button>}</div><div className="direct-screen-view-controls" role="group" aria-label="Modo de visualização"><span>Visualização</span>{(Object.keys(modeLabels) as ScreenViewMode[]).map((mode) => <button key={mode} type="button" className={viewMode === mode ? "is-active" : ""} onPointerDown={(event) => event.stopPropagation()} onClick={() => setViewMode(mode)}>{modeLabels[mode]}</button>)}</div><ScreenPreview stream={stream} label={label} muted={muted} volume={volume ?? 1} />{onVolumeChange && <label className="direct-screen-volume"><Volume2 size={14} /><span>Volume da tela</span><input type="range" min="0" max="1" step="0.05" value={volume ?? 1} onChange={(event) => onVolumeChange(Number(event.target.value))} aria-label="Volume do áudio da tela compartilhada" /><output>{Math.round((volume ?? 1) * 100)}%</output></label>}</div>;
+  return <div ref={panelRef} className={`${dragging ? "direct-screen-float is-dragging" : "direct-screen-float"} direct-screen-view-${viewMode}`} style={panelStyle}><div className="direct-screen-float-bar" onPointerDown={startDragging}><div className="direct-screen-float-title"><GripVertical size={15} aria-hidden="true" /><span><strong>{title}</strong><small>{label}</small></span></div>{onClose && <button type="button" aria-label="Fechar compartilhamento de tela" onPointerDown={(event) => event.stopPropagation()} onClick={onClose}><X size={15} /></button>}</div><div className="direct-screen-view-controls" role="group" aria-label="Modo de visualização"><span>Visualização</span>{(Object.keys(modeLabels) as ScreenViewMode[]).map((mode) => <button key={mode} type="button" className={viewMode === mode ? "is-active" : ""} onPointerDown={(event) => event.stopPropagation()} onClick={() => setViewMode(mode)}>{modeLabels[mode]}</button>)}</div><ScreenPreview stream={stream} label={label} muted={muted} volume={volume ?? 1} outputDeviceId={outputDeviceId} />{onVolumeChange && <label className="direct-screen-volume"><Volume2 size={14} /><span>Volume da tela</span><input type="range" min="0" max="1" step="0.05" value={volume ?? 1} onChange={(event) => onVolumeChange(Number(event.target.value))} aria-label="Volume do áudio da tela compartilhada" /><output>{Math.round((volume ?? 1) * 100)}%</output></label>}</div>;
 }
 
-function RemoteAudio({ stream, peerId, unlockVersion, onBlocked }: { stream: MediaStream; peerId: string; unlockVersion: number; onBlocked: () => void }) {
+function RemoteAudio({ stream, peerId, unlockVersion, outputDeviceId, onBlocked }: { stream: MediaStream; peerId: string; unlockVersion: number; outputDeviceId?: string; onBlocked: () => void }) {
   const audioRef = useRef<HTMLAudioElement>(null);
   const onBlockedRef = useRef(onBlocked);
   onBlockedRef.current = onBlocked;
@@ -243,9 +264,10 @@ function RemoteAudio({ stream, peerId, unlockVersion, onBlocked }: { stream: Med
     if (!audio) return;
     audio.srcObject = stream;
     audio.volume = 1;
+    if (outputDeviceId && "setSinkId" in audio) void (audio as HTMLAudioElement & { setSinkId: (deviceId: string) => Promise<void> }).setSinkId(outputDeviceId).catch(() => undefined);
     void audio.play().catch(() => onBlockedRef.current());
     return () => { if (audio.srcObject === stream) audio.srcObject = null; };
-  }, [stream, unlockVersion]);
+  }, [stream, unlockVersion, outputDeviceId]);
   return <audio ref={audioRef} autoPlay playsInline aria-label={`Áudio de ${peerId}`} />;
 }
 
@@ -285,6 +307,13 @@ export default function FirebaseWorkspace() {
   const [membersOpen, setMembersOpen] = useState(true);
   const [notice, setNotice] = useState("");
   const [loading, setLoading] = useState(false);
+  const [audioDevices, setAudioDevices] = useState<MediaDeviceInfo[]>([]);
+  const [selectedInput, setSelectedInput] = useState(() => typeof window === "undefined" ? "" : window.localStorage.getItem("concord.voice.input") ?? "");
+  const [selectedOutput, setSelectedOutput] = useState(() => typeof window === "undefined" ? "" : window.localStorage.getItem("concord.voice.output") ?? "");
+  const [noiseSuppression, setNoiseSuppression] = useState(() => typeof window === "undefined" ? true : window.localStorage.getItem("concord.voice.noiseSuppression") !== "false");
+  const [micLevel, setMicLevel] = useState(0);
+  const inviteFromUrl = useMemo(() => readVoiceInviteFromLocation(), []);
+  const [inviteHandled, setInviteHandled] = useState(false);
 
   useEffect(() => {
     if (!mobileDrawer) return;
@@ -307,6 +336,21 @@ export default function FirebaseWorkspace() {
   const [screenVolumes, setScreenVolumes] = useState<Record<string, number>>({});
   const [voiceStream, setVoiceStream] = useState<MediaStream | null>(null);
   const [muted, setMuted] = useState(false);
+
+  useEffect(() => {
+    const refreshAudioDevices = async () => {
+      try { setAudioDevices(await voiceService.listAudioDevices()); } catch { setAudioDevices([]); }
+    };
+    void refreshAudioDevices();
+    navigator.mediaDevices?.addEventListener?.("devicechange", refreshAudioDevices);
+    return () => navigator.mediaDevices?.removeEventListener?.("devicechange", refreshAudioDevices);
+  }, [voiceService]);
+
+  useEffect(() => {
+    if (!voiceStream) { setMicLevel(0); return; }
+    const timer = window.setInterval(() => setMicLevel(voiceService.getMicrophoneLevel()), 120);
+    return () => window.clearInterval(timer);
+  }, [voiceService, voiceStream]);
   const [screenSharing, setScreenSharing] = useState(false);
   const [screenPreviewStream, setScreenPreviewStream] = useState<MediaStream | null>(null);
   const [screenViewerIds, setScreenViewerIds] = useState<Set<string>>(() => new Set());
@@ -330,6 +374,12 @@ export default function FirebaseWorkspace() {
   const [directScreenVolume, setDirectScreenVolume] = useState(1);
   const [directAudioBlocked, setDirectAudioBlocked] = useState(false);
   const directAudioRef = useRef<HTMLAudioElement>(null);
+
+  useEffect(() => {
+    const audio = directAudioRef.current;
+    if (!audio || !selectedOutput || !("setSinkId" in audio)) return;
+    void (audio as HTMLAudioElement & { setSinkId: (deviceId: string) => Promise<void> }).setSinkId(selectedOutput).catch(() => undefined);
+  }, [selectedOutput, directRemoteStream]);
   const [pendingDirectSignals, setPendingDirectSignals] = useState<import("@/services/firebaseStore").FirebaseSignal[]>([]);
   const handledDirectSignalIds = useRef<Set<string>>(new Set());
   const directCallRef = useRef<FirebaseDirectCall | null>(null);
@@ -655,7 +705,7 @@ export default function FirebaseWorkspace() {
   const startDirectCall = async (media: "audio" | "screen") => {
     if (!directFriendId) return;
     try {
-      const local = await captureDirectStream(media);
+      const local = await captureDirectStream(media, selectedInput || undefined, noiseSuppression);
       const callId = await createDirectCall(currentUser.uid, directFriendId, media);
       const service = new FirebaseDirectCall({ callId, userId: currentUser.uid, media, localStream: local, onRemoteStream: (stream) => { setDirectRemoteStream(new MediaStream(stream.getTracks())); setDirectCallStatus("connected"); }, onRemoteScreenStream: (stream) => { setDirectRemoteScreenStream(new MediaStream(stream.getTracks())); }, onRemoteScreenEnded: () => setDirectRemoteScreenStream(null), onScreenShareEnded: () => { setDirectScreenStream(null); setDirectScreenSharing(false); }, onError: (error) => setNotice(error.message) });
       directCallRef.current = service; setPendingDirectSignals([]); setDirectLocalStream(local); setDirectScreenStream(media === "screen" ? local : null); setDirectScreenSharing(media === "screen"); setDirectRemoteStream(null); setDirectRemoteScreenStream(null); setDirectScreenVolume(1); setDirectAudioBlocked(false); setDirectCallId(callId); setDirectCallDirection("outgoing"); setDirectCallStatus("ringing");
@@ -699,7 +749,7 @@ export default function FirebaseWorkspace() {
     if (!directCallId || !directFriendId) return;
     stopDirectCallRingtone();
     try {
-      const local = await captureDirectStream("audio");
+      const local = await captureDirectStream("audio", selectedInput || undefined, noiseSuppression);
       const service = new FirebaseDirectCall({ callId: directCallId, userId: currentUser.uid, media: directCallMedia, localStream: local, onRemoteStream: (stream) => { setDirectRemoteStream(new MediaStream(stream.getTracks())); setDirectCallStatus("connected"); }, onRemoteScreenStream: (stream) => { setDirectRemoteScreenStream(new MediaStream(stream.getTracks())); }, onRemoteScreenEnded: () => setDirectRemoteScreenStream(null), onScreenShareEnded: () => { setDirectScreenStream(null); setDirectScreenSharing(false); }, onError: (error) => setNotice(error.message) });
       directCallRef.current = service;
       setDirectLocalStream(local);
@@ -813,6 +863,41 @@ export default function FirebaseWorkspace() {
     playVoiceTone(kind, pan);
   };
 
+  const applyVoicePreferences = async (inputDeviceId = selectedInput, nextNoiseSuppression = noiseSuppression) => {
+    if (voiceRoomId && voiceStream) {
+      const nextStream = await voiceService.replaceMicrophone(inputDeviceId || undefined, nextNoiseSuppression);
+      await meshRef.current?.replaceMicrophone(nextStream);
+      setVoiceStream(nextStream);
+      await voiceService.startMicrophoneMeter();
+      return;
+    }
+    if (directCallRef.current && directCallStatus === "connected") {
+      const nextStream = await captureDirectStream("audio", inputDeviceId || undefined, nextNoiseSuppression);
+      await directCallRef.current.replaceMicrophone(nextStream);
+      directLocalStream?.getTracks().forEach((track) => track.stop());
+      setDirectLocalStream(nextStream);
+    }
+  };
+
+  const changeVoiceInput = async (deviceId: string) => {
+    setSelectedInput(deviceId);
+    window.localStorage.setItem("concord.voice.input", deviceId);
+    try { await applyVoicePreferences(deviceId, noiseSuppression); setNotice("Microfone atualizado."); }
+    catch (error) { setNotice(error instanceof Error ? error.message : "Não foi possível trocar o microfone."); }
+  };
+
+  const changeNoiseSuppression = async (enabled: boolean) => {
+    setNoiseSuppression(enabled);
+    window.localStorage.setItem("concord.voice.noiseSuppression", String(enabled));
+    try { await applyVoicePreferences(selectedInput, enabled); setNotice(enabled ? "Supressão de ruído ativada." : "Supressão de ruído desativada."); }
+    catch (error) { setNotice(error instanceof Error ? error.message : "Não foi possível atualizar a supressão de ruído."); }
+  };
+
+  const changeVoiceOutput = (deviceId: string) => {
+    setSelectedOutput(deviceId);
+    window.localStorage.setItem("concord.voice.output", deviceId);
+    setNotice("Saída de voz atualizada.");
+  };
 
   const toggleMute = async () => {
     if (!community || !voiceRoomId || !voiceStream) return;
@@ -857,6 +942,22 @@ export default function FirebaseWorkspace() {
     } catch (error) { setNotice(error instanceof Error ? error.message : "Não foi possível fechar o compartilhamento de tela."); }
   };
 
+  const shareVoiceInvite = async () => {
+    if (!community || !voiceRoomId) { setNotice("Entre em uma sala de call antes de convidar alguém."); return; }
+    const room = rooms.find((item) => item.id === voiceRoomId);
+    if (!room) return;
+    const inviteUrl = buildVoiceInviteUrl(community.id, room.id);
+    try {
+      const nativeShare = (navigator as Navigator & { share?: (data: ShareData) => Promise<void> }).share;
+      if (nativeShare) { await nativeShare.call(navigator, { title: `Call · ${room.name}`, text: `Entre na call ${room.name} do Concord.`, url: inviteUrl }); setNotice("Convite pronto para compartilhar."); }
+      else { await navigator.clipboard.writeText(inviteUrl); setNotice("Link da call copiado para a área de transferência."); }
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") return;
+      try { await navigator.clipboard.writeText(inviteUrl); setNotice("Link da call copiado para a área de transferência."); }
+      catch { setNotice("Não foi possível compartilhar o convite. Copie o endereço da página."); }
+    }
+  };
+
   const leaveVoiceRoom = async () => {
     if (!community || !voiceRoomId) return;
     leavingVoiceRef.current = true;
@@ -882,7 +983,10 @@ export default function FirebaseWorkspace() {
         const roomMemberCount = await countVoiceMembers(community.id, room.id);
         if (roomMemberCount >= 8) { setNotice("Esta sala já atingiu o limite de 8 participantes."); return; }
         meshRef.current?.dispose();
-        const localStream = await voiceService.captureMicrophone();
+        const localStream = await voiceService.captureMicrophone(selectedInput || undefined, noiseSuppression);
+        const activeInputId = localStream.getAudioTracks()[0]?.getSettings().deviceId;
+        if (activeInputId) setSelectedInput(activeInputId);
+        void voiceService.listAudioDevices().then(setAudioDevices);
         const sessionId = globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`;
         setVoiceStream(localStream);
         setVoiceSessionId(sessionId);
@@ -898,6 +1002,37 @@ export default function FirebaseWorkspace() {
       }
     } catch (error) { setNotice(error instanceof Error ? error.message : "Não foi possível atualizar a sala."); }
   };
+
+  useEffect(() => {
+    if (!auth.user || !inviteFromUrl || inviteHandled) return;
+    let cancelled = false;
+    void joinCommunity(inviteFromUrl.communityId, auth.user.uid).then(async () => {
+      if (cancelled) return;
+      const nextCommunities = await listCommunities(auth.user!.uid);
+      const invitedCommunity = nextCommunities.find((item) => item.id === inviteFromUrl.communityId);
+      setCommunities(nextCommunities);
+      if (invitedCommunity) {
+        setCommunity(invitedCommunity);
+        setActivePanel("chat");
+        setNotice("Convite aceito. Escolhendo a sala de call...");
+      } else setNotice("A comunidade do convite não está disponível.");
+      setInviteHandled(true);
+      const cleanUrl = new URL(window.location.href);
+      cleanUrl.searchParams.delete("voiceCommunity");
+      cleanUrl.searchParams.delete("voiceRoom");
+      window.history.replaceState({}, "", cleanUrl.toString());
+    }).catch((error) => setNotice(error instanceof Error ? error.message : "Não foi possível abrir o convite da call."));
+    return () => { cancelled = true; };
+  }, [auth.user, inviteFromUrl, inviteHandled]);
+
+  useEffect(() => {
+    if (!inviteHandled || !inviteFromUrl || !community || community.id !== inviteFromUrl.communityId || voiceRoomId) return;
+    const invitedRoom = rooms.find((room) => room.id === inviteFromUrl.roomId);
+    if (!invitedRoom) { if (rooms.length) setNotice("A sala do convite não está disponível."); return; }
+    setChannel({ id: invitedRoom.id, communityId: invitedRoom.communityId, name: invitedRoom.name, kind: "voice" });
+    setActivePanel("chat");
+    void toggleVoice(invitedRoom);
+  }, [community, inviteFromUrl, inviteHandled, rooms, voiceRoomId]);
 
   if (!hasFirebaseConfig()) return <main className="firebase-config-error"><div className="firebase-config-card"><span className="firebase-config-kicker">CONFIGURAÇÃO NECESSÁRIA</span><h1>Concord está pronto, mas o Firebase ainda não foi configurado.</h1><p>Adicione as variáveis públicas do Firebase em GitHub → Settings → Secrets and variables → Actions → Variables e execute o workflow novamente.</p><code>{missingFirebaseConfigKeys.join(", ") || "VITE_FIREBASE_*"}</code><p className="firebase-config-help">As credenciais administrativas não são necessárias no frontend. Depois de salvar as variáveis, faça um novo push ou use Run workflow.</p></div></main>;
 
@@ -930,11 +1065,11 @@ export default function FirebaseWorkspace() {
       <header className="content-header"><div className="mobile-nav-actions"><button type="button" aria-label="Abrir canais" onClick={() => setMobileDrawer("channels")}><Compass size={17} /></button><button type="button" aria-label="Abrir amigos" onClick={() => { setActivePanel("friends"); setMobileDrawer(null); }}><Users size={17} /></button><button type="button" aria-label="Abrir perfil" onClick={() => { setActivePanel("profile"); setMobileDrawer(null); }}><Settings size={17} /></button></div><div className="channel-title"><div className="title-symbol"><Hash size={18} /></div><div><h2>{directFriendId ? "Mensagem direta" : channel?.name ?? "geral"}</h2><span>{channel?.kind === "voice" ? `Sala de voz em tempo real${isOnline ? "." : " · Offline — mensagens serão sincronizadas depois."}` : "Um espaço para começar qualquer conversa."}</span></div></div><div className="header-actions"><PwaInstallButton compact /><button title="Ativar notificações de mensagens" onClick={() => void enableVoiceNotifications()} aria-label="Ativar notificações de mensagens"><Bell size={17} />{Object.values(channelUnread).reduce((total, count) => total + count, 0) > 0 && <span className="header-unread-dot" />}</button><button title="Abrir Amigos" onClick={() => { setActivePanel("friends"); setSocialOpen(false); }}><Search size={17} /></button><button type="button" title="Abrir membros" aria-expanded={mobileDrawer === "members" || membersOpen} onClick={() => { if (window.matchMedia("(max-width: 760px)").matches) { setMembersOpen(true); setMobileDrawer("members"); } else { setMembersOpen((open) => !open); } }}><Users size={17} /></button><div className="header-divider" /><button type="button" className="profile-chip" onClick={() => { setActivePanel("profile"); setMobileDrawer(null); }}><span className="avatar profile-avatar-shell">{profile?.avatarUrl ? <img src={profile.avatarUrl} alt="" /> : <span>{initials(profile?.displayName ?? currentUser.displayName ?? "Conta")}</span>}<span className="online-dot" /></span><span>{profile?.displayName ?? currentUser.displayName ?? "Conta Concord"}</span><ChevronDown size={14} /></button></div></header>
       {notice && <div className="firebase-notice" role="status">{notice}</div>}
       {activePanel === "chat" ? <>
-      {directFriendId ? <><section className="message-area"><div className="direct-chat-toolbar"><div className="direct-chat-identity"><ProfileAvatar profile={activeFriend} fallbackName="Amigo" /><div><strong>{activeFriend?.displayName ?? "Conversa direta"}</strong><small>{activeFriend?.presence === "online" ? "Online" : activeFriend?.presence === "away" ? "Ocupado" : "Indisponível"}</small></div></div><div className="direct-chat-actions"><div className="direct-call-actions" role="group" aria-label="Controles da chamada"><button className="direct-call-button" onClick={() => void startDirectCall("audio")} disabled={directCallStatus !== "idle" && directCallStatus !== "ended"} aria-label="Iniciar chamada de áudio" title="Chamada de áudio"><Headphones size={16} /><span>Áudio</span></button><button className={directScreenSharing ? "direct-call-button direct-call-screen-active" : "direct-call-button"} onClick={() => void toggleDirectScreen()} disabled={directCallStatus !== "connected"} aria-label={directScreenSharing ? "Parar compartilhamento de tela" : "Compartilhar tela na chamada"} title={directScreenSharing ? "Parar compartilhamento" : "Compartilhar tela"}><Video size={16} /><span>{directScreenSharing ? "Parar tela" : "Tela"}</span></button>{directCallStatus !== "idle" && directCallStatus !== "ended" ? <button className="direct-call-button direct-call-end" onClick={() => void endDirectCall()} aria-label="Encerrar chamada" title="Encerrar chamada"><PhoneOff size={16} /><span>Encerrar</span></button> : null}</div><div className="direct-utility-actions"><button onClick={() => setSocialOpen(true)} aria-label="Convidar para o grupo" title="Convidar"><UserPlus size={16} /></button><button onClick={() => { if (directFriendId) void deleteDirect(directFriendId); }} aria-label="Apagar conversa" title="Apagar conversa"><X size={16} /></button></div></div></div>{hasVideoTrack(directScreenStream) && <DraggableScreenPanel stream={directScreenStream} title="Sua tela" label="Você está compartilhando a tela" onClose={() => void closeDirectScreenForEveryone()} />}{hasVideoTrack(directRemoteScreenStream) && <DraggableScreenPanel stream={directRemoteScreenStream} title={activeFriend?.displayName ?? "Seu amigo"} label={`Tela de ${activeFriend?.displayName ?? "seu amigo"}`} volume={directScreenVolume} muted={false} onVolumeChange={setDirectScreenVolume} onClose={() => void closeDirectScreenForEveryone()} />}<audio ref={directAudioRef} autoPlay playsInline aria-label="Áudio remoto da chamada" />{directRemoteStream && directAudioBlocked && <button className="direct-audio-unlock" onClick={() => void enableDirectAudio()}><Volume2 size={15} /> Ativar áudio</button>}<div className="channel-intro"><div className="intro-symbol"><MessageCircle size={27} /></div><h1>Conversa com {activeFriend?.displayName ?? "seu amigo"}</h1><p>Mensagens diretas com sua conexão.</p><div className="intro-rule" /></div><div className="message-list">{directMessages.length ? directMessages.map((item) => <article className="message-row" key={item.id}><span className="avatar bg-blue-200 text-blue-900">{initials(item.authorId)}</span><div className="message-copy"><div className="message-author"><strong>{item.authorId === currentUser.uid ? "Você" : item.authorId}</strong><span>@conexão</span><time>agora</time></div><p>{item.body}</p></div></article>) : <div className="empty-state">Nenhuma mensagem nesta conversa ainda.</div>}</div></section><div className="composer-wrap"><div className="composer"><Input value={directBody} onChange={(event) => setDirectBody(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") void sendDirect(); }} placeholder="Mensagem direta" /><button className="send-button" onClick={() => void sendDirect()} aria-label="Enviar mensagem direta"><Send size={17} /></button></div></div></> : channel?.kind === "voice" ? <section className="message-area firebase-voice-original-stage"><div className="channel-intro"><div className="intro-symbol"><Headphones size={27} /></div><h1>{channel.name}</h1><p>{members.length}/8 participante(s) sincronizado(s) pelo Firestore.</p><div className="intro-rule" /></div><div className="firebase-member-grid">{members.length ? members.map((member) => { const quality = peerQualities[member.uid]; return <div className={member.isSpeaking || (member.uid === currentUser.uid && localSpeaking) ? "firebase-member speaking call-member-speaking" : "firebase-member"} key={member.uid} title={member.isSpeaking || (member.uid === currentUser.uid && localSpeaking) ? `${member.displayName} está falando agora` : member.displayName}><ProfileAvatar profile={member} fallbackName={member.displayName} className={member.isSpeaking || (member.uid === currentUser.uid && localSpeaking) ? "speaking-avatar" : ""} /><strong>{member.displayName}</strong>{member.isSpeaking || (member.uid === currentUser.uid && localSpeaking) ? <span className="talking-label">Falando</span> : null}<span className={`voice-quality voice-quality-${quality?.level ?? "unknown"}`} title={`${qualityLabel(quality)}${quality?.ping !== null && quality?.ping !== undefined ? ` · ${quality.ping} ms` : ""}`}><Signal size={13} /><span>{quality?.ping !== null && quality?.ping !== undefined ? `${quality.ping} ms` : "--"}</span></span></div>; }) : <div className="empty-state">Ninguém na sala ainda.</div>}</div>{Object.entries(remoteStreams).map(([peerId, stream]) => <RemoteAudio key={peerId} peerId={peerId} stream={stream} unlockVersion={voiceAudioUnlockVersion} onBlocked={() => setVoiceAudioBlocked(true)} />)}{voiceAudioBlocked && <button className="voice-audio-unlock" type="button" onClick={() => { setVoiceAudioBlocked(false); setVoiceAudioUnlockVersion((current) => current + 1); }}><Volume2 size={15} /> Ativar áudio dos participantes</button>}{screenPreviewStream && <DraggableScreenPanel stream={screenPreviewStream} title="Sua tela" label="Você está compartilhando a tela" onClose={() => void closeGroupScreen()} />}{members.filter((member) => member.screenSharing && member.uid !== currentUser.uid && screenViewerIds.has(member.uid) && hasVideoTrack(remoteScreenStreams[member.uid] ?? null)).map((member) => <DraggableScreenPanel key={member.uid} stream={remoteScreenStreams[member.uid]!} title={member.displayName} label={`Tela de ${member.displayName}`} volume={screenVolumes[member.uid] ?? 1} muted={false} onVolumeChange={(value) => setScreenVolumes((current) => ({ ...current, [member.uid]: value }))} onClose={() => void closeGroupScreen(member.uid)} />)}<VoiceScreenPanel currentUid={currentUser.uid} members={members} screenStreams={remoteScreenStreams} viewers={screenViewerIds} onToggleViewer={toggleScreenViewer} /><div className="voice-chat-redirect"><MessageCircle size={16} /><span>O chat desta sala foi unificado com o canal Geral da comunidade.</span><button type="button" onClick={() => { const general = channels.find((item) => item.kind === "text"); if (general) setChannel(general); }}>Abrir Geral</button></div>{voiceRoomId ? <div className="call-actions firebase-voice-actions"><button className={muted ? "control-active" : ""} onClick={toggleMute} aria-label="Mutar microfone"><Mic size={16} /></button><button className={screenSharing ? "control-active" : ""} onClick={() => void toggleScreen()} aria-label="Compartilhar tela"><Video size={16} /></button><button className="disconnect" onClick={() => void leaveVoiceRoom()} aria-label="Sair da sala"><PhoneOff size={16} /></button></div> : <div className="call-actions firebase-voice-actions"><button className="join-call-button" onClick={() => activeVoiceRoom && void toggleVoice(activeVoiceRoom)} disabled={!activeVoiceRoom}><Headphones size={16} /> Entrar na chamada</button></div>}</section> : <><section className="message-area"><div className="channel-intro"><div className="intro-symbol"><Hash size={27} /></div><h1>Bem-vindo ao #{channel?.name ?? "geral"}</h1><p>Este é o começo do canal. Um bom lugar para dizer olá.</p><div className="intro-rule" /></div><div className="message-list">{messages.length ? messages.map((item) => <article className="message-row" key={item.id}><span className="avatar bg-blue-200 text-blue-900">{initials(item.authorId)}</span><div className="message-copy"><div className="message-author"><strong>{item.authorId === currentUser.uid ? "Você" : "Concord"}</strong><span>@concord</span><time>agora</time></div><p>{item.body}</p></div></article>) : <article className="message-row"><span className="avatar bg-blue-100 text-blue-900">CO</span><div className="message-copy"><div className="message-author"><strong>Concord</strong><span>@concord</span><time>agora</time></div><p>Bem-vindo ao Concord. Esta é a primeira mensagem deste canal.</p></div></article>}</div></section><div className="composer-wrap"><div className="composer"><button aria-label="Mais opções"><Plus size={19} /></button><Input value={body} onChange={(event) => setBody(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") void sendMessage(); }} placeholder={"Mensagem em #" + (channel?.name ?? "geral")} /><button onClick={() => void sendMessage()} className="send-button" aria-label="Enviar mensagem"><Send size={17} /></button></div><span className="composer-hint">Enter para enviar <span>•</span> Shift + Enter para nova linha</span></div></>}
-      </> : activePanel === "friends" ? <FriendsPanel currentUid={currentUser.uid} searchValue={search} results={results} friendships={friendships} friendProfiles={friendProfiles} invites={invites} onOpenChat={(uid) => { setDirectFriendId(uid); setActivePanel("chat"); }} onSearchValueChange={setSearch} onSearch={() => void searchProfiles()} onAddFriend={(target) => void addFriend(target)} onRespondFriend={(request, status) => void respondFriend(request, status)} onRespondInvite={(invite, status) => void respondInvite(invite, status)} /> : activePanel === "profile" ? <ProfilePanel profile={profile} email={currentUser.email ?? ""} onSave={(name, avatarUrl) => void saveDisplayName(name, avatarUrl)} onUpload={uploadAvatar} /> : <SettingsPanel onVoiceSettings={() => setNotice("Entre em uma sala para testar o microfone; a permissão será solicitada pelo navegador.")} />}
+      {directFriendId ? <><section className="message-area"><div className="direct-chat-toolbar"><div className="direct-chat-identity"><ProfileAvatar profile={activeFriend} fallbackName="Amigo" /><div><strong>{activeFriend?.displayName ?? "Conversa direta"}</strong><small>{activeFriend?.presence === "online" ? "Online" : activeFriend?.presence === "away" ? "Ocupado" : "Indisponível"}</small></div></div><div className="direct-chat-actions"><div className="direct-call-actions" role="group" aria-label="Controles da chamada"><button className="direct-call-button" onClick={() => void startDirectCall("audio")} disabled={directCallStatus !== "idle" && directCallStatus !== "ended"} aria-label="Iniciar chamada de áudio" title="Chamada de áudio"><Headphones size={16} /><span>Áudio</span></button><button className={directScreenSharing ? "direct-call-button direct-call-screen-active" : "direct-call-button"} onClick={() => void toggleDirectScreen()} disabled={directCallStatus !== "connected"} aria-label={directScreenSharing ? "Parar compartilhamento de tela" : "Compartilhar tela na chamada"} title={directScreenSharing ? "Parar compartilhamento" : "Compartilhar tela"}><Video size={16} /><span>{directScreenSharing ? "Parar tela" : "Tela"}</span></button>{directCallStatus !== "idle" && directCallStatus !== "ended" ? <button className="direct-call-button direct-call-end" onClick={() => void endDirectCall()} aria-label="Encerrar chamada" title="Encerrar chamada"><PhoneOff size={16} /><span>Encerrar</span></button> : null}</div><div className="direct-utility-actions"><button onClick={() => setSocialOpen(true)} aria-label="Convidar para o grupo" title="Convidar"><UserPlus size={16} /></button><button onClick={() => { if (directFriendId) void deleteDirect(directFriendId); }} aria-label="Apagar conversa" title="Apagar conversa"><X size={16} /></button></div></div></div>{hasVideoTrack(directScreenStream) && <DraggableScreenPanel stream={directScreenStream} title="Sua tela" label="Você está compartilhando a tela" onClose={() => void closeDirectScreenForEveryone()} />}{hasVideoTrack(directRemoteScreenStream) && <DraggableScreenPanel stream={directRemoteScreenStream} title={activeFriend?.displayName ?? "Seu amigo"} label={`Tela de ${activeFriend?.displayName ?? "seu amigo"}`} volume={directScreenVolume} muted={false} outputDeviceId={selectedOutput || undefined} onVolumeChange={setDirectScreenVolume} onClose={() => void closeDirectScreenForEveryone()} />}<audio ref={directAudioRef} autoPlay playsInline aria-label="Áudio remoto da chamada" />{directRemoteStream && directAudioBlocked && <button className="direct-audio-unlock" onClick={() => void enableDirectAudio()}><Volume2 size={15} /> Ativar áudio</button>}<div className="channel-intro"><div className="intro-symbol"><MessageCircle size={27} /></div><h1>Conversa com {activeFriend?.displayName ?? "seu amigo"}</h1><p>Mensagens diretas com sua conexão.</p><div className="intro-rule" /></div><div className="message-list">{directMessages.length ? directMessages.map((item) => <article className="message-row" key={item.id}><span className="avatar bg-blue-200 text-blue-900">{initials(item.authorId)}</span><div className="message-copy"><div className="message-author"><strong>{item.authorId === currentUser.uid ? "Você" : item.authorId}</strong><span>@conexão</span><time>agora</time></div><p>{item.body}</p></div></article>) : <div className="empty-state">Nenhuma mensagem nesta conversa ainda.</div>}</div></section><div className="composer-wrap"><div className="composer"><Input value={directBody} onChange={(event) => setDirectBody(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") void sendDirect(); }} placeholder="Mensagem direta" /><button className="send-button" onClick={() => void sendDirect()} aria-label="Enviar mensagem direta"><Send size={17} /></button></div></div></> : channel?.kind === "voice" ? <section className="message-area firebase-voice-original-stage"><div className="channel-intro"><div className="intro-symbol"><Headphones size={27} /></div><h1>{channel.name}</h1><p>{members.length}/8 participante(s) sincronizado(s) pelo Firestore.</p><div className="intro-rule" /></div><div className="firebase-member-grid">{members.length ? members.map((member) => { const quality = peerQualities[member.uid]; return <div className={member.isSpeaking || (member.uid === currentUser.uid && localSpeaking) ? "firebase-member speaking call-member-speaking" : "firebase-member"} key={member.uid} title={member.isSpeaking || (member.uid === currentUser.uid && localSpeaking) ? `${member.displayName} está falando agora` : member.displayName}><ProfileAvatar profile={member} fallbackName={member.displayName} className={member.isSpeaking || (member.uid === currentUser.uid && localSpeaking) ? "speaking-avatar" : ""} /><strong>{member.displayName}</strong>{member.isSpeaking || (member.uid === currentUser.uid && localSpeaking) ? <span className="talking-label">Falando</span> : null}<span className={`voice-quality voice-quality-${quality?.level ?? "unknown"}`} title={`${qualityLabel(quality)}${quality?.ping !== null && quality?.ping !== undefined ? ` · ${quality.ping} ms` : ""}`}><Signal size={13} /><span>{quality?.ping !== null && quality?.ping !== undefined ? `${quality.ping} ms` : "--"}</span></span></div>; }) : <div className="empty-state">Ninguém na sala ainda.</div>}</div>{Object.entries(remoteStreams).map(([peerId, stream]) => <RemoteAudio key={peerId} peerId={peerId} stream={stream} unlockVersion={voiceAudioUnlockVersion} outputDeviceId={selectedOutput || undefined} onBlocked={() => setVoiceAudioBlocked(true)} />)}{voiceAudioBlocked && <button className="voice-audio-unlock" type="button" onClick={() => { setVoiceAudioBlocked(false); setVoiceAudioUnlockVersion((current) => current + 1); }}><Volume2 size={15} /> Ativar áudio dos participantes</button>}{screenPreviewStream && <DraggableScreenPanel stream={screenPreviewStream} title="Sua tela" label="Você está compartilhando a tela" onClose={() => void closeGroupScreen()} />}{members.filter((member) => member.screenSharing && member.uid !== currentUser.uid && screenViewerIds.has(member.uid) && hasVideoTrack(remoteScreenStreams[member.uid] ?? null)).map((member) => <DraggableScreenPanel key={member.uid} stream={remoteScreenStreams[member.uid]!} title={member.displayName} label={`Tela de ${member.displayName}`} volume={screenVolumes[member.uid] ?? 1} muted={false} outputDeviceId={selectedOutput || undefined} onVolumeChange={(value) => setScreenVolumes((current) => ({ ...current, [member.uid]: value }))} onClose={() => void closeGroupScreen(member.uid)} />)}<VoiceScreenPanel currentUid={currentUser.uid} members={members} screenStreams={remoteScreenStreams} viewers={screenViewerIds} onToggleViewer={toggleScreenViewer} /><div className="voice-chat-redirect"><MessageCircle size={16} /><span>O chat desta sala foi unificado com o canal Geral da comunidade.</span><button type="button" onClick={() => { const general = channels.find((item) => item.kind === "text"); if (general) setChannel(general); }}>Abrir Geral</button></div>{voiceRoomId ? <div className="call-actions firebase-voice-actions"><button className={muted ? "control-active" : ""} onClick={toggleMute} aria-label="Mutar microfone"><Mic size={16} /></button><button className={screenSharing ? "control-active" : ""} onClick={() => void toggleScreen()} aria-label="Compartilhar tela"><Video size={16} /></button><button className="disconnect" onClick={() => void leaveVoiceRoom()} aria-label="Sair da sala"><PhoneOff size={16} /></button></div> : <div className="call-actions firebase-voice-actions"><button className="join-call-button" onClick={() => activeVoiceRoom && void toggleVoice(activeVoiceRoom)} disabled={!activeVoiceRoom}><Headphones size={16} /> Entrar na chamada</button></div>}</section> : <><section className="message-area"><div className="channel-intro"><div className="intro-symbol"><Hash size={27} /></div><h1>Bem-vindo ao #{channel?.name ?? "geral"}</h1><p>Este é o começo do canal. Um bom lugar para dizer olá.</p><div className="intro-rule" /></div><div className="message-list">{messages.length ? messages.map((item) => <article className="message-row" key={item.id}><span className="avatar bg-blue-200 text-blue-900">{initials(item.authorId)}</span><div className="message-copy"><div className="message-author"><strong>{item.authorId === currentUser.uid ? "Você" : "Concord"}</strong><span>@concord</span><time>agora</time></div><p>{item.body}</p></div></article>) : <article className="message-row"><span className="avatar bg-blue-100 text-blue-900">CO</span><div className="message-copy"><div className="message-author"><strong>Concord</strong><span>@concord</span><time>agora</time></div><p>Bem-vindo ao Concord. Esta é a primeira mensagem deste canal.</p></div></article>}</div></section><div className="composer-wrap"><div className="composer"><button aria-label="Mais opções"><Plus size={19} /></button><Input value={body} onChange={(event) => setBody(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") void sendMessage(); }} placeholder={"Mensagem em #" + (channel?.name ?? "geral")} /><button onClick={() => void sendMessage()} className="send-button" aria-label="Enviar mensagem"><Send size={17} /></button></div><span className="composer-hint">Enter para enviar <span>•</span> Shift + Enter para nova linha</span></div></>}
+      </> : activePanel === "friends" ? <FriendsPanel currentUid={currentUser.uid} searchValue={search} results={results} friendships={friendships} friendProfiles={friendProfiles} invites={invites} onOpenChat={(uid) => { setDirectFriendId(uid); setActivePanel("chat"); }} onSearchValueChange={setSearch} onSearch={() => void searchProfiles()} onAddFriend={(target) => void addFriend(target)} onRespondFriend={(request, status) => void respondFriend(request, status)} onRespondInvite={(invite, status) => void respondInvite(invite, status)} /> : activePanel === "profile" ? <ProfilePanel profile={profile} email={currentUser.email ?? ""} onSave={(name, avatarUrl) => void saveDisplayName(name, avatarUrl)} onUpload={uploadAvatar} /> : <SettingsPanel audioDevices={audioDevices} selectedInput={selectedInput} selectedOutput={selectedOutput} noiseSuppression={noiseSuppression} micLevel={micLevel} onInputChange={changeVoiceInput} onOutputChange={changeVoiceOutput} onNoiseChange={changeNoiseSuppression} onRefreshDevices={() => { void voiceService.listAudioDevices().then(setAudioDevices); }} />}
     </main>
 
-    <aside className={mobileDrawer === "members" ? "member-sidebar mobile-open" : membersOpen ? "member-sidebar" : "member-sidebar collapsed"}><div className="member-heading"><span>{voiceRoomId ? "NA CHAMADA" : "CONEXÕES"} — {voiceRoomId ? members.length : friendships.filter((item) => item.status === "accepted").length}</span><div className="member-heading-actions"><button type="button" className="mobile-close-panel" onClick={() => setMobileDrawer(null)} aria-label="Fechar membros"><X size={17} /></button><button type="button" onClick={() => setNotice("Membros sincronizados pelo Firebase.")} aria-label="Mais opções"><MoreHorizontal size={17} /></button></div></div><div className="member-group"><span className="member-role">{voiceRoomId ? "PARTICIPANTES DA SALA" : "CONEXÕES"}</span>{voiceRoomId ? (members.length ? members.map((member) => <div className="member-card call-member-card" key={member.uid}><ProfileAvatar profile={member} fallbackName={member.displayName} /><div><strong>{member.displayName}{member.uid === currentUser.uid ? " (Você)" : ""}</strong><span>{member.isSpeaking ? "Falando agora" : member.muted ? "Microfone mutado" : "Na chamada"}</span></div></div>) : <div className="empty-state">Ninguém entrou na chamada ainda.</div>) : <>{friendships.filter((item) => item.status === "accepted").map((item) => <button className="member-card" key={item.id} onClick={() => { setDirectFriendId(item.requesterId === currentUser.uid ? item.addresseeId : item.requesterId); setActivePanel("chat"); setMobileDrawer(null); }}><ProfileAvatar profile={friendProfiles[item.requesterId === currentUser.uid ? item.addresseeId : item.requesterId]} fallbackName="Conexão" /><div><strong>{friendProfiles[item.requesterId === currentUser.uid ? item.addresseeId : item.requesterId]?.displayName ?? "Conexão"}</strong><span>{friendProfiles[item.requesterId === currentUser.uid ? item.addresseeId : item.requesterId]?.presence === "online" ? "Online" : friendProfiles[item.requesterId === currentUser.uid ? item.addresseeId : item.requesterId]?.presence === "away" ? "Ocupado" : "Indisponível"}</span></div></button>)}{!friendships.filter((item) => item.status === "accepted").length && <div className="empty-state">Nenhuma conexão aceita.</div>}</>}</div>{voiceRoomId && <div className="call-dock"><div className="call-status"><span className="call-pulse" /><div><strong>{rooms.find((room) => room.id === voiceRoomId)?.name ?? "Sala de voz"}</strong><span>{members.length || 1}/8 pessoa(s) na sala</span></div><button onClick={() => setNotice("Convite de sala disponível quando houver conexões.")} aria-label="Convidar"><UserPlus size={15} /></button></div><div className="call-actions"><button className={muted ? "control-active" : ""} onClick={toggleMute} aria-label="Mutar microfone"><Mic size={16} /></button><button className={screenSharing ? "control-active" : ""} onClick={() => void toggleScreen()} aria-label="Compartilhar tela"><Video size={16} /></button><button className="disconnect" onClick={() => void leaveVoiceRoom()} aria-label="Sair da call"><X size={16} /></button></div></div>}</aside>
+    <aside className={mobileDrawer === "members" ? "member-sidebar mobile-open" : membersOpen ? "member-sidebar" : "member-sidebar collapsed"}><div className="member-heading"><span>{voiceRoomId ? "NA CHAMADA" : "CONEXÕES"} — {voiceRoomId ? members.length : friendships.filter((item) => item.status === "accepted").length}</span><div className="member-heading-actions"><button type="button" className="mobile-close-panel" onClick={() => setMobileDrawer(null)} aria-label="Fechar membros"><X size={17} /></button><button type="button" onClick={() => setNotice("Membros sincronizados pelo Firebase.")} aria-label="Mais opções"><MoreHorizontal size={17} /></button></div></div><div className="member-group"><span className="member-role">{voiceRoomId ? "PARTICIPANTES DA SALA" : "CONEXÕES"}</span>{voiceRoomId ? (members.length ? members.map((member) => <div className="member-card call-member-card" key={member.uid}><ProfileAvatar profile={member} fallbackName={member.displayName} /><div><strong>{member.displayName}{member.uid === currentUser.uid ? " (Você)" : ""}</strong><span>{member.isSpeaking ? "Falando agora" : member.muted ? "Microfone mutado" : "Na chamada"}</span></div></div>) : <div className="empty-state">Ninguém entrou na chamada ainda.</div>) : <>{friendships.filter((item) => item.status === "accepted").map((item) => <button className="member-card" key={item.id} onClick={() => { setDirectFriendId(item.requesterId === currentUser.uid ? item.addresseeId : item.requesterId); setActivePanel("chat"); setMobileDrawer(null); }}><ProfileAvatar profile={friendProfiles[item.requesterId === currentUser.uid ? item.addresseeId : item.requesterId]} fallbackName="Conexão" /><div><strong>{friendProfiles[item.requesterId === currentUser.uid ? item.addresseeId : item.requesterId]?.displayName ?? "Conexão"}</strong><span>{friendProfiles[item.requesterId === currentUser.uid ? item.addresseeId : item.requesterId]?.presence === "online" ? "Online" : friendProfiles[item.requesterId === currentUser.uid ? item.addresseeId : item.requesterId]?.presence === "away" ? "Ocupado" : "Indisponível"}</span></div></button>)}{!friendships.filter((item) => item.status === "accepted").length && <div className="empty-state">Nenhuma conexão aceita.</div>}</>}</div>{voiceRoomId && <div className="call-dock"><div className="call-status"><span className="call-pulse" /><div><strong>{rooms.find((room) => room.id === voiceRoomId)?.name ?? "Sala de voz"}</strong><span>{members.length || 1}/8 pessoa(s) na sala</span></div><button onClick={() => void shareVoiceInvite()} aria-label="Convidar por link" title="Convidar por link"><Link2 size={15} /></button></div><div className="call-actions"><button className={muted ? "control-active" : ""} onClick={toggleMute} aria-label="Mutar microfone"><Mic size={16} /></button><button className={screenSharing ? "control-active" : ""} onClick={() => void toggleScreen()} aria-label="Compartilhar tela"><Video size={16} /></button><button className="disconnect" onClick={() => void leaveVoiceRoom()} aria-label="Sair da call"><X size={16} /></button></div></div>}</aside>
     {directCallStatus === "ringing" && directCallDirection === "incoming" && directCallId && <div className="firebase-dialog-backdrop incoming-call-backdrop" role="presentation"><section className="firebase-dialog incoming-call-dialog" role="dialog" aria-modal="true" aria-labelledby="incoming-call-title"><div className="incoming-call-glow" aria-hidden="true" /><span className="firebase-kicker">CONCORD / CHAMADA RECEBIDA</span><div className="incoming-call-avatar-wrap"><div className="incoming-call-avatar avatar bg-blue-200 text-blue-900">{initials(activeFriend?.displayName ?? "Amigo")}</div><span className="incoming-call-wave incoming-call-wave-one" /><span className="incoming-call-wave incoming-call-wave-two" /></div><span className="incoming-call-label"><Headphones size={13} /> Chamada de áudio</span><h2 id="incoming-call-title">{activeFriend?.displayName ?? "Seu amigo"} está ligando</h2><p>Atenda para iniciar uma conversa em tempo real.</p><div className="incoming-call-actions"><Button className="incoming-call-reject" onClick={() => void rejectDirectCall()}><PhoneOff size={16} /> Recusar</Button><Button className="incoming-call-accept" onClick={() => void acceptDirectCall()}><Headphones size={16} /> Atender</Button></div></section></div>}
     {creationTarget && <CreationDialog target={creationTarget} value={creationName} error={creationError} pending={creationPending} onChange={setCreationName} onClose={closeCreationDialog} onSubmit={() => void submitCreation()} />}
     {socialOpen && <SocialDialog currentPublicId={profile?.publicId ?? "CON-00000000"} searchValue={search} results={results} friendships={friendships} invites={invites} currentUid={currentUser.uid} community={community} onSearchValueChange={setSearch} onSearch={() => void searchProfiles()} onAddFriend={(target) => void addFriend(target)} onInvite={(targetUid) => void inviteFriend(targetUid)} onRespondInvite={(invite, status) => void respondInvite(invite, status)} onClose={() => setSocialOpen(false)} />}

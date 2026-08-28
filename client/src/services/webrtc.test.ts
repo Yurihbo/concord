@@ -1,6 +1,21 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { ConcordWebRTCService } from "./webrtc";
 
+describe("voice capture", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("captures the selected microphone with noise suppression preferences", async () => {
+    const track = { kind: "audio", stop: vi.fn() } as unknown as MediaStreamTrack;
+    const stream = { getAudioTracks: () => [track], getTracks: () => [track] } as unknown as MediaStream;
+    const getUserMedia = vi.fn().mockResolvedValue(stream);
+    vi.stubGlobal("navigator", { mediaDevices: { getUserMedia } });
+    const service = new ConcordWebRTCService();
+
+    await expect(service.captureMicrophone("microphone-1", false)).resolves.toBe(stream);
+    expect(getUserMedia).toHaveBeenCalledWith({ audio: { echoCancellation: true, noiseSuppression: false, autoGainControl: true, deviceId: { exact: "microphone-1" } } });
+  });
+});
+
 describe("screen sharing", () => {
   afterEach(() => vi.unstubAllGlobals());
 

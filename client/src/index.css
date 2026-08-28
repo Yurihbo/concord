@@ -1184,3 +1184,53 @@ button:not(:disabled):not([data-no-neon]):active { transform: translateY(0) scal
   border-color: rgba(255, 127, 148, .42);
   outline: none;
 }
+
+/* Visible call invitation actions */
+.app-shell.firebase-original-shell .firebase-voice-actions .call-invite-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .45rem;
+  min-width: 9rem;
+  color: #03131e;
+  background: #5ceaff;
+  border-color: #9ff6ff;
+  font-weight: 800;
+}
+.app-shell.firebase-original-shell .firebase-voice-actions .call-invite-button:hover,
+.app-shell.firebase-original-shell .firebase-voice-actions .call-invite-button:focus-visible {
+  color: #03131e;
+  background: #9ff6ff;
+  outline: 2px solid rgba(159, 246, 255, .3);
+  outline-offset: 2px;
+}
+.app-shell.firebase-original-shell .call-status .call-link-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .35rem;
+  min-width: 5.8rem;
+  padding: .35rem .55rem;
+  color: #03131e;
+  background: #5ceaff;
+  border: 1px solid #9ff6ff;
+  border-radius: .45rem;
+  font-size: .68rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+.app-shell.firebase-original-shell .call-status .call-link-button:hover,
+.app-shell.firebase-original-shell .call-status .call-link-button:focus-visible {
+  background: #9ff6ff;
+  outline: 2px solid rgba(159, 246, 255, .3);
+  outline-offset: 2px;
+}
+@media (max-width: 520px) {
+  .app-shell.firebase-original-shell .firebase-voice-actions .call-invite-button {
+    min-width: 100%;
+    flex: 1 1 100%;
+  }
+  .app-shell.firebase-original-shell .call-status .call-link-button span {
+    display: inline;
+  }
+}

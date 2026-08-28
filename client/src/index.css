@@ -692,3 +692,11 @@ button:not(:disabled):not([data-no-neon]):active { transform: translateY(0) scal
 .profile-workspace-panel .avatar-preset.selected { border-color: #4be4ff; box-shadow: 0 0 0 3px rgba(75, 228, 255, .15), 0 0 1.1rem rgba(39, 215, 255, .18); }
 .profile-workspace-panel .avatar-upload-button { color: #61e9ff !important; background: rgba(8, 55, 86, .76); border-color: rgba(79, 218, 255, .35); }
 .profile-workspace-panel .avatar-upload-button:hover { background: rgba(14, 77, 113, .9); border-color: #61e9ff; }
+
+
+.friends-person { display: flex; align-items: center; gap: .65rem; min-width: 0; }
+.friends-person > span:last-child { min-width: 0; display: grid; gap: .2rem; }
+.friends-person .profile-avatar-shell { width: 2rem; height: 2rem; border-radius: .65rem; }
+.user-panel-avatar { overflow: hidden; }
+.user-panel-avatar + .online-dot { margin-left: -1.1rem; z-index: 1; }
+.firebase-member .profile-avatar-shell { overflow: hidden; }

@@ -11,6 +11,7 @@ type VoiceMeshOptions = {
   sessionId?: string;
   localStream: MediaStream;
   onRemoteStream: (peerId: string, stream: MediaStream) => void;
+  onRemoteStreamEnded?: (peerId: string) => void;
   onRemoteScreenStream?: (peerId: string, stream: MediaStream) => void;
   onRemoteScreenEnded?: (peerId: string) => void;
   onPeerQuality?: (peerId: string, quality: VoicePeerQuality) => void;
@@ -104,6 +105,20 @@ export class FirebaseVoiceMesh {
     if (hadScreen) this.options.onRemoteScreenEnded?.(peerId);
   }
 
+  private closePeer(peerId: string, peer = this.peers.get(peerId)): void {
+    if (this.peers.get(peerId) === peer) this.peers.delete(peerId);
+    this.peerSessionIds.delete(peerId);
+    this.screenSenders.delete(peerId);
+    this.screenAudioSenders.delete(peerId);
+    this.pendingCandidates.delete(peerId);
+    this.stopPeerQualityMonitor(peerId);
+    const hadCallStream = this.remoteCallStreams.delete(peerId) || this.remoteCallStreamIds.delete(peerId);
+    if (hadCallStream) this.options.onRemoteStreamEnded?.(peerId);
+    else this.remoteCallStreamIds.delete(peerId);
+    this.clearRemoteScreen(peerId);
+    if (peer && peer.connectionState !== "closed") peer.close();
+  }
+
   private handleRemoteTrack(peerId: string, event: RTCTrackEvent): void {
     const eventStream = event.streams[0];
     const eventStreamId = eventStream?.id;
@@ -135,25 +150,17 @@ export class FirebaseVoiceMesh {
   private createPeer(peerId: string, initiator: boolean): RTCPeerConnection {
     const existing = this.peers.get(peerId);
     if (existing) return existing;
-    const peer = new RTCPeerConnection({ iceServers: [{ urls: "stun:stun.l.google.com:19302" }] });
+    const peer = new RTCPeerConnection({ iceServers: [{ urls: "stun:stun.l.google.com:19302" }, { urls: "stun:stun1.l.google.com:19302" }, { urls: "stun:stun.cloudflare.com:3478" }], iceCandidatePoolSize: 10 });
     this.options.localStream.getAudioTracks().forEach((track) => peer.addTrack(track, this.options.localStream));
     const screenTransceiver = peer.addTransceiver("video", { direction: "sendrecv" });
     this.screenSenders.set(peerId, screenTransceiver.sender);
     peer.ontrack = (event) => this.handleRemoteTrack(peerId, event);
     peer.onicecandidate = (event) => {
-      if (event.candidate) void publishSignal(this.options.roomId, { from: this.options.userId, to: peerId, sessionId: this.sessionId, targetSessionId: this.peerSessionIds.get(peerId), kind: "ice", payload: JSON.stringify({ candidate: event.candidate.toJSON() }) });
+      if (!event.candidate) return;
+      void publishSignal(this.options.roomId, { from: this.options.userId, to: peerId, sessionId: this.sessionId, targetSessionId: this.peerSessionIds.get(peerId), kind: "ice", payload: JSON.stringify({ candidate: event.candidate.toJSON() }) }).catch((reason) => this.reportError(reason, "Não foi possível enviar a sinalização de voz."));
     };
     peer.onconnectionstatechange = () => {
-      if (["failed", "closed"].includes(peer.connectionState)) {
-        this.peers.delete(peerId);
-        this.screenSenders.delete(peerId);
-        this.screenAudioSenders.delete(peerId);
-        this.pendingCandidates.delete(peerId);
-        this.stopPeerQualityMonitor(peerId);
-        this.remoteCallStreams.delete(peerId);
-        this.remoteCallStreamIds.delete(peerId);
-        this.clearRemoteScreen(peerId);
-      }
+      if (["failed", "closed"].includes(peer.connectionState) && this.peers.get(peerId) === peer) this.closePeer(peerId, peer);
     };
     this.peers.set(peerId, peer);
     this.startPeerQualityMonitor(peerId, peer);
@@ -171,19 +178,14 @@ export class FirebaseVoiceMesh {
 
   async syncMembers(members: FirebaseVoiceMember[]): Promise<void> {
     const others = members.filter((member) => member.uid !== this.options.userId);
-    for (const member of others) { this.peerSessionIds.set(member.uid, member.sessionId ?? ""); this.createPeer(member.uid, this.options.userId < member.uid); }
-    for (const [peerId, peer] of Array.from(this.peers.entries())) if (!others.some((member) => member.uid === peerId)) {
-      peer.close();
-      this.peers.delete(peerId);
-      this.peerSessionIds.delete(peerId);
-      this.screenSenders.delete(peerId);
-      this.screenAudioSenders.delete(peerId);
-      this.pendingCandidates.delete(peerId);
-      this.stopPeerQualityMonitor(peerId);
-      this.remoteCallStreams.delete(peerId);
-      this.remoteCallStreamIds.delete(peerId);
-      this.clearRemoteScreen(peerId);
+    for (const member of others) {
+      const nextSessionId = member.sessionId ?? "";
+      const previousSessionId = this.peerSessionIds.get(member.uid);
+      if (previousSessionId && nextSessionId && previousSessionId !== nextSessionId) this.closePeer(member.uid);
+      this.peerSessionIds.set(member.uid, nextSessionId);
+      this.createPeer(member.uid, this.options.userId < member.uid);
     }
+    for (const [peerId, peer] of Array.from(this.peers.entries())) if (!others.some((member) => member.uid === peerId)) this.closePeer(peerId, peer);
   }
 
   private async flushPendingCandidates(peerId: string, peer: RTCPeerConnection): Promise<void> {
@@ -195,16 +197,24 @@ export class FirebaseVoiceMesh {
 
   async handleSignal(signal: FirebaseSignal): Promise<void> {
     if (signal.to !== this.options.userId || signal.from === this.options.userId || (signal.targetSessionId && signal.targetSessionId !== this.sessionId) || this.handledSignalIds.has(signal.id)) return;
+    const knownSessionId = this.peerSessionIds.get(signal.from);
+    if (knownSessionId && signal.sessionId && knownSessionId !== signal.sessionId) return;
     const payload = JSON.parse(signal.payload) as SignalPayload;
+    if (signal.sessionId) this.peerSessionIds.set(signal.from, signal.sessionId);
     const peer = this.createPeer(signal.from, false);
     try {
       if (signal.kind === "offer" && payload.sdp) {
+        if (peer.signalingState === "have-local-offer") {
+          if (this.options.userId < signal.from) return;
+          await peer.setLocalDescription({ type: "rollback" });
+        }
         await peer.setRemoteDescription(payload.sdp);
         await this.flushPendingCandidates(signal.from, peer);
         const answer = await peer.createAnswer();
         await peer.setLocalDescription(answer);
         await publishSignal(this.options.roomId, { from: this.options.userId, to: signal.from, sessionId: this.sessionId, targetSessionId: signal.sessionId, kind: "answer", payload: JSON.stringify({ sdp: answer }) });
       } else if (signal.kind === "answer" && payload.sdp) {
+        if (peer.signalingState !== "have-local-offer") return;
         await peer.setRemoteDescription(payload.sdp);
         await this.flushPendingCandidates(signal.from, peer);
       } else if (signal.kind === "ice" && payload.candidate) {

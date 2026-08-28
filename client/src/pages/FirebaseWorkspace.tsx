@@ -42,6 +42,7 @@ import {
   setVoiceSpeaking,
   subscribeToChannelMessages,
   subscribeToVoiceMembers,
+  touchVoiceMember,
   subscribeToCommunityInvites,
   createCommunityInvite,
   respondToCommunityInvite,
@@ -391,6 +392,14 @@ export default function FirebaseWorkspace() {
     if (!community || !voiceRoomId || !voiceSessionId || !auth.user || !meshRef.current) return;
     return subscribeToSignals(voiceRoomId, auth.user.uid, voiceSessionId, (signals) => { for (const signal of signals) void meshRef.current?.handleSignal(signal); }, (error) => setNotice(error.message));
   }, [auth.user, community, voiceRoomId, voiceSessionId]);
+
+  useEffect(() => {
+    if (!community || !voiceRoomId || !auth.user) return;
+    const heartbeat = () => { void touchVoiceMember(community.id, auth.user!.uid).catch(() => undefined); };
+    heartbeat();
+    const timer = window.setInterval(heartbeat, 5_000);
+    return () => window.clearInterval(timer);
+  }, [auth.user, community, voiceRoomId]);
 
   useEffect(() => {
     if (!currentUserId) return;

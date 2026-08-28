@@ -35,7 +35,7 @@ export type FirebaseProfile = {
 export type FirebaseCommunity = { id: string; name: string; description?: string; ownerId: string; createdAt?: unknown };
 export type FirebaseChannel = { id: string; communityId: string; name: string; kind: "text" | "voice"; category?: string };
 export type FirebaseMessage = { id: string; channelId: string; authorId: string; authorName?: string; body: string; createdAt?: unknown; kind?: "text" | "file"; fileUrl?: string; fileName?: string; fileType?: string; fileSize?: number };
-export type FirebaseVoiceMember = { uid: string; roomId: string; sessionId?: string; displayName: string; avatarUrl?: string | null; isSpeaking: boolean; muted: boolean; screenSharing?: boolean; joinedAt?: unknown };
+export type FirebaseVoiceMember = { uid: string; roomId: string; sessionId?: string; displayName: string; avatarUrl?: string | null; isSpeaking: boolean; muted: boolean; screenSharing?: boolean; joinedAt?: unknown; lastSeenAt?: unknown };
 export type FirebaseFriendship = { id: string; requesterId: string; addresseeId: string; status: "pending" | "accepted" | "declined"; updatedAt?: unknown };
 export type FirebaseCommunityInvite = { id: string; communityId: string; communityName?: string; inviterId: string; inviteeId: string; status: "pending" | "accepted" | "declined"; updatedAt?: unknown };
 export type FirebaseDirectMessage = { id: string; authorId: string; body: string; createdAt?: unknown };
@@ -53,6 +53,21 @@ function communityCollection(id: string, child: string) { return collection(fire
 
 function withFirestoreTimeout<T>(operation: Promise<T>, label: string, timeoutMs = 15000): Promise<T> {
   return Promise.race([operation, new Promise<T>((_, reject) => window.setTimeout(() => reject(new Error(`${label} demorou mais de 15 segundos. Verifique a conexão, o Firestore Database e as regras publicadas.`)), timeoutMs))]);
+}
+
+const VOICE_MEMBER_TTL_MS = 20_000;
+const VOICE_MEMBER_HEARTBEAT_MS = 5_000;
+
+function timestampMillis(value: unknown): number | null {
+  if (typeof value === "number") return value;
+  if (value instanceof Date) return value.getTime();
+  if (value && typeof (value as { toMillis?: unknown }).toMillis === "function") return (value as { toMillis: () => number }).toMillis();
+  return null;
+}
+
+function isActiveVoiceMember(member: FirebaseVoiceMember, now = Date.now()): boolean {
+  const lastSeenAt = timestampMillis(member.lastSeenAt);
+  return lastSeenAt !== null && now - lastSeenAt <= VOICE_MEMBER_TTL_MS;
 }
 
 export async function saveProfile(user: User, profile: Partial<FirebaseProfile>): Promise<void> {
@@ -267,11 +282,15 @@ export async function uploadProfileAvatar(userId: string, file: File): Promise<s
 
 export async function countVoiceMembers(communityId: string, roomId: string): Promise<number> {
   const snapshot = await getDocs(query(communityCollection(communityId, "voiceMembers"), where("roomId", "==", roomId), limit(9)));
-  return snapshot.size;
+  return snapshot.docs.map((item) => item.data() as FirebaseVoiceMember).filter((member) => isActiveVoiceMember(member)).length;
 }
 
 export async function upsertVoiceMember(communityId: string, member: FirebaseVoiceMember): Promise<void> {
-  await setDoc(doc(firebaseDb, "communities", communityId, "voiceMembers", member.uid), { ...member, updatedAt: serverTimestamp() }, { merge: true });
+  await setDoc(doc(firebaseDb, "communities", communityId, "voiceMembers", member.uid), { ...member, lastSeenAt: Date.now(), updatedAt: serverTimestamp() }, { merge: true });
+}
+
+export async function touchVoiceMember(communityId: string, uid: string): Promise<void> {
+  await updateDoc(doc(firebaseDb, "communities", communityId, "voiceMembers", uid), { lastSeenAt: Date.now(), updatedAt: serverTimestamp() });
 }
 
 export async function removeVoiceMember(communityId: string, uid: string): Promise<void> {
@@ -279,9 +298,21 @@ export async function removeVoiceMember(communityId: string, uid: string): Promi
 }
 
 export function subscribeToVoiceMembers(communityId: string, roomId: string, listener: (members: FirebaseVoiceMember[]) => void, onError?: (error: Error) => void): Unsubscribe {
-  return onSnapshot(query(communityCollection(communityId, "voiceMembers"), where("roomId", "==", roomId)), (snapshot) => {
-    listener(snapshot.docs.map((item) => item.data() as FirebaseVoiceMember));
+  const members = new Map<string, FirebaseVoiceMember>();
+  const emitActiveMembers = () => {
+    const now = Date.now();
+    listener(Array.from(members.values()).filter((member) => isActiveVoiceMember(member, now)));
+  };
+  const unsubscribe = onSnapshot(query(communityCollection(communityId, "voiceMembers"), where("roomId", "==", roomId)), (snapshot) => {
+    members.clear();
+    snapshot.docs.forEach((item) => members.set(item.id, item.data() as FirebaseVoiceMember));
+    emitActiveMembers();
   }, (reason) => onError?.(reason instanceof Error ? reason : new Error("Não foi possível sincronizar a sala de voz.")));
+  const expiryTimer = window.setInterval(emitActiveMembers, VOICE_MEMBER_HEARTBEAT_MS);
+  return () => {
+    unsubscribe();
+    window.clearInterval(expiryTimer);
+  };
 }
 
 function directThreadId(firstUid: string, secondUid: string): string { return [firstUid, secondUid].sort().join("__"); }

@@ -226,6 +226,11 @@ export function subscribeToChannelMessages(communityId: string, channelId: strin
   }, (reason) => onError?.(reason instanceof Error ? reason : new Error("Não foi possível sincronizar as mensagens.")));
 }
 
+export async function countVoiceMembers(communityId: string, roomId: string): Promise<number> {
+  const snapshot = await getDocs(query(communityCollection(communityId, "voiceMembers"), where("roomId", "==", roomId), limit(9)));
+  return snapshot.size;
+}
+
 export async function upsertVoiceMember(communityId: string, member: FirebaseVoiceMember): Promise<void> {
   await setDoc(doc(firebaseDb, "communities", communityId, "voiceMembers", member.uid), { ...member, updatedAt: serverTimestamp() }, { merge: true });
 }

@@ -31,7 +31,8 @@ describe("FirebaseVoiceMesh", () => {
     const mesh = new FirebaseVoiceMesh({ roomId: "room-1", userId: "user-a", localStream, onRemoteStream });
     await mesh.syncMembers([{ uid: "user-b", roomId: "room-1", displayName: "B", isSpeaking: false, muted: false }]);
     const remoteStream = {} as MediaStream;
-    peers[0].ontrack?.({ streams: [remoteStream] });
+    const remoteTrack = { kind: "audio", id: "remote-audio" } as unknown as MediaStreamTrack;
+    peers[0].ontrack?.({ streams: [remoteStream], track: remoteTrack } as unknown as { streams: MediaStream[] });
     expect(onRemoteStream).toHaveBeenCalledWith("user-b", remoteStream);
     mesh.dispose();
   });

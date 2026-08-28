@@ -314,6 +314,7 @@ export default function FirebaseWorkspace() {
   const [micLevel, setMicLevel] = useState(0);
   const inviteFromUrl = useMemo(() => readVoiceInviteFromLocation(), []);
   const [inviteHandled, setInviteHandled] = useState(false);
+  const toggleVoiceRef = useRef<(room: FirebaseVoiceRoom) => void>(() => undefined);
 
   useEffect(() => {
     if (!mobileDrawer) return;
@@ -664,6 +665,37 @@ export default function FirebaseWorkspace() {
 
   const acceptedFriendIds = useMemo(() => new Set(friendships.filter((item) => item.status === "accepted").map((item) => item.requesterId === auth.user?.uid ? item.addresseeId : item.requesterId)), [friendships, auth.user?.uid]);
 
+  useEffect(() => {
+    if (!auth.user || !inviteFromUrl || inviteHandled) return;
+    let cancelled = false;
+    void joinCommunity(inviteFromUrl.communityId, auth.user.uid).then(async () => {
+      if (cancelled) return;
+      const nextCommunities = await listCommunities(auth.user!.uid);
+      const invitedCommunity = nextCommunities.find((item) => item.id === inviteFromUrl.communityId);
+      setCommunities(nextCommunities);
+      if (invitedCommunity) {
+        setCommunity(invitedCommunity);
+        setActivePanel("chat");
+        setNotice("Convite aceito. Escolhendo a sala de call...");
+      } else setNotice("A comunidade do convite não está disponível.");
+      setInviteHandled(true);
+      const cleanUrl = new URL(window.location.href);
+      cleanUrl.searchParams.delete("voiceCommunity");
+      cleanUrl.searchParams.delete("voiceRoom");
+      window.history.replaceState({}, "", cleanUrl.toString());
+    }).catch((error) => setNotice(error instanceof Error ? error.message : "Não foi possível abrir o convite da call."));
+    return () => { cancelled = true; };
+  }, [auth.user, inviteFromUrl, inviteHandled]);
+
+  useEffect(() => {
+    if (!inviteHandled || !inviteFromUrl || !community || community.id !== inviteFromUrl.communityId || voiceRoomId) return;
+    const invitedRoom = rooms.find((room) => room.id === inviteFromUrl.roomId);
+    if (!invitedRoom) { if (rooms.length) setNotice("A sala do convite não está disponível."); return; }
+    setChannel({ id: invitedRoom.id, communityId: invitedRoom.communityId, name: invitedRoom.name, kind: "voice" });
+    setActivePanel("chat");
+    toggleVoiceRef.current(invitedRoom);
+  }, [community, inviteFromUrl, inviteHandled, rooms, voiceRoomId]);
+
   if (auth.loading) return <div className="loading-screen"><span>Preparando seu espaço Firebase...</span></div>;
   if (!authUser) return <FirebaseAuthPanel />;
   const currentUser = authUser;
@@ -1003,36 +1035,7 @@ export default function FirebaseWorkspace() {
     } catch (error) { setNotice(error instanceof Error ? error.message : "Não foi possível atualizar a sala."); }
   };
 
-  useEffect(() => {
-    if (!auth.user || !inviteFromUrl || inviteHandled) return;
-    let cancelled = false;
-    void joinCommunity(inviteFromUrl.communityId, auth.user.uid).then(async () => {
-      if (cancelled) return;
-      const nextCommunities = await listCommunities(auth.user!.uid);
-      const invitedCommunity = nextCommunities.find((item) => item.id === inviteFromUrl.communityId);
-      setCommunities(nextCommunities);
-      if (invitedCommunity) {
-        setCommunity(invitedCommunity);
-        setActivePanel("chat");
-        setNotice("Convite aceito. Escolhendo a sala de call...");
-      } else setNotice("A comunidade do convite não está disponível.");
-      setInviteHandled(true);
-      const cleanUrl = new URL(window.location.href);
-      cleanUrl.searchParams.delete("voiceCommunity");
-      cleanUrl.searchParams.delete("voiceRoom");
-      window.history.replaceState({}, "", cleanUrl.toString());
-    }).catch((error) => setNotice(error instanceof Error ? error.message : "Não foi possível abrir o convite da call."));
-    return () => { cancelled = true; };
-  }, [auth.user, inviteFromUrl, inviteHandled]);
-
-  useEffect(() => {
-    if (!inviteHandled || !inviteFromUrl || !community || community.id !== inviteFromUrl.communityId || voiceRoomId) return;
-    const invitedRoom = rooms.find((room) => room.id === inviteFromUrl.roomId);
-    if (!invitedRoom) { if (rooms.length) setNotice("A sala do convite não está disponível."); return; }
-    setChannel({ id: invitedRoom.id, communityId: invitedRoom.communityId, name: invitedRoom.name, kind: "voice" });
-    setActivePanel("chat");
-    void toggleVoice(invitedRoom);
-  }, [community, inviteFromUrl, inviteHandled, rooms, voiceRoomId]);
+  toggleVoiceRef.current = (room) => { void toggleVoice(room); };
 
   if (!hasFirebaseConfig()) return <main className="firebase-config-error"><div className="firebase-config-card"><span className="firebase-config-kicker">CONFIGURAÇÃO NECESSÁRIA</span><h1>Concord está pronto, mas o Firebase ainda não foi configurado.</h1><p>Adicione as variáveis públicas do Firebase em GitHub → Settings → Secrets and variables → Actions → Variables e execute o workflow novamente.</p><code>{missingFirebaseConfigKeys.join(", ") || "VITE_FIREBASE_*"}</code><p className="firebase-config-help">As credenciais administrativas não são necessárias no frontend. Depois de salvar as variáveis, faça um novo push ou use Run workflow.</p></div></main>;
 

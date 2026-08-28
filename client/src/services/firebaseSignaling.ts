@@ -18,6 +18,6 @@ export async function publishSignal(callId: string, signal: Omit<FirebaseSignal,
 
 export function subscribeToSignals(callId: string, recipientId: string, sessionId: string, listener: (signals: FirebaseSignal[]) => void, onError?: (error: Error) => void): Unsubscribe {
   return onSnapshot(query(collection(firebaseDb, "calls", callId, "signals"), where("to", "==", recipientId), limit(100)), (snapshot) => {
-    listener(snapshot.docs.map((item) => ({ id: item.id, ...item.data() } as FirebaseSignal)).filter((signal) => !signal.targetSessionId || signal.targetSessionId === sessionId));
+    listener(snapshot.docs.map((item) => ({ id: item.id, ...item.data() } as FirebaseSignal)).filter((signal) => signal.targetSessionId === sessionId));
   }, (reason) => onError?.(reason instanceof Error ? reason : new Error("Não foi possível sincronizar a sinalização da chamada.")));
 }

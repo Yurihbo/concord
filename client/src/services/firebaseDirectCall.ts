@@ -221,11 +221,7 @@ export class FirebaseDirectCall {
     const peer = this.ensurePeer(signal.from);
     try {
       if (signal.kind === "offer" && payload.sdp) {
-        if (peer.signalingState === "have-local-offer") {
-          // Use a deterministic polite/impolite role if both sides renegotiate at once.
-          if (this.options.userId < signal.from) return;
-          await peer.setLocalDescription({ type: "rollback" });
-        }
+        if (peer.signalingState === "have-local-offer") await peer.setLocalDescription({ type: "rollback" });
         if (payload.sdp.sdp?.includes("m=video") && !this.videoTransceiver) {
           this.videoTransceiver = peer.addTransceiver("video", { direction: "recvonly" });
           this.videoSender = this.videoTransceiver.sender;

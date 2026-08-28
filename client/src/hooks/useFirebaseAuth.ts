@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useState } from "react";
 import type { User } from "firebase/auth";
 import {
+  completeGoogleRedirect,
   createFirebaseAccount,
   ensureFirebaseProfile,
+  hasPendingGoogleRedirect,
   signInWithEmail,
   signInWithGoogle,
   signOutFirebase,
@@ -11,15 +13,41 @@ import {
 
 export function useFirebaseAuth() {
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => hasPendingGoogleRedirect());
   const [error, setError] = useState<unknown>(null);
 
   useEffect(() => {
-    return subscribeToFirebaseAuth((nextUser) => {
+    let active = true;
+    const redirectPending = hasPendingGoogleRedirect();
+    const unsubscribe = subscribeToFirebaseAuth((nextUser) => {
+      if (!active) return;
       setUser(nextUser);
+      if (!nextUser) setError(null);
+      if (!redirectPending) setLoading(false);
+      if (nextUser) void ensureFirebaseProfile(nextUser).catch((reason) => { if (active) setError(reason); });
+    }, (reason) => {
+      if (!active) return;
+      setError(reason);
       setLoading(false);
-      if (nextUser) void ensureFirebaseProfile(nextUser).catch(setError);
     });
+
+    void completeGoogleRedirect().then((redirectUser) => {
+      if (!active) return;
+      if (redirectUser) {
+        setUser(redirectUser);
+        setError(null);
+      }
+      setLoading(false);
+    }).catch((reason) => {
+      if (!active) return;
+      setError(reason);
+      setLoading(false);
+    });
+
+    return () => {
+      active = false;
+      unsubscribe();
+    };
   }, []);
 
   const clearError = useCallback(() => setError(null), []);

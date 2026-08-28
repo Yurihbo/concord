@@ -700,3 +700,154 @@ button:not(:disabled):not([data-no-neon]):active { transform: translateY(0) scal
 .user-panel-avatar { overflow: hidden; }
 .user-panel-avatar + .online-dot { margin-left: -1.1rem; z-index: 1; }
 .firebase-member .profile-avatar-shell { overflow: hidden; }
+
+
+/* Mobile-first polish and Firebase auth surface */
+.firebase-auth-shell {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  min-height: 100svh;
+  padding: clamp(1rem, 4vw, 2.5rem);
+  background: radial-gradient(circle at 82% 12%, rgba(0, 187, 255, .16), transparent 28%), radial-gradient(circle at 15% 90%, rgba(72, 69, 255, .18), transparent 32%), #040915;
+}
+.firebase-auth-shell::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  opacity: .24;
+  pointer-events: none;
+  background-image: linear-gradient(rgba(89, 221, 255, .06) 1px, transparent 1px), linear-gradient(90deg, rgba(89, 221, 255, .06) 1px, transparent 1px);
+  background-size: 44px 44px;
+  mask-image: linear-gradient(to bottom, black, transparent 88%);
+}
+.firebase-auth-orbit { position: absolute; z-index: -1; border: 1px solid rgba(64, 221, 255, .16); border-radius: 999px; pointer-events: none; }
+.firebase-auth-orbit-one { width: min(75vw, 36rem); height: min(75vw, 36rem); top: -18rem; right: -13rem; transform: rotate(28deg); }
+.firebase-auth-orbit-two { width: min(60vw, 28rem); height: min(60vw, 28rem); bottom: -17rem; left: -13rem; transform: rotate(-24deg); border-color: rgba(105, 99, 255, .2); }
+.firebase-auth-card {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 30rem);
+  gap: .9rem;
+  padding: clamp(1.25rem, 5vw, 2.35rem);
+  color: #dff7ff;
+  background: linear-gradient(145deg, rgba(10, 35, 66, .96), rgba(4, 14, 30, .98));
+  border: 1px solid rgba(68, 214, 255, .28);
+  border-radius: 1.35rem;
+  box-shadow: 0 1.8rem 5rem rgba(0, 0, 0, .42), 0 0 2.8rem rgba(0, 153, 255, .13), inset 0 0 2rem rgba(39, 215, 255, .035);
+}
+.firebase-auth-brand { color: #eafcff; text-shadow: 0 0 1.1rem rgba(39, 215, 255, .35); }
+.firebase-auth-mark { color: #03131e; background: linear-gradient(135deg, #47edff, #268be9); box-shadow: 0 0 1.2rem rgba(39, 215, 255, .35); }
+.firebase-auth-card > .section-kicker { color: #55e5ff; }
+.firebase-auth-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: .75rem; }
+.firebase-auth-heading > div { min-width: 0; }
+.firebase-auth-card h1 { color: #effcff; }
+.firebase-auth-card p { color: #9fc1d8; }
+.firebase-auth-status { display: inline-flex; align-items: center; gap: .35rem; flex: 0 0 auto; padding: .32rem .5rem; color: #7fffd0; background: rgba(9, 78, 71, .4); border: 1px solid rgba(67, 236, 174, .25); border-radius: 999px; font: .55rem 'DM Mono', monospace; letter-spacing: .08em; }
+.firebase-auth-status span { width: .35rem; height: .35rem; border-radius: 999px; background: #46e8a9; box-shadow: 0 0 .5rem #46e8a9; }
+.firebase-google-button { min-height: 3rem; color: #eaf8ff; background: rgba(11, 48, 79, .8); border: 1px solid rgba(102, 213, 255, .34); box-shadow: 0 .4rem 1.2rem rgba(0, 102, 170, .12); }
+.firebase-google-button:hover { color: #041421; background: #e7fbff; border-color: #77eaff; }
+.firebase-auth-helper { margin: -.2rem 0 .2rem !important; color: #7da4bf !important; font-size: .68rem !important; line-height: 1.45 !important; }
+.firebase-divider { color: #7398b3; }
+.firebase-divider::before, .firebase-divider::after { background: rgba(102, 213, 255, .18); }
+.firebase-auth-card label { color: #cfe8f4; }
+.firebase-auth-card input { color: #e9fbff; background: rgba(2, 15, 31, .78); border-color: rgba(102, 213, 255, .28); }
+.firebase-auth-card input::placeholder { color: #6f96b0; }
+.firebase-auth-card input:focus { border-color: #4be4ff; box-shadow: 0 0 0 3px rgba(75, 228, 255, .13); }
+.firebase-auth-error { color: #ffd1d7; background: rgba(108, 24, 52, .52); border-color: rgba(255, 124, 153, .36); }
+.firebase-mode-toggle { min-height: 2.5rem; padding-inline: .75rem; color: #63e8ff; }
+.firebase-mode-toggle:hover { color: #b8f7ff; }
+.community-header-actions, .member-heading-actions { display: flex; align-items: center; gap: .35rem; }
+.mobile-community-switcher { display: none; }
+.mobile-drawer-backdrop { display: none; }
+
+@media (max-width: 760px) {
+  html, body, #root { min-height: 100%; }
+  body { overflow-x: hidden; }
+  .app-shell.firebase-original-shell { display: grid; grid-template-columns: minmax(0, 1fr); height: 100svh; min-height: 100svh; overflow: hidden; background-image: linear-gradient(145deg, rgba(3, 9, 22, .97), rgba(4, 12, 28, .98)); background-attachment: scroll; }
+  .app-shell.firebase-original-shell .server-rail { display: none; }
+  .app-shell.firebase-original-shell .content-area { min-width: 0; min-height: 100svh; height: 100svh; overflow: hidden; }
+  .app-shell.firebase-original-shell .channel-sidebar { display: none; }
+  .app-shell.firebase-original-shell .channel-sidebar.mobile-open { position: fixed; inset: 0 auto 0 0; z-index: 80; display: flex; width: min(88vw, 22rem); min-height: 100svh; padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom); box-shadow: 1.25rem 0 3rem rgba(0, 0, 0, .45); }
+  .app-shell.firebase-original-shell .member-sidebar { display: none; }
+  .app-shell.firebase-original-shell .member-sidebar.mobile-open { position: fixed; inset: 0 0 0 auto; z-index: 80; display: flex; width: min(88vw, 22rem); min-height: 100svh; padding-top: calc(.8rem + env(safe-area-inset-top)); padding-bottom: env(safe-area-inset-bottom); box-shadow: -1.25rem 0 3rem rgba(0, 0, 0, .45); }
+  .mobile-drawer-backdrop { position: fixed; inset: 0; z-index: 70; display: block; width: 100%; height: 100%; padding: 0; border: 0; border-radius: 0; background: rgba(0, 6, 18, .62); backdrop-filter: blur(5px); }
+  .app-shell.firebase-original-shell .community-header { min-height: 4.5rem; height: auto; padding: .8rem .9rem; }
+  .app-shell.firebase-original-shell .community-header-actions .desktop-more { display: none; }
+  .app-shell.firebase-original-shell .mobile-close-panel { display: grid !important; place-items: center; width: 2.35rem; height: 2.35rem; padding: 0; border: 1px solid rgba(102, 213, 255, .2); border-radius: .65rem; color: #bfe8f5; background: rgba(17, 55, 87, .7); }
+  .mobile-community-switcher { display: flex; gap: .5rem; overflow-x: auto; padding: .75rem .8rem .55rem; border-bottom: 1px solid rgba(89, 180, 255, .16); scrollbar-width: none; }
+  .mobile-community-switcher::-webkit-scrollbar { display: none; }
+  .mobile-community-switcher button { display: grid; place-items: center; width: 2.55rem; height: 2.55rem; flex: 0 0 auto; padding: 0; border: 1px solid rgba(89, 180, 255, .22); border-radius: .75rem; color: #9bc4db; background: rgba(11, 46, 78, .84); font: .68rem 'DM Mono', monospace; font-weight: 800; }
+  .mobile-community-switcher button.active { color: #03131e; border-color: #5eeaff; background: linear-gradient(135deg, #56edff, #2189e7); box-shadow: 0 0 .9rem rgba(39, 215, 255, .3); }
+  .app-shell.firebase-original-shell .channel-scroll { padding: .85rem .7rem calc(1rem + env(safe-area-inset-bottom)); }
+  .app-shell.firebase-original-shell .channel-link { min-height: 2.8rem; padding-block: .65rem; }
+  .app-shell.firebase-original-shell .user-panel { padding-bottom: calc(.65rem + env(safe-area-inset-bottom)); }
+  .app-shell.firebase-original-shell .content-header { min-height: calc(4.25rem + env(safe-area-inset-top)); height: auto; padding: calc(.65rem + env(safe-area-inset-top)) .75rem .65rem; gap: .5rem; }
+  .app-shell.firebase-original-shell .mobile-nav-actions { display: flex; align-items: center; gap: .3rem; margin-right: .15rem; }
+  .app-shell.firebase-original-shell .mobile-nav-actions button { display: grid; place-items: center; width: 2.45rem; height: 2.45rem; flex: 0 0 auto; padding: 0; border: 1px solid rgba(89, 180, 255, .25); border-radius: .7rem; color: #8eb7ce; background: rgba(10, 39, 69, .72); }
+  .app-shell.firebase-original-shell .mobile-nav-actions button:hover, .app-shell.firebase-original-shell .mobile-nav-actions button:focus-visible { color: #061421; background: #54e7ff; }
+  .app-shell.firebase-original-shell .channel-title { min-width: 0; flex: 1; gap: .55rem; }
+  .app-shell.firebase-original-shell .title-symbol { width: 2.35rem; height: 2.35rem; flex: 0 0 auto; }
+  .app-shell.firebase-original-shell .channel-title h2 { overflow: hidden; font-size: .82rem; text-overflow: ellipsis; white-space: nowrap; }
+  .app-shell.firebase-original-shell .header-actions { flex: 0 0 auto; gap: .15rem; }
+  .app-shell.firebase-original-shell .header-actions > button:not(.profile-chip), .app-shell.firebase-original-shell .header-divider, .app-shell.firebase-original-shell .header-actions .profile-chip { display: none; }
+  .app-shell.firebase-original-shell .firebase-notice { margin: .55rem .75rem 0; font-size: .7rem; }
+  .app-shell.firebase-original-shell .message-area { min-height: 0; padding: .9rem .8rem 0; overflow-y: auto; overscroll-behavior: contain; }
+  .app-shell.firebase-original-shell .channel-intro { padding: .55rem 0 1rem; }
+  .app-shell.firebase-original-shell .channel-intro h1 { font-size: clamp(1.25rem, 6vw, 1.7rem); overflow-wrap: anywhere; }
+  .app-shell.firebase-original-shell .message-row { gap: .6rem; padding: .65rem 0; }
+  .app-shell.firebase-original-shell .message-copy p { overflow-wrap: anywhere; font-size: .74rem; }
+  .app-shell.firebase-original-shell .composer-wrap { padding: .6rem .7rem calc(.7rem + env(safe-area-inset-bottom)); background: linear-gradient(180deg, rgba(4, 15, 31, .1), rgba(4, 15, 31, .96)); }
+  .app-shell.firebase-original-shell .composer { max-width: none; min-height: 3rem; height: auto; padding: .25rem .35rem .25rem .55rem; border-radius: .8rem; }
+  .app-shell.firebase-original-shell .composer input { min-width: 0; height: 2.5rem; font-size: 16px; }
+  .app-shell.firebase-original-shell .composer > button { width: 2.35rem; height: 2.35rem; flex: 0 0 auto; }
+  .app-shell.firebase-original-shell .composer-hint { display: none; }
+  .app-shell.firebase-original-shell .workspace-panel { width: 100%; height: 100%; min-height: 100%; margin: 0; padding: 1rem .8rem calc(1.25rem + env(safe-area-inset-bottom)); border: 0; border-radius: 0; box-shadow: none; overflow-y: auto; }
+  .app-shell.firebase-original-shell .workspace-panel-heading { flex-wrap: wrap; gap: .7rem; padding-bottom: 1rem; }
+  .app-shell.firebase-original-shell .workspace-panel-heading h1 { font-size: clamp(1.35rem, 7vw, 1.9rem); }
+  .app-shell.firebase-original-shell .friends-search-row { display: grid; grid-template-columns: 1fr; width: 100%; margin: .95rem 0; }
+  .app-shell.firebase-original-shell .friends-search-row .primary-cta { width: 100%; min-height: 2.9rem; }
+  .app-shell.firebase-original-shell .friends-section { width: 100%; margin-top: .8rem; padding: .85rem; }
+  .app-shell.firebase-original-shell .friends-list-row { gap: .65rem; }
+  .app-shell.firebase-original-shell .friends-list-row > button, .app-shell.firebase-original-shell .friends-actions { width: 100%; }
+  .app-shell.firebase-original-shell .profile-edit-card { width: 100%; margin-top: 1rem; padding: .9rem; }
+  .app-shell.firebase-original-shell .profile-avatar-preview { align-items: flex-start; }
+  .app-shell.firebase-original-shell .profile-avatar-preview > div:last-child { min-width: 0; }
+  .app-shell.firebase-original-shell .firebase-voice-original-stage { padding-inline: .7rem; }
+  .app-shell.firebase-original-shell .firebase-member-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .6rem; padding: 0; }
+  .app-shell.firebase-original-shell .firebase-member { min-height: 7rem; padding: .75rem .35rem; }
+  .app-shell.firebase-original-shell .firebase-voice-actions { width: 100%; margin-top: 1rem; padding-inline: .45rem; }
+  .app-shell.firebase-original-shell .firebase-voice-actions button { flex: 1 1 0; min-width: 0; }
+  .app-shell.firebase-original-shell .direct-chat-toolbar { margin-inline: -.1rem; }
+  .app-shell.firebase-original-shell .direct-chat-actions { width: 100%; }
+  .app-shell.firebase-original-shell .voice-screen-panel { margin-inline: 0; }
+  .app-shell.firebase-original-shell .member-heading { min-height: 2.5rem; }
+  .app-shell.firebase-original-shell .member-heading-actions .mobile-close-panel { display: grid !important; }
+  .app-shell.firebase-original-shell .member-sidebar .member-group { overflow-y: auto; }
+  .app-shell.firebase-original-shell .member-sidebar .call-dock { position: static; margin-top: auto; }
+  .firebase-auth-shell { align-items: start; padding-top: calc(1rem + env(safe-area-inset-top)); padding-bottom: calc(1rem + env(safe-area-inset-bottom)); }
+  .firebase-auth-card { width: min(100%, 30rem); border-radius: 1.1rem; }
+}
+
+@media (max-width: 420px) {
+  .firebase-auth-card { padding: 1.15rem; gap: .78rem; }
+  .firebase-auth-heading { display: block; }
+  .firebase-auth-status { margin-top: .7rem; }
+  .firebase-auth-card h1 { font-size: 1.75rem; }
+  .firebase-auth-card p { font-size: .82rem; }
+  .firebase-auth-helper { font-size: .64rem !important; }
+  .app-shell.firebase-original-shell .mobile-nav-actions button { width: 2.25rem; height: 2.25rem; }
+  .app-shell.firebase-original-shell .title-symbol { width: 2.2rem; height: 2.2rem; }
+  .app-shell.firebase-original-shell .firebase-member { min-height: 6.6rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .firebase-auth-orbit { transform: none; }
+}
+
+
+@media (max-width: 760px) {
+  .app-shell.firebase-original-shell .member-sidebar.mobile-open { flex-direction: column; }
+  .app-shell.firebase-original-shell .member-sidebar.mobile-open .member-group { flex: 1; min-height: 0; overflow-y: auto; }
+}

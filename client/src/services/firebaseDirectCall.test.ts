@@ -10,8 +10,12 @@ class FakePeer {
   ontrack: ((event: { streams: MediaStream[]; track: MediaStreamTrack }) => void) | null = null;
   onicecandidate: ((event: { candidate: { toJSON: () => object } | null }) => void) | null = null;
   onconnectionstatechange: (() => void) | null = null;
-  addTrack = vi.fn();
-  addTransceiver = vi.fn(() => ({ sender: {} }));
+  senders: RTCRtpSender[] = [];
+  transceivers: RTCRtpTransceiver[] = [];
+  addTrack = vi.fn((track: MediaStreamTrack) => { const sender = { track, replaceTrack: vi.fn(async (next: MediaStreamTrack | null) => { (sender as { track: MediaStreamTrack | null }).track = next; }) } as unknown as RTCRtpSender; this.senders.push(sender); return sender; });
+  getSenders = vi.fn(() => this.senders);
+  getTransceivers = vi.fn(() => this.transceivers);
+  addTransceiver = vi.fn((_kind: "audio" | "video", init?: RTCRtpTransceiverInit) => { const sender = { track: null, replaceTrack: vi.fn(async (next: MediaStreamTrack | null) => { (sender as { track: MediaStreamTrack | null }).track = next; }) } as unknown as RTCRtpSender; const transceiver = { sender, direction: init?.direction ?? "sendrecv" } as unknown as RTCRtpTransceiver; this.senders.push(sender); this.transceivers.push(transceiver); return transceiver; });
   addIceCandidate = vi.fn(async () => undefined);
   createOffer = vi.fn(async () => ({ type: "offer", sdp: "offer-sdp" }));
   createAnswer = vi.fn(async () => ({ type: "answer", sdp: "answer-sdp" }));
@@ -39,6 +43,26 @@ describe("FirebaseDirectCall", () => {
 
     expect(onRemoteStream).toHaveBeenCalledWith(remoteStream);
     expect(publishDirectCallSignal).toHaveBeenCalledWith("call-1", expect.objectContaining({ kind: "offer", to: "user-b" }));
+    call.stop();
+  });
+
+  it("renegocia tela dentro de uma chamada de áudio e permite encerrar a transmissão", async () => {
+    let peer: FakePeer | undefined;
+    vi.stubGlobal("RTCPeerConnection", class extends FakePeer { constructor() { super(); peer = this; } });
+    const screenTrack = { kind: "video", id: "screen-video", readyState: "live", stop: vi.fn(), addEventListener: vi.fn() } as unknown as MediaStreamTrack;
+    const screenStream = { getTracks: () => [screenTrack], getVideoTracks: () => [screenTrack] } as unknown as MediaStream;
+    vi.stubGlobal("navigator", { mediaDevices: { getDisplayMedia: vi.fn(async () => screenStream) } });
+    const onScreenShareEnded = vi.fn();
+    const call = new FirebaseDirectCall({ callId: "call-screen", userId: "user-a", media: "audio", localStream: localStream(), onRemoteStream: vi.fn(), onScreenShareEnded });
+
+    await call.start("user-b");
+    await expect(call.shareScreen()).resolves.toBe(screenStream);
+    expect(peer?.addTransceiver).toHaveBeenCalledWith("video", { direction: "sendrecv" });
+    expect(peer?.getSenders()[1]?.replaceTrack).toHaveBeenCalledWith(screenTrack);
+
+    await call.stopScreenShare();
+    expect(peer?.getSenders()[1]?.replaceTrack).toHaveBeenCalledWith(null);
+    expect(onScreenShareEnded).toHaveBeenCalledTimes(1);
     call.stop();
   });
 

@@ -588,3 +588,41 @@ body { background: #050a16; color: #e8f4ff; font-family: 'Space Grotesk', 'Manro
 .preview-rail { background: #040d1c; }
 .preview-sidebar { background: #09172c; }
 .preview-chat { background: #071426; }
+
+/* Generated cyberpunk environment background */
+.app-shell { background-image: linear-gradient(90deg, rgba(3, 9, 22, .9) 0%, rgba(4, 12, 28, .78) 42%, rgba(3, 8, 20, .86) 100%), url('/concord-cyberpunk-bg.jpg'); background-size: cover; background-position: center; background-attachment: fixed; }
+.app-shell::before { opacity: .12; }
+.server-rail { background: linear-gradient(180deg, rgba(3, 12, 29, .98), rgba(4, 19, 42, .92)); }
+.channel-sidebar { background: linear-gradient(180deg, rgba(7, 25, 51, .97), rgba(4, 15, 34, .96)); }
+.member-sidebar { background: linear-gradient(180deg, rgba(8, 25, 50, .96), rgba(4, 14, 31, .96)); }
+.content-area { background: linear-gradient(135deg, rgba(5, 16, 35, .89), rgba(4, 10, 24, .92)); }
+
+/* Friends area as a dedicated visual surface */
+.workspace-panel { width: min(100% - 3rem, 68rem); height: calc(100% - 3rem); margin: 1.5rem auto; padding: clamp(1.25rem, 3vw, 2.25rem); border: 1px solid rgba(84, 203, 255, .24); border-radius: 20px; background: linear-gradient(145deg, rgba(10, 34, 66, .92), rgba(5, 18, 38, .9)); box-shadow: 0 0 48px rgba(0, 127, 255, .13), inset 0 0 28px rgba(39, 215, 255, .035); }
+.workspace-panel-heading { border-bottom-color: rgba(84, 203, 255, .2); }
+.workspace-panel-heading > svg { color: #46e5ff; filter: drop-shadow(0 0 8px rgba(39,215,255,.55)); }
+.friends-section { background: rgba(4, 19, 40, .7); border-color: rgba(84, 203, 255, .16); box-shadow: inset 0 0 20px rgba(0, 137, 255, .04); }
+.friends-section h2 { color: #d8f5ff; }
+.friends-list-row { border-top-color: rgba(84, 203, 255, .12); }
+.friends-list-row strong { color: #caedfb; }
+.friends-list-row small { color: #729ab8; }
+.friends-tabs > button { color: #7396b1; }
+.friends-search-row input { color: #dff6ff; background: rgba(3, 15, 31, .75); border-color: rgba(84,203,255,.25); }
+
+/* Group call participant cards */
+.firebase-member-grid { width: min(100%, 58rem); display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px; margin: 1.4rem auto 0; padding: 0 .5rem; }
+.firebase-member { min-height: 142px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 1rem .75rem; border-radius: 18px !important; text-align: center; }
+.firebase-member .avatar { width: 54px; height: 54px; border-radius: 17px; font-size: 14px; box-shadow: 0 0 0 5px rgba(73, 179, 255, .08); }
+.firebase-member.call-member-speaking .avatar { box-shadow: 0 0 0 5px rgba(57,243,156,.14), 0 0 18px rgba(57,243,156,.3); }
+.firebase-member strong { max-width: 100%; overflow: hidden; color: #dff7ff; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.firebase-member .voice-quality { margin-top: 1px; color: #84b4cd; background: rgba(15, 63, 96, .72); border: 1px solid rgba(84,203,255,.18); }
+.firebase-member .voice-quality-excellent { color: #65f0b2; background: rgba(10, 92, 72, .45); }
+.firebase-member .voice-quality-poor { color: #ff9aac; background: rgba(103, 28, 58, .4); }
+.firebase-voice-original-stage > .channel-intro { width: min(100%, 58rem); margin: 0 auto; }
+.firebase-voice-original-stage > .channel-intro h1 { letter-spacing: -.035em; }
+
+/* Centered call action dock */
+.firebase-voice-actions { justify-content: center; width: min(100%, 58rem); }
+.firebase-voice-actions button { flex: 0 0 110px; }
+.firebase-voice-actions .join-call-button { flex: 0 1 260px; }
+@media (max-width: 640px) { .workspace-panel { width: calc(100% - 1.5rem); height: calc(100% - 1.5rem); margin: .75rem auto; border-radius: 16px; } .firebase-member-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; } .firebase-member { min-height: 128px; } .firebase-voice-actions { width: calc(100% - 1rem); } .firebase-voice-actions button { flex-basis: 0; flex: 1; min-width: 0; } }

@@ -3,6 +3,8 @@ import { publishSignal } from "@/services/firebaseSignaling";
 
 type SignalPayload = { sdp?: RTCSessionDescriptionInit; candidate?: RTCIceCandidateInit };
 
+export type VoicePeerQuality = { ping: number | null; packetLoss: number | null; level: "excellent" | "good" | "fair" | "poor" | "unknown"; state: RTCPeerConnectionState };
+
 type VoiceMeshOptions = {
   roomId: string;
   userId: string;
@@ -10,6 +12,7 @@ type VoiceMeshOptions = {
   onRemoteStream: (peerId: string, stream: MediaStream) => void;
   onRemoteScreenStream?: (peerId: string, stream: MediaStream) => void;
   onRemoteScreenEnded?: (peerId: string) => void;
+  onPeerQuality?: (peerId: string, quality: VoicePeerQuality) => void;
   onError?: (error: Error) => void;
   onScreenShareEnded?: () => void;
 };
@@ -19,6 +22,8 @@ export class FirebaseVoiceMesh {
   private readonly screenSenders = new Map<string, RTCRtpSender>();
   private readonly screenAudioSenders = new Map<string, RTCRtpSender>();
   private readonly pendingCandidates = new Map<string, RTCIceCandidateInit[]>();
+  private readonly qualityTimers = new Map<string, ReturnType<typeof setInterval>>();
+  private readonly previousStats = new Map<string, { timestamp: number; packetsLost: number; packetsReceived: number }>();
   private readonly remoteCallStreams = new Map<string, MediaStream>();
   private readonly remoteCallStreamIds = new Map<string, string>();
   private readonly remoteScreenTracks = new Map<string, Map<string, MediaStreamTrack>>();
@@ -31,6 +36,48 @@ export class FirebaseVoiceMesh {
 
   private reportError(reason: unknown, fallback: string): void {
     this.options.onError?.(reason instanceof Error ? reason : new Error(fallback));
+  }
+
+  private async measurePeerQuality(peerId: string, peer: RTCPeerConnection): Promise<void> {
+    try {
+      const reports = await peer.getStats();
+      let ping: number | null = null;
+      let packetsLost = 0;
+      let packetsReceived = 0;
+      reports.forEach((rawReport) => {
+        const report = rawReport as Record<string, unknown>;
+        if (report.type === "candidate-pair" && (report.state === "succeeded" || report.nominated === true) && typeof report.currentRoundTripTime === "number") ping = Math.round(report.currentRoundTripTime * 1000);
+        if (report.type === "inbound-rtp" && (report.kind === "audio" || report.mediaType === "audio" || report.kind === "video" || report.mediaType === "video")) {
+          packetsLost += typeof report.packetsLost === "number" ? report.packetsLost : 0;
+          packetsReceived += typeof report.packetsReceived === "number" ? report.packetsReceived : 0;
+        }
+      });
+      const previous = this.previousStats.get(peerId);
+      const lostDelta = previous ? Math.max(0, packetsLost - previous.packetsLost) : 0;
+      const receivedDelta = previous ? Math.max(0, packetsReceived - previous.packetsReceived) : 0;
+      const totalDelta = lostDelta + receivedDelta;
+      const packetLoss = totalDelta > 0 ? Math.round((lostDelta / totalDelta) * 1000) / 10 : null;
+      this.previousStats.set(peerId, { timestamp: Date.now(), packetsLost, packetsReceived });
+      const effectivePing = ping ?? null;
+      const loss = packetLoss ?? 0;
+      const level = effectivePing === null ? "unknown" : effectivePing <= 80 && loss <= 1 ? "excellent" : effectivePing <= 160 && loss <= 3 ? "good" : effectivePing <= 300 && loss <= 8 ? "fair" : "poor";
+      this.options.onPeerQuality?.(peerId, { ping: effectivePing, packetLoss, level, state: peer.connectionState });
+    } catch (reason) {
+      this.options.onPeerQuality?.(peerId, { ping: null, packetLoss: null, level: "unknown", state: peer.connectionState });
+    }
+  }
+
+  private startPeerQualityMonitor(peerId: string, peer: RTCPeerConnection): void {
+    const timer = setInterval(() => void this.measurePeerQuality(peerId, peer), 3000);
+    this.qualityTimers.set(peerId, timer);
+    void this.measurePeerQuality(peerId, peer);
+  }
+
+  private stopPeerQualityMonitor(peerId: string): void {
+    const timer = this.qualityTimers.get(peerId);
+    if (timer) clearInterval(timer);
+    this.qualityTimers.delete(peerId);
+    this.previousStats.delete(peerId);
   }
 
   private notifyCallStream(peerId: string, stream: MediaStream): void {
@@ -98,12 +145,14 @@ export class FirebaseVoiceMesh {
         this.screenSenders.delete(peerId);
         this.screenAudioSenders.delete(peerId);
         this.pendingCandidates.delete(peerId);
+        this.stopPeerQualityMonitor(peerId);
         this.remoteCallStreams.delete(peerId);
         this.remoteCallStreamIds.delete(peerId);
         this.clearRemoteScreen(peerId);
       }
     };
     this.peers.set(peerId, peer);
+    this.startPeerQualityMonitor(peerId, peer);
     if (initiator) void this.createOffer(peerId, peer);
     return peer;
   }
@@ -125,6 +174,7 @@ export class FirebaseVoiceMesh {
       this.screenSenders.delete(peerId);
       this.screenAudioSenders.delete(peerId);
       this.pendingCandidates.delete(peerId);
+      this.stopPeerQualityMonitor(peerId);
       this.remoteCallStreams.delete(peerId);
       this.remoteCallStreamIds.delete(peerId);
       this.clearRemoteScreen(peerId);
@@ -231,6 +281,7 @@ export class FirebaseVoiceMesh {
     this.screenSenders.clear();
     this.screenAudioSenders.clear();
     this.pendingCandidates.clear();
+    for (const peerId of Array.from(this.qualityTimers.keys())) this.stopPeerQualityMonitor(peerId);
     this.remoteCallStreams.clear();
     this.remoteCallStreamIds.clear();
     this.remoteScreenTracks.clear();

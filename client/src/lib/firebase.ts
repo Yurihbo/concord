@@ -13,11 +13,12 @@ const firebaseConfig = {
   measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
 };
 
-const firebaseConfigReady = Boolean(firebaseConfig.apiKey && firebaseConfig.authDomain && firebaseConfig.projectId && firebaseConfig.appId);
+const firebaseConfigReady = Boolean(firebaseConfig.apiKey && firebaseConfig.authDomain && firebaseConfig.projectId && firebaseConfig.appId && firebaseConfig.storageBucket);
 const safeFirebaseConfig = firebaseConfigReady ? firebaseConfig : {
   apiKey: "missing-public-config",
   authDomain: "missing-public-config.invalid",
   projectId: "missing-public-config",
+  storageBucket: "missing-public-config",
   appId: "missing-public-config",
 };
 
@@ -34,5 +35,6 @@ export const missingFirebaseConfigKeys = [
   ["VITE_FIREBASE_API_KEY", firebaseConfig.apiKey],
   ["VITE_FIREBASE_AUTH_DOMAIN", firebaseConfig.authDomain],
   ["VITE_FIREBASE_PROJECT_ID", firebaseConfig.projectId],
+  ["VITE_FIREBASE_STORAGE_BUCKET", firebaseConfig.storageBucket],
   ["VITE_FIREBASE_APP_ID", firebaseConfig.appId],
 ].filter(([, value]) => !value).map(([key]) => key);

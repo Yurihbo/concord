@@ -17,8 +17,9 @@ import {
   type QueryConstraint,
   type Unsubscribe,
 } from "firebase/firestore";
+import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
 import type { User } from "firebase/auth";
-import { firebaseDb } from "@/lib/firebase";
+import { firebaseDb, firebaseStorage } from "@/lib/firebase";
 
 export type FirebaseProfile = {
   uid: string;
@@ -32,7 +33,7 @@ export type FirebaseProfile = {
 
 export type FirebaseCommunity = { id: string; name: string; description?: string; ownerId: string; createdAt?: unknown };
 export type FirebaseChannel = { id: string; communityId: string; name: string; kind: "text" | "voice"; category?: string };
-export type FirebaseMessage = { id: string; channelId: string; authorId: string; body: string; createdAt?: unknown };
+export type FirebaseMessage = { id: string; channelId: string; authorId: string; body: string; createdAt?: unknown; kind?: "text" | "file"; fileUrl?: string; fileName?: string; fileType?: string; fileSize?: number };
 export type FirebaseVoiceMember = { uid: string; roomId: string; displayName: string; avatarUrl?: string | null; isSpeaking: boolean; muted: boolean; screenSharing?: boolean; joinedAt?: unknown };
 export type FirebaseFriendship = { id: string; requesterId: string; addresseeId: string; status: "pending" | "accepted" | "declined"; updatedAt?: unknown };
 export type FirebaseCommunityInvite = { id: string; communityId: string; communityName?: string; inviterId: string; inviteeId: string; status: "pending" | "accepted" | "declined"; updatedAt?: unknown };
@@ -224,6 +225,25 @@ export function subscribeToChannelMessages(communityId: string, channelId: strin
   return onSnapshot(query(communityCollection(communityId, "messages"), ...constraints), (snapshot) => {
     listener(snapshot.docs.map((item) => clean(item.id, item.data() as Omit<FirebaseMessage, "id">)));
   }, (reason) => onError?.(reason instanceof Error ? reason : new Error("Não foi possível sincronizar as mensagens.")));
+}
+
+export async function sendVoiceChatMessage(communityId: string, roomId: string, authorId: string, body: string, attachment?: { url: string; name: string; type: string; size: number }): Promise<string> {
+  const created = await addDoc(communityCollection(communityId, "messages"), {
+    channelId: roomId,
+    authorId,
+    body,
+    kind: attachment ? "file" : "text",
+    ...(attachment ? { fileUrl: attachment.url, fileName: attachment.name, fileType: attachment.type, fileSize: attachment.size } : {}),
+    createdAt: serverTimestamp(),
+  });
+  return created.id;
+}
+
+export async function uploadVoiceChatFile(communityId: string, roomId: string, userId: string, file: File): Promise<{ url: string; name: string; type: string; size: number }> {
+  const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_").slice(-120) || "arquivo";
+  const storageRef = ref(firebaseStorage, `communities/${communityId}/voiceRooms/${roomId}/${userId}/${Date.now()}-${safeName}`);
+  await uploadBytes(storageRef, file, { contentType: file.type || "application/octet-stream" });
+  return { url: await getDownloadURL(storageRef), name: file.name, type: file.type || "application/octet-stream", size: file.size };
 }
 
 export async function countVoiceMembers(communityId: string, roomId: string): Promise<number> {

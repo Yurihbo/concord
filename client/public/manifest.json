@@ -1,14 +1,20 @@
 {
-  "name": "Concord — Comunicação simples e intencional",
+  "id": "./",
+  "name": "Concord — Comunicação em outro nível",
   "short_name": "Concord",
   "description": "Comunidades e conversas que encontram seu ritmo.",
-  "start_url": "/",
+  "start_url": "./",
+  "scope": "./",
   "display": "standalone",
-  "background_color": "#070d18",
-  "theme_color": "#0b1220",
+  "display_override": ["window-controls-overlay", "standalone"],
+  "orientation": "any",
+  "background_color": "#050a16",
+  "theme_color": "#050a16",
   "lang": "pt-BR",
+  "dir": "ltr",
+  "categories": ["social", "communication"],
   "icons": [
-    { "src": "./assets/logo-concord.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "./assets/logo-concord-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
     { "src": "./assets/logo-concord.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
   ]
 }

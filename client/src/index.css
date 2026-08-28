@@ -881,11 +881,12 @@ button:not(:disabled):not([data-no-neon]):active { transform: translateY(0) scal
 .pwa-install-button-compact { min-height: 2.3rem; padding-inline: .7rem; font-size: .64rem; }
 .landing-nav-actions .pwa-install-button { flex: 0 0 auto; }
 .header-actions .pwa-install-button { display: inline-flex; flex: 0 0 auto; }
-.pwa-install-backdrop { position: fixed; inset: 0; z-index: 120; display: grid; place-items: center; padding: 1rem; background: rgba(1, 8, 20, .82); backdrop-filter: blur(12px); }
-.pwa-install-dialog { position: relative; width: min(100%, 29rem); padding: 1.35rem; color: #dff7ff; background: linear-gradient(145deg, #0b2d4d, #06172e); border: 1px solid rgba(84, 225, 255, .4); border-radius: 1rem; box-shadow: 0 1.8rem 5rem rgba(0, 0, 0, .5), 0 0 2.5rem rgba(0, 183, 255, .16); }
-.pwa-install-dialog h2 { margin: .55rem 0 .35rem; color: #f1fdff; font-size: 1.25rem; }
-.pwa-install-dialog > p { margin: 0; color: #a8cde0; font-size: .78rem; line-height: 1.55; }
-.pwa-install-close { position: absolute; top: .75rem; right: .75rem; display: grid; place-items: center; width: 2.2rem; height: 2.2rem; padding: 0; color: #bdebf7 !important; background: rgba(20, 76, 111, .7) !important; border: 1px solid rgba(102, 213, 255, .28) !important; border-radius: .6rem; }
+.pwa-install-dialog[data-slot="dialog-content"] { width: min(29rem, calc(100% - 2rem)); max-width: min(29rem, calc(100% - 2rem)); max-height: calc(100dvh - 2rem); overflow-y: auto; padding: 1.35rem; color: #dff7ff; background: linear-gradient(145deg, #0b2d4d, #06172e); border: 1px solid rgba(84, 225, 255, .4); border-radius: 1rem; box-shadow: 0 1.8rem 5rem rgba(0, 0, 0, .5), 0 0 2.5rem rgba(0, 183, 255, .16); }
+.pwa-install-dialog [data-slot="dialog-header"] { padding-right: 2.5rem; text-align: left; }
+.pwa-install-dialog [data-slot="dialog-title"] { margin: .55rem 0 .35rem; color: #f1fdff; font-size: 1.25rem; }
+.pwa-install-dialog [data-slot="dialog-description"] { margin: 0; color: #a8cde0; font-size: .78rem; line-height: 1.55; }
+.pwa-install-dialog [data-slot="dialog-close"] { top: .75rem; right: .75rem; display: grid; place-items: center; width: 2.2rem; height: 2.2rem; padding: 0; color: #bdebf7 !important; background: rgba(20, 76, 111, .7) !important; border: 1px solid rgba(102, 213, 255, .28) !important; border-radius: .6rem; opacity: 1; }
+.pwa-install-dialog [data-slot="dialog-close"]:hover, .pwa-install-dialog [data-slot="dialog-close"]:focus-visible { color: #ffffff !important; background: #2563eb !important; border-color: #8ddcff !important; opacity: 1; }
 .pwa-install-guide { display: grid; gap: .65rem; margin: 1.1rem 0; }
 .pwa-install-guide > div { display: grid; gap: .28rem; padding: .75rem; color: #dff7ff; background: rgba(6, 35, 63, .9); border: 1px solid rgba(84, 203, 255, .2); border-radius: .65rem; }
 .pwa-install-guide strong { color: #65eaff; font-size: .72rem; }
@@ -935,8 +936,7 @@ button:not(:disabled):not([data-no-neon]):active { transform: translateY(0) scal
   .firebase-dialog .firebase-social-row { width: 100%; }
   .firebase-dialog .firebase-social-row > div { width: 100%; display: flex; }
   .firebase-dialog .firebase-social-row > div button { flex: 1 1 0; min-width: 0; }
-  .pwa-install-backdrop { align-items: end; padding: .75rem; }
-  .pwa-install-dialog { max-height: calc(100dvh - 1.5rem); overflow-y: auto; padding: 1.15rem; padding-bottom: calc(1.15rem + env(safe-area-inset-bottom)); }
+  .pwa-install-dialog[data-slot="dialog-content"] { max-height: calc(100dvh - 1.5rem); padding: 1.15rem; padding-bottom: calc(1.15rem + env(safe-area-inset-bottom)); }
 }
 
 @media (max-width: 420px) {

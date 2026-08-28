@@ -100,7 +100,10 @@ createRoot(document.getElementById("root")!).render(
 if ("serviceWorker" in navigator && import.meta.env.PROD) {
   window.addEventListener("load", () => {
     const baseUrl = new URL(import.meta.env.BASE_URL, window.location.origin);
-    const serviceWorkerUrl = new URL("sw.js", baseUrl).toString();
-    navigator.serviceWorker.register(serviceWorkerUrl, { scope: import.meta.env.BASE_URL }).catch(() => undefined);
+    const serviceWorkerUrl = new URL("sw.js?v=4", baseUrl).toString();
+    const serviceWorkerScope = `${baseUrl.pathname.replace(/\/$/, "")}/`;
+    navigator.serviceWorker
+      .register(serviceWorkerUrl, { scope: serviceWorkerScope, updateViaCache: "none" })
+      .catch(() => undefined);
   });
 }

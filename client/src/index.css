@@ -644,3 +644,22 @@ button:not(:disabled):not([data-no-neon]):active { transform: translateY(0) scal
 @keyframes neon-sweep { from { transform: translateX(-120%); } to { transform: translateX(120%); } }
 @keyframes neon-burst { 0% { opacity: 1; transform: scale(.5); } 55% { opacity: 1; transform: scale(1.2); } 100% { opacity: 0; transform: scale(2.6); } }
 @media (prefers-reduced-motion: reduce) { button:not(:disabled):not([data-no-neon]):hover, button:not(:disabled):not([data-no-neon]):active { transform: none; } button:not(:disabled):not([data-no-neon])::after, .neon-click-burst { animation: none; } .neon-click-burst { display: none; } }
+
+
+/* Perfil: avatar selecionável, preview e upload */
+.profile-avatar-preview { display: flex; align-items: center; gap: 1rem; padding: .9rem; background: linear-gradient(135deg, #eff6ff, #f8fafc); border: 1px solid #dbeafe; border-radius: .75rem; }
+.profile-avatar-preview > div:last-child { display: grid; gap: .28rem; }
+.profile-avatar-preview strong { color: #0f172a; font-size: .8rem; }
+.profile-avatar-preview span { color: #64748b; font-size: .7rem; line-height: 1.4; }
+.profile-avatar-image { width: 4.5rem; height: 4.5rem; display: grid; place-items: center; overflow: hidden; flex: 0 0 auto; color: #1e3a8a; background: #bfdbfe; border: 3px solid #fff; border-radius: 1.25rem; box-shadow: 0 .6rem 1.4rem rgba(37,99,235,.18); font-weight: 800; }
+.profile-avatar-image img, .profile-avatar-shell img, .avatar-preset img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.profile-avatar-section { display: grid; gap: .65rem; }
+.profile-field-label { color: #334155; font-size: .72rem; font-weight: 700; }
+.avatar-preset-grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: .55rem; }
+.avatar-preset { aspect-ratio: 1; padding: 0; overflow: hidden; border: 2px solid transparent; border-radius: .7rem; background: #dbeafe; cursor: pointer; transition: transform .16s ease-out, border-color .16s ease-out, box-shadow .16s ease-out; }
+.avatar-preset:hover { transform: translateY(-2px); border-color: #93c5fd; }
+.avatar-preset.selected { border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,.16); }
+.avatar-upload-button { display: inline-flex !important; width: fit-content; align-items: center; gap: .45rem; padding: .55rem .75rem; color: #1d4ed8 !important; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: .55rem; cursor: pointer; }
+.avatar-upload-button input { display: none; }
+.profile-avatar-shell { overflow: hidden; background: #bfdbfe !important; }
+@media (max-width: 560px) { .avatar-preset-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }

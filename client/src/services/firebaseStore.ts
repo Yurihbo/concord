@@ -256,6 +256,15 @@ export async function uploadVoiceChatFile(communityId: string, roomId: string, u
   return { url: await getDownloadURL(storageRef), name: file.name, type: file.type || "application/octet-stream", size: file.size };
 }
 
+export async function uploadProfileAvatar(userId: string, file: File): Promise<string> {
+  if (!file.type.startsWith("image/")) throw new Error("Escolha um arquivo de imagem.");
+  if (file.size > 5 * 1024 * 1024) throw new Error("A imagem deve ter no máximo 5 MB.");
+  const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_").slice(-100) || "avatar";
+  const storageRef = ref(firebaseStorage, `users/${userId}/avatar-${Date.now()}-${safeName}`);
+  await uploadBytes(storageRef, file, { contentType: file.type });
+  return getDownloadURL(storageRef);
+}
+
 export async function countVoiceMembers(communityId: string, roomId: string): Promise<number> {
   const snapshot = await getDocs(query(communityCollection(communityId, "voiceMembers"), where("roomId", "==", roomId), limit(9)));
   return snapshot.size;

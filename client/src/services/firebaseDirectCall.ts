@@ -7,6 +7,7 @@ type DirectCallOptions = {
   media: "audio" | "screen";
   localStream: MediaStream;
   onRemoteStream: (stream: MediaStream) => void;
+  onRemoteScreenStream?: (stream: MediaStream) => void;
   onScreenShareEnded?: () => void;
   onRemoteScreenEnded?: () => void;
   onError?: (error: Error) => void;
@@ -14,18 +15,21 @@ type DirectCallOptions = {
 
 /**
  * WebRTC adapter for one-to-one calls signaled through Firestore.
- *
- * Audio calls can be upgraded to screen sharing without creating another call.
- * The upgrade is a normal WebRTC renegotiation: the sender adds a video track,
- * publishes a new offer, and the other participant answers it.
+ * Call audio and screen audio are kept in different remote MediaStreams so
+ * the viewer can adjust the screen volume without changing the call volume.
  */
 export class FirebaseDirectCall {
   private readonly options: DirectCallOptions;
   private peer: RTCPeerConnection | null = null;
   private peerId: string | null = null;
   private videoSender: RTCRtpSender | null = null;
+  private screenAudioSender: RTCRtpSender | null = null;
   private videoTransceiver: RTCRtpTransceiver | null = null;
-  private remoteStream: MediaStream | null = null;
+  private remoteSourceTracks = new Map<string, Map<string, MediaStreamTrack>>();
+  private remoteScreenSourceIds = new Set<string>();
+  private remoteScreenStreams = new Map<string, MediaStream>();
+  private remoteCallSourceId: string | null = null;
+  private remoteCallStream: MediaStream | null = null;
   private screenStream: MediaStream | null = null;
   private stoppingScreen = false;
   private pendingCandidates: RTCIceCandidateInit[] = [];
@@ -40,18 +44,67 @@ export class FirebaseDirectCall {
     this.options.onError?.(reason instanceof Error ? reason : new Error(fallback));
   }
 
+  private rebuildRemoteStreams(): void {
+    const callTracks = Array.from(this.remoteSourceTracks.entries()).filter(([sourceId]) => !this.remoteScreenSourceIds.has(sourceId)).flatMap(([, tracks]) => Array.from(tracks.values()).filter((track) => track.kind === "audio"));
+    if (callTracks.length || !this.remoteCallStream) {
+      const callStream = new MediaStream(callTracks);
+      this.remoteCallStream = callStream;
+      this.options.onRemoteStream(callStream);
+    } else {
+      this.options.onRemoteStream(this.remoteCallStream);
+    }
+
+    for (const sourceId of Array.from(this.remoteScreenSourceIds)) {
+      const tracks = Array.from(this.remoteSourceTracks.get(sourceId)?.values() ?? []);
+      if (!tracks.length) continue;
+      const screenStream = new MediaStream(tracks);
+      this.remoteScreenStreams.set(sourceId, screenStream);
+      this.options.onRemoteScreenStream?.(screenStream);
+    }
+  }
+
   private emitRemoteTrack(event: RTCTrackEvent): void {
-    const stream = event.streams[0] ?? this.remoteStream ?? new MediaStream();
-    this.remoteStream = stream;
-    if (!event.streams[0] && !stream.getTracks().some((track) => track.id === event.track.id)) stream.addTrack(event.track);
-    this.options.onRemoteStream(stream);
+    const eventStream = event.streams[0];
+    const incomingSourceId = eventStream?.id ?? `track-source-${event.track.id}`;
+    let sourceId = incomingSourceId;
+
+    if (event.track.kind === "video") {
+      const pendingScreenSource = Array.from(this.remoteScreenSourceIds).find((candidate) => !(this.remoteSourceTracks.get(candidate)?.has("video")));
+      sourceId = pendingScreenSource ?? incomingSourceId;
+      this.remoteScreenSourceIds.add(sourceId);
+      if (this.remoteCallStream === eventStream) this.remoteCallStream = null;
+    } else if (this.remoteScreenSourceIds.size) {
+      const screenSourceWithVideo = Array.from(this.remoteScreenSourceIds).find((candidate) => Array.from(this.remoteSourceTracks.get(candidate)?.values() ?? []).some((track) => track.kind === "video"));
+      if (screenSourceWithVideo && screenSourceWithVideo !== incomingSourceId) sourceId = screenSourceWithVideo;
+      else if (!this.remoteScreenSourceIds.has(incomingSourceId) && this.remoteCallSourceId === null) this.remoteCallSourceId = incomingSourceId;
+    } else if (this.remoteCallSourceId === null) {
+      this.remoteCallSourceId = incomingSourceId;
+    } else if (incomingSourceId !== this.remoteCallSourceId) {
+      this.remoteScreenSourceIds.add(incomingSourceId);
+    }
+
+    const sourceTracks = this.remoteSourceTracks.get(sourceId) ?? new Map<string, MediaStreamTrack>();
+    sourceTracks.set(event.track.id, event.track);
+    this.remoteSourceTracks.set(sourceId, sourceTracks);
+    if (sourceId !== incomingSourceId && !eventStream) this.remoteSourceTracks.delete(incomingSourceId);
+
+    if (event.track.kind !== "video" && eventStream && sourceId === this.remoteCallSourceId) {
+      this.remoteCallStream = eventStream;
+      this.options.onRemoteStream(eventStream);
+      return;
+    }
+    this.rebuildRemoteStreams();
 
     if (event.track.kind === "video") {
       event.track.addEventListener("ended", () => {
-        if (this.remoteStream === stream) {
-          stream.removeTrack(event.track);
-          this.options.onRemoteStream(stream);
+        const tracks = this.remoteSourceTracks.get(sourceId);
+        tracks?.delete(event.track.id);
+        if (!tracks?.size) {
+          this.remoteSourceTracks.delete(sourceId);
+          this.remoteScreenSourceIds.delete(sourceId);
+          this.remoteScreenStreams.delete(sourceId);
         }
+        this.rebuildRemoteStreams();
         this.options.onRemoteScreenEnded?.();
       }, { once: true });
     }
@@ -64,12 +117,14 @@ export class FirebaseDirectCall {
   }
 
   private clearRemoteScreen(): void {
-    const stream = this.remoteStream;
-    if (!stream) return;
-    const videoTracks = stream.getVideoTracks();
-    videoTracks.forEach((track) => stream.removeTrack(track));
-    if (videoTracks.length) this.options.onRemoteStream(stream);
-    this.options.onRemoteScreenEnded?.();
+    const hadScreen = this.remoteScreenSourceIds.size > 0;
+    for (const sourceId of Array.from(this.remoteScreenSourceIds)) {
+      this.remoteSourceTracks.delete(sourceId);
+      this.remoteScreenStreams.delete(sourceId);
+    }
+    this.remoteScreenSourceIds.clear();
+    this.rebuildRemoteStreams();
+    if (hadScreen) this.options.onRemoteScreenEnded?.();
   }
 
   private async publishOffer(peer: RTCPeerConnection, peerId: string): Promise<void> {
@@ -156,7 +211,7 @@ export class FirebaseDirectCall {
         if (!this.remoteDescriptionReady || !peer.remoteDescription) this.pendingCandidates.push(payload.candidate);
         else await peer.addIceCandidate(payload.candidate);
       } else if (signal.kind === "screen-close") {
-        if (this.screenStream || this.videoSender?.track?.kind === "video") await this.stopScreenShare();
+        if (this.screenStream || this.videoSender?.track?.kind === "video" || this.screenAudioSender?.track) await this.stopScreenShare();
         this.clearRemoteScreen();
       }
     } catch (reason) {
@@ -168,7 +223,7 @@ export class FirebaseDirectCall {
   async shareScreen(): Promise<MediaStream> {
     if (!this.peer || !this.peerId) throw new Error("A chamada ainda não está conectada.");
     if (!navigator.mediaDevices?.getDisplayMedia) throw new Error("Este navegador não permite compartilhamento de tela.");
-    const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false });
+    const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
     const screenTrack = stream.getVideoTracks()[0];
     if (!screenTrack) throw new Error("Nenhuma tela foi selecionada.");
     try {
@@ -176,6 +231,8 @@ export class FirebaseDirectCall {
       this.videoTransceiver.direction = "sendrecv";
       this.videoSender = this.videoTransceiver.sender;
       await this.videoSender.replaceTrack(screenTrack);
+      const screenAudioTrack = stream.getAudioTracks?.()[0];
+      if (screenAudioTrack) this.screenAudioSender = this.peer.addTrack(screenAudioTrack, stream);
       this.screenStream = stream;
       screenTrack.addEventListener("ended", () => { void this.stopScreenShare(); }, { once: true });
       await this.publishOffer(this.peer, this.peerId);
@@ -188,7 +245,7 @@ export class FirebaseDirectCall {
   }
 
   async closeScreenForEveryone(): Promise<void> {
-    if (this.screenStream || this.videoSender?.track?.kind === "video") await this.stopScreenShare();
+    if (this.screenStream || this.videoSender?.track?.kind === "video" || this.screenAudioSender?.track) await this.stopScreenShare();
     this.clearRemoteScreen();
     if (this.peerId) await publishDirectCallSignal(this.options.callId, {
       from: this.options.userId,
@@ -201,16 +258,18 @@ export class FirebaseDirectCall {
   async stopScreenShare(): Promise<void> {
     if (this.stoppingScreen) return;
     const stream = this.screenStream;
-    const sender = this.videoSender;
-    if (!stream && sender?.track?.kind !== "video") return;
+    const videoSender = this.videoSender;
+    const screenAudioSender = this.screenAudioSender;
+    if (!stream && videoSender?.track?.kind !== "video" && !screenAudioSender?.track) return;
     this.stoppingScreen = true;
     this.screenStream = null;
     stream?.getTracks().forEach((track) => { if (track.readyState !== "ended") track.stop(); });
-    if (sender?.track?.kind === "video") {
-      const track = sender.track;
-      if (!stream && track.readyState !== "ended") track.stop();
-      await sender.replaceTrack(null);
+    if (videoSender?.track?.kind === "video") {
+      if (!stream && videoSender.track.readyState !== "ended") videoSender.track.stop();
+      await videoSender.replaceTrack(null);
     }
+    if (screenAudioSender?.track) await screenAudioSender.replaceTrack(null);
+    this.screenAudioSender = null;
     if (this.peer && this.peerId && this.peer.connectionState !== "closed") await this.publishOffer(this.peer, this.peerId).catch((reason) => this.reportError(reason, "Não foi possível encerrar o compartilhamento da tela."));
     this.options.onScreenShareEnded?.();
     this.stoppingScreen = false;
@@ -225,8 +284,13 @@ export class FirebaseDirectCall {
     this.peer = null;
     this.peerId = null;
     this.videoSender = null;
+    this.screenAudioSender = null;
     this.videoTransceiver = null;
-    this.remoteStream = null;
+    this.remoteSourceTracks.clear();
+    this.remoteScreenSourceIds.clear();
+    this.remoteScreenStreams.clear();
+    this.remoteCallStream = null;
+    this.remoteCallSourceId = null;
     this.pendingCandidates = [];
     this.remoteDescriptionReady = false;
     this.stoppingScreen = false;

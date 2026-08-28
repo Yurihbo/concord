@@ -220,9 +220,15 @@ export async function sendChannelMessage(communityId: string, channelId: string,
 }
 
 export function subscribeToChannelMessages(communityId: string, channelId: string, listener: (messages: FirebaseMessage[]) => void, onError?: (error: Error) => void): Unsubscribe {
-  const constraints: QueryConstraint[] = [where("channelId", "==", channelId), orderBy("createdAt", "asc"), limit(200)];
+  const constraints: QueryConstraint[] = [where("channelId", "==", channelId), limit(200)];
   return onSnapshot(query(communityCollection(communityId, "messages"), ...constraints), (snapshot) => {
-    listener(snapshot.docs.map((item) => clean(item.id, item.data() as Omit<FirebaseMessage, "id">)));
+    const messages = snapshot.docs.map((item) => clean(item.id, item.data() as Omit<FirebaseMessage, "id">));
+    messages.sort((left, right) => {
+      const leftTime = left.createdAt ? new Date(String(left.createdAt)).getTime() : 0;
+      const rightTime = right.createdAt ? new Date(String(right.createdAt)).getTime() : 0;
+      return leftTime - rightTime;
+    });
+    listener(messages);
   }, (reason) => onError?.(reason instanceof Error ? reason : new Error("Não foi possível sincronizar as mensagens.")));
 }
 

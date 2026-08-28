@@ -11,6 +11,7 @@ class FakePeer {
   onicecandidate: ((event: { candidate: { toJSON: () => object } | null }) => void) | null = null;
   onconnectionstatechange: (() => void) | null = null;
   addTrack = vi.fn();
+  addTransceiver = vi.fn(() => ({ sender: {} }));
   addIceCandidate = vi.fn(async () => undefined);
   createOffer = vi.fn(async () => ({ type: "offer", sdp: "offer-sdp" }));
   createAnswer = vi.fn(async () => ({ type: "answer", sdp: "answer-sdp" }));
@@ -21,7 +22,7 @@ class FakePeer {
 
 function localStream(): MediaStream {
   const track = { kind: "audio", id: "local-audio" } as unknown as MediaStreamTrack;
-  return { getTracks: () => [track] } as unknown as MediaStream;
+  return { getTracks: () => [track], getVideoTracks: () => [] } as unknown as MediaStream;
 }
 
 describe("FirebaseDirectCall", () => {
@@ -29,7 +30,7 @@ describe("FirebaseDirectCall", () => {
     let peer: FakePeer | undefined;
     vi.stubGlobal("RTCPeerConnection", class extends FakePeer { constructor() { super(); peer = this; } });
     const onRemoteStream = vi.fn();
-    const call = new FirebaseDirectCall({ callId: "call-1", userId: "user-a", localStream: localStream(), onRemoteStream });
+    const call = new FirebaseDirectCall({ callId: "call-1", userId: "user-a", media: "audio", localStream: localStream(), onRemoteStream });
 
     await call.start("user-b");
     const remoteStream = {} as MediaStream;
@@ -44,7 +45,7 @@ describe("FirebaseDirectCall", () => {
   it("guarda candidatos ICE que chegam antes da descrição remota", async () => {
     let peer: FakePeer | undefined;
     vi.stubGlobal("RTCPeerConnection", class extends FakePeer { constructor() { super(); peer = this; } });
-    const call = new FirebaseDirectCall({ callId: "call-2", userId: "user-b", localStream: localStream(), onRemoteStream: vi.fn() });
+    const call = new FirebaseDirectCall({ callId: "call-2", userId: "user-b", media: "screen", localStream: localStream(), onRemoteStream: vi.fn() });
     const candidate = { candidate: "candidate:1 1 UDP 1 127.0.0.1 1234 typ host" };
 
     await call.handleSignal({ id: "ice-1", from: "user-a", to: "user-b", kind: "ice", payload: JSON.stringify({ candidate }) });
@@ -52,6 +53,7 @@ describe("FirebaseDirectCall", () => {
 
     await call.handleSignal({ id: "offer-1", from: "user-a", to: "user-b", kind: "offer", payload: JSON.stringify({ sdp: { type: "offer", sdp: "offer-sdp" } }) });
     expect(peer?.addIceCandidate).toHaveBeenCalledWith(candidate);
+    expect(peer?.addTransceiver).toHaveBeenCalledWith("video", { direction: "recvonly" });
     expect(publishDirectCallSignal).toHaveBeenCalledWith("call-2", expect.objectContaining({ kind: "answer", to: "user-a" }));
     call.stop();
   });

@@ -4,6 +4,7 @@ import { publishDirectCallSignal } from "@/services/firebaseStore";
 type DirectCallOptions = {
   callId: string;
   userId: string;
+  media: "audio" | "screen";
   localStream: MediaStream;
   onRemoteStream: (stream: MediaStream) => void;
   onError?: (error: Error) => void;
@@ -53,7 +54,11 @@ export class FirebaseDirectCall {
       iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
       iceCandidatePoolSize: 10,
     });
-    this.options.localStream.getTracks().forEach((track) => peer.addTrack(track, this.options.localStream));
+    const localTracks = this.options.localStream.getTracks();
+    localTracks.forEach((track) => peer.addTrack(track, this.options.localStream));
+    if (this.options.media === "screen" && !this.options.localStream.getVideoTracks().length) {
+      peer.addTransceiver("video", { direction: "recvonly" });
+    }
     peer.ontrack = (event) => this.emitRemoteTrack(event);
     peer.onicecandidate = (event) => {
       if (!event.candidate) return;

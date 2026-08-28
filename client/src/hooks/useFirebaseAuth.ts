@@ -3,8 +3,8 @@ import type { User } from "firebase/auth";
 import {
   completeGoogleRedirect,
   createFirebaseAccount,
+  ensureFirebaseAuthPersistence,
   ensureFirebaseProfile,
-  hasPendingGoogleRedirect,
   signInWithEmail,
   signInWithGoogle,
   signOutFirebase,
@@ -13,25 +13,33 @@ import {
 
 export function useFirebaseAuth() {
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(() => hasPendingGoogleRedirect());
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<unknown>(null);
 
   useEffect(() => {
     let active = true;
-    const redirectPending = hasPendingGoogleRedirect();
+    let resolveInitialAuthState: () => void = () => undefined;
+    const initialAuthState = new Promise<void>((resolve) => { resolveInitialAuthState = resolve; });
+
     const unsubscribe = subscribeToFirebaseAuth((nextUser) => {
       if (!active) return;
       setUser(nextUser);
-      if (!nextUser) setError(null);
-      if (!redirectPending) setLoading(false);
-      if (nextUser) void ensureFirebaseProfile(nextUser).catch((reason) => { if (active) setError(reason); });
+      setError(null);
+      resolveInitialAuthState();
+      if (nextUser) {
+        void ensureFirebaseProfile(nextUser).catch((reason) => { if (active) setError(reason); });
+      }
     }, (reason) => {
       if (!active) return;
       setError(reason);
-      setLoading(false);
+      resolveInitialAuthState();
     });
 
-    void completeGoogleRedirect().then((redirectUser) => {
+    void Promise.all([
+      ensureFirebaseAuthPersistence(),
+      completeGoogleRedirect(),
+      initialAuthState,
+    ]).then(([, redirectUser]) => {
       if (!active) return;
       if (redirectUser) {
         setUser(redirectUser);

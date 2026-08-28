@@ -1,8 +1,12 @@
 import {
+  browserLocalPersistence,
+  browserSessionPersistence,
   createUserWithEmailAndPassword,
   getRedirectResult,
   GoogleAuthProvider,
+  indexedDBLocalPersistence,
   onAuthStateChanged,
+  setPersistence,
   signInWithEmailAndPassword,
   signInWithPopup,
   signInWithRedirect,
@@ -17,42 +21,80 @@ import { firebaseAuth, firebaseDb } from "@/lib/firebase";
 const GOOGLE_REDIRECT_PENDING_KEY = "concord.google-redirect-pending";
 const googleProvider = new GoogleAuthProvider();
 googleProvider.setCustomParameters({ prompt: "select_account" });
+let authPersistencePromise: Promise<void> | null = null;
 
 export type FirebaseProfileInput = {
   displayName?: string;
   avatarUrl?: string;
 };
 
-function canUseSessionStorage(): boolean {
-  return typeof window !== "undefined" && typeof window.sessionStorage !== "undefined";
+function getStorage(kind: "localStorage" | "sessionStorage"): Storage | null {
+  if (typeof window === "undefined") return null;
+  try {
+    return window[kind];
+  } catch {
+    return null;
+  }
 }
 
 function markGoogleRedirectPending(): void {
-  if (!canUseSessionStorage()) return;
+  const storage = getStorage("localStorage") ?? getStorage("sessionStorage");
   try {
-    window.sessionStorage.setItem(GOOGLE_REDIRECT_PENDING_KEY, "1");
+    storage?.setItem(GOOGLE_REDIRECT_PENDING_KEY, "1");
   } catch {
-    // A navegação de redirect ainda funciona quando o storage está indisponível.
+    // O redirect ainda pode ser concluído mesmo quando o storage está indisponível.
   }
 }
 
 function clearGoogleRedirectPending(): void {
-  if (!canUseSessionStorage()) return;
-  try {
-    window.sessionStorage.removeItem(GOOGLE_REDIRECT_PENDING_KEY);
-  } catch {
-    // O resultado do redirect continua válido mesmo sem limpar o marcador local.
+  for (const storage of [getStorage("localStorage"), getStorage("sessionStorage")]) {
+    try {
+      storage?.removeItem(GOOGLE_REDIRECT_PENDING_KEY);
+    } catch {
+      // Ignora bloqueios de storage; a sessão Firebase continua válida.
+    }
   }
 }
 
 export function hasPendingGoogleRedirect(): boolean {
-  if (!canUseSessionStorage()) return false;
-  try {
-    return window.sessionStorage.getItem(GOOGLE_REDIRECT_PENDING_KEY) === "1";
-  } catch {
-    return false;
+  for (const storage of [getStorage("localStorage"), getStorage("sessionStorage")]) {
+    try {
+      if (storage?.getItem(GOOGLE_REDIRECT_PENDING_KEY) === "1") return true;
+    } catch {
+      // Tenta o próximo mecanismo de storage.
+    }
   }
+  return false;
 }
+
+/**
+ * Mantém a sessão Firebase entre aberturas do navegador e do PWA.
+ * Os tokens continuam sob controle do SDK; não copiamos credenciais para storage próprio.
+ */
+export function ensureFirebaseAuthPersistence(): Promise<void> {
+  if (!authPersistencePromise) {
+    authPersistencePromise = (async () => {
+      try {
+        await setPersistence(firebaseAuth, browserLocalPersistence);
+        return;
+      } catch {
+        try {
+          await setPersistence(firebaseAuth, indexedDBLocalPersistence);
+        } catch {
+          try {
+            await setPersistence(firebaseAuth, browserSessionPersistence);
+          } catch {
+            // Alguns webviews bloqueiam todos os storages; o SDK ainda pode manter a sessão em memória.
+          }
+        }
+      }
+    })();
+  }
+  return authPersistencePromise;
+}
+
+// Inicializa a persistência antes do primeiro listener de autenticação.
+void ensureFirebaseAuthPersistence();
 
 export function shouldUseGoogleRedirect(): boolean {
   if (typeof window === "undefined" || typeof navigator === "undefined") return false;
@@ -73,18 +115,22 @@ export function subscribeToFirebaseAuth(listener: (user: User | null) => void, o
 }
 
 export async function completeGoogleRedirect(): Promise<User | null> {
-  if (!hasPendingGoogleRedirect()) return null;
+  await ensureFirebaseAuthPersistence();
   try {
+    // O retorno deve ser consultado sempre: alguns PWA/webviews não preservam o marcador local.
     const result = await getRedirectResult(firebaseAuth);
+    clearGoogleRedirectPending();
     if (!result) return null;
     await ensureFirebaseProfile(result.user);
     return result.user;
-  } finally {
+  } catch (reason) {
     clearGoogleRedirectPending();
+    throw reason;
   }
 }
 
 export async function signInWithGoogle(): Promise<User | null> {
+  await ensureFirebaseAuthPersistence();
   if (shouldUseGoogleRedirect()) {
     markGoogleRedirectPending();
     await signInWithRedirect(firebaseAuth, googleProvider);
@@ -104,12 +150,14 @@ export async function signInWithGoogle(): Promise<User | null> {
 }
 
 export async function signInWithEmail(email: string, password: string): Promise<User> {
+  await ensureFirebaseAuthPersistence();
   const result = await signInWithEmailAndPassword(firebaseAuth, email, password);
   await ensureFirebaseProfile(result.user);
   return result.user;
 }
 
 export async function createFirebaseAccount(email: string, password: string, displayName: string): Promise<User> {
+  await ensureFirebaseAuthPersistence();
   const result = await createUserWithEmailAndPassword(firebaseAuth, email, password);
   if (displayName.trim()) await updateProfile(result.user, { displayName: displayName.trim() });
   await ensureFirebaseProfile(result.user, { displayName });
@@ -122,6 +170,7 @@ export async function updateFirebaseProfile(user: User, input: FirebaseProfileIn
 }
 
 export async function signOutFirebase(): Promise<void> {
+  clearGoogleRedirectPending();
   await signOut(firebaseAuth);
 }
 

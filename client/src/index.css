@@ -626,3 +626,21 @@ body { background: #050a16; color: #e8f4ff; font-family: 'Space Grotesk', 'Manro
 .firebase-voice-actions button { flex: 0 0 110px; }
 .firebase-voice-actions .join-call-button { flex: 0 1 260px; }
 @media (max-width: 640px) { .workspace-panel { width: calc(100% - 1.5rem); height: calc(100% - 1.5rem); margin: .75rem auto; border-radius: 16px; } .firebase-member-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; } .firebase-member { min-height: 128px; } .firebase-voice-actions { width: calc(100% - 1rem); } .firebase-voice-actions button { flex-basis: 0; flex: 1; min-width: 0; } }
+
+/* Interactive neon button effects */
+button { position: relative; }
+button:not(:disabled):not([data-no-neon]) { overflow: hidden; transition: transform .16s cubic-bezier(.23,1,.32,1), box-shadow .2s ease, border-color .2s ease, background .2s ease, color .2s ease; }
+button:not(:disabled):not([data-no-neon])::after { content: ''; position: absolute; inset: -2px; pointer-events: none; border-radius: inherit; opacity: 0; background: linear-gradient(115deg, transparent 22%, rgba(103, 235, 255, .42) 48%, transparent 72%); transform: translateX(-120%); }
+button:not(:disabled):not([data-no-neon]):hover { transform: translateY(-1px); filter: brightness(1.08); }
+button:not(:disabled):not([data-no-neon]):hover::after { opacity: 1; animation: neon-sweep .72s cubic-bezier(.23,1,.32,1) both; }
+button:not(:disabled):not([data-no-neon]):focus-visible { outline: 2px solid #49e5ff; outline-offset: 3px; box-shadow: 0 0 0 4px rgba(39, 215, 255, .14), 0 0 20px rgba(39, 215, 255, .28); }
+button:not(:disabled):not([data-no-neon]):active { transform: translateY(0) scale(.965); filter: brightness(1.16); }
+.neon-click-burst { position: absolute; z-index: 4; width: 9px; height: 9px; margin: -4.5px 0 0 -4.5px; border: 1px solid rgba(185, 250, 255, .98); border-radius: 50%; pointer-events: none; background: #35ddff; box-shadow: 0 0 7px #35ddff, 0 0 17px #35ddff, 0 0 28px rgba(102, 98, 255, .9); animation: neon-burst .55s cubic-bezier(.23,1,.32,1) both; }
+.neon-click-burst::before, .neon-click-burst::after { content: ''; position: absolute; inset: -10px; border: 1px solid rgba(55, 224, 255, .7); border-radius: 50%; }
+.neon-click-burst::after { inset: -17px; border-color: rgba(149, 108, 255, .45); }
+.primary-cta:not(:disabled):hover, .join-call-button:not(:disabled):hover { box-shadow: 0 0 24px rgba(39, 215, 255, .5), 0 10px 30px rgba(0, 121, 255, .24); }
+.server-icon:not(:disabled):hover { box-shadow: 0 0 18px rgba(39, 215, 255, .35), inset 0 0 16px rgba(39, 215, 255, .12); }
+.channel-link:not(:disabled):hover { box-shadow: inset 3px 0 #2cdcff, 0 0 18px rgba(39, 215, 255, .14); }
+@keyframes neon-sweep { from { transform: translateX(-120%); } to { transform: translateX(120%); } }
+@keyframes neon-burst { 0% { opacity: 1; transform: scale(.5); } 55% { opacity: 1; transform: scale(1.2); } 100% { opacity: 0; transform: scale(2.6); } }
+@media (prefers-reduced-motion: reduce) { button:not(:disabled):not([data-no-neon]):hover, button:not(:disabled):not([data-no-neon]):active { transform: none; } button:not(:disabled):not([data-no-neon])::after, .neon-click-burst { animation: none; } .neon-click-burst { display: none; } }

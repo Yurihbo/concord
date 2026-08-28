@@ -72,6 +72,23 @@ const trpcClient = trpc.createClient({
   ],
 });
 
+function installNeonButtonEffects() {
+  if (typeof document === "undefined") return;
+  document.addEventListener("pointerdown", (event) => {
+    const target = (event.target as Element | null)?.closest("button");
+    if (!(target instanceof HTMLButtonElement) || target.disabled || target.dataset.noNeon !== undefined) return;
+    const rect = target.getBoundingClientRect();
+    const burst = document.createElement("span");
+    burst.className = "neon-click-burst";
+    burst.style.left = `${event.clientX - rect.left}px`;
+    burst.style.top = `${event.clientY - rect.top}px`;
+    target.appendChild(burst);
+    burst.addEventListener("animationend", () => burst.remove(), { once: true });
+  });
+}
+
+installNeonButtonEffects();
+
 createRoot(document.getElementById("root")!).render(
   <trpc.Provider client={trpcClient} queryClient={queryClient}>
     <QueryClientProvider client={queryClient}>

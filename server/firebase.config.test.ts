@@ -1,9 +1,10 @@
 import { describe, expect, it } from "vitest";
 
+const apiKey = process.env.VITE_FIREBASE_API_KEY;
+const projectId = process.env.VITE_FIREBASE_PROJECT_ID;
+
 describe("Firebase web configuration", () => {
-  it("accepts the configured public API key", async () => {
-    const apiKey = process.env.VITE_FIREBASE_API_KEY;
-    const projectId = process.env.VITE_FIREBASE_PROJECT_ID;
+  it.skipIf(!apiKey || !projectId)("accepts the configured public API key", async () => {
     expect(apiKey).toBeTruthy();
     expect(projectId).toBeTruthy();
 

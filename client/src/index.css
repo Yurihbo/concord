@@ -341,11 +341,27 @@ a { color: inherit; text-decoration: none; }
 .direct-chat-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: .8rem 1rem; border: 1px solid #e5e7eb; border-radius: .75rem; background: #fff; }.direct-chat-identity { display: flex; align-items: center; gap: .65rem; min-width: 0; }.direct-chat-identity > div { display: grid; gap: .18rem; min-width: 0; }.direct-chat-identity strong { overflow: hidden; color: #1f2937; font-size: .8rem; text-overflow: ellipsis; white-space: nowrap; }.direct-chat-identity small { color: #64748b; font-size: .65rem; }.direct-chat-actions { display: flex; gap: .35rem; }.direct-chat-actions button { display: inline-grid; place-items: center; width: 2.15rem; height: 2.15rem; color: #475569; background: #f8fafc; border: 1px solid #dbe3ee; border-radius: .5rem; cursor: pointer; }.direct-chat-actions button:hover { color: #1d4ed8; background: #eff6ff; border-color: #93c5fd; }
 @media (max-width: 640px) { .direct-chat-toolbar { align-items: flex-start; flex-direction: column; }.direct-chat-actions { width: 100%; }.direct-chat-actions button { flex: 1; } }
 
-.incoming-call-backdrop { z-index: 70; }
-.incoming-call-dialog { text-align: center; border-color: #93c5fd; box-shadow: 0 1.5rem 4rem rgba(15,23,42,.38); }
-.incoming-call-dialog .firebase-dialog-actions { justify-content: center; }
-.incoming-call-dialog .primary-cta { display: inline-flex; align-items: center; gap: .45rem; }
-.incoming-call-avatar { width: 3.7rem; height: 3.7rem; margin: .75rem auto .5rem; display: grid; place-items: center; border-radius: 1rem; font-weight: 800; color: #1e3a8a; background: #bfdbfe; box-shadow: 0 0 0 .35rem rgba(37,99,235,.12); }
+.incoming-call-backdrop { z-index: 70; background: rgba(7,17,31,.72); backdrop-filter: blur(12px); }
+.incoming-call-dialog { position: relative; overflow: hidden; width: min(100%, 25rem); padding: 2rem 1.6rem 1.6rem; color: #172033; text-align: center; background: linear-gradient(160deg, #ffffff 0%, #f4f8ff 100%); border: 1px solid #bfdbfe; border-radius: 1.25rem; box-shadow: 0 1.75rem 5rem rgba(15,23,42,.42), 0 0 0 1px rgba(255,255,255,.7) inset; }
+.incoming-call-glow { position: absolute; top: -5rem; left: 50%; width: 14rem; height: 14rem; transform: translateX(-50%); background: radial-gradient(circle, rgba(96,165,250,.3), transparent 68%); pointer-events: none; }
+.incoming-call-dialog .firebase-kicker, .incoming-call-dialog h2, .incoming-call-dialog p, .incoming-call-dialog .incoming-call-label, .incoming-call-dialog .incoming-call-actions { position: relative; z-index: 1; }
+.incoming-call-dialog h2 { margin: .75rem 0 .35rem; color: #0f172a; font-size: 1.28rem; letter-spacing: -.02em; }
+.incoming-call-dialog p { margin: 0 auto 1.4rem; max-width: 18rem; color: #64748b; font-size: .78rem; }
+.incoming-call-avatar-wrap { position: relative; display: grid; place-items: center; width: 6.5rem; height: 6.5rem; margin: .8rem auto .55rem; }
+.incoming-call-avatar { position: relative; z-index: 2; width: 4.15rem; height: 4.15rem; display: grid; place-items: center; border: 4px solid #fff; border-radius: 1.25rem; font-size: 1.25rem; font-weight: 800; color: #1e3a8a; background: linear-gradient(145deg, #bfdbfe, #93c5fd); box-shadow: 0 .7rem 1.5rem rgba(37,99,235,.22); }
+.incoming-call-wave { position: absolute; display: block; width: 5rem; height: 5rem; border: 1px solid rgba(37,99,235,.3); border-radius: 1.45rem; animation: incoming-call-wave 1.8s ease-out infinite; }
+.incoming-call-wave-two { animation-delay: .65s; }
+.incoming-call-label { display: inline-flex; align-items: center; gap: .3rem; padding: .32rem .55rem; color: #1d4ed8; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 999px; font-size: .65rem; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; }
+.incoming-call-actions { display: grid; grid-template-columns: 1fr 1fr; gap: .65rem; }
+.incoming-call-actions button { min-height: 2.8rem; justify-content: center; gap: .4rem; border-radius: .65rem; font-size: .75rem; font-weight: 800; }
+.incoming-call-reject { color: #b42318 !important; background: #fff1f2 !important; border-color: #fecdd3 !important; }
+.incoming-call-reject:hover { background: #ffe4e6 !important; border-color: #fda4af !important; }
+.incoming-call-accept { color: #fff !important; background: linear-gradient(135deg, #2563eb, #1d4ed8) !important; box-shadow: 0 .55rem 1.2rem rgba(37,99,235,.25); }
+.direct-audio-unlock { display: inline-flex; align-items: center; gap: .4rem; margin: .7rem 0 0; padding: .55rem .75rem; color: #1d4ed8; background: #eff6ff; border: 1px solid #93c5fd; border-radius: .55rem; font-size: .7rem; font-weight: 800; cursor: pointer; }
+.direct-audio-unlock:hover { background: #dbeafe; }
+@keyframes incoming-call-wave { 0% { transform: scale(.72); opacity: .85; } 70%, 100% { transform: scale(1.18); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .incoming-call-wave { animation: none; } }
+@media (max-width: 520px) { .incoming-call-dialog { padding: 1.5rem 1.1rem 1.2rem; } }
 
 .voice-screen-panel { display: grid; gap: .75rem; margin: 1rem 1.4rem 0; padding: .9rem; color: #1f2937; background: #f8fbff; border: 1px solid #bfdbfe; border-radius: .8rem; }
 .voice-screen-panel-heading, .voice-screen-card-heading { display: flex; align-items: center; justify-content: space-between; gap: .75rem; }

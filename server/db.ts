@@ -141,9 +141,9 @@ export async function createChannelMessage(channelId: number, authorId: number, 
 }
 
 export async function createFriendRequest(requesterId: number, addresseeId: number) {
+  if (requesterId === addresseeId) throw new Error("Cannot add yourself");
   const db = await getDb();
   if (!db) throw new Error("Database unavailable");
-  if (requesterId === addresseeId) throw new Error("Cannot add yourself");
   const existing = await db.select().from(friendships).where(or(and(eq(friendships.requesterId, requesterId), eq(friendships.addresseeId, addresseeId)), and(eq(friendships.requesterId, addresseeId), eq(friendships.addresseeId, requesterId)))).limit(1);
   if (existing.length) return existing;
   return db.insert(friendships).values({ requesterId, addresseeId }).$returningId();

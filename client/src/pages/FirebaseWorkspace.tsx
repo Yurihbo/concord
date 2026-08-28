@@ -163,9 +163,13 @@ export default function FirebaseWorkspace() {
   const [directBody, setDirectBody] = useState("");
   const [directCallId, setDirectCallId] = useState<string | null>(null);
   const [directCallStatus, setDirectCallStatus] = useState<"idle" | "ringing" | "connected" | "ended">("idle");
+  const [directCallDirection, setDirectCallDirection] = useState<"incoming" | "outgoing" | null>(null);
   const [directLocalStream, setDirectLocalStream] = useState<MediaStream | null>(null);
   const [directRemoteStream, setDirectRemoteStream] = useState<MediaStream | null>(null);
+  const [directAudioBlocked, setDirectAudioBlocked] = useState(false);
+  const directAudioRef = useRef<HTMLAudioElement>(null);
   const [pendingDirectSignals, setPendingDirectSignals] = useState<import("@/services/firebaseStore").FirebaseSignal[]>([]);
+  const handledDirectSignalIds = useRef<Set<string>>(new Set());
   const directCallRef = useRef<FirebaseDirectCall | null>(null);
   const ringtoneStopRef = useRef<(() => void) | null>(null);
 
@@ -257,16 +261,43 @@ export default function FirebaseWorkspace() {
     return subscribeToDirectCalls(currentUserId, (calls) => {
       const incoming = calls[0];
       if (!incoming) return;
-      setDirectCallId(incoming.id); setDirectFriendId(incoming.callerId); setDirectCallStatus("ringing");
+      if (directCallRef.current && directCallId !== incoming.id) {
+        directCallRef.current.stop();
+        directCallRef.current = null;
+        directLocalStream?.getTracks().forEach((track) => track.stop());
+        directRemoteStream?.getTracks().forEach((track) => track.stop());
+        setDirectLocalStream(null);
+        setDirectRemoteStream(null);
+      }
+      setDirectCallId(incoming.id); setDirectFriendId(incoming.callerId); setDirectCallDirection("incoming"); setDirectAudioBlocked(false); setDirectCallStatus("ringing");
       if (!ringtoneStopRef.current) ringtoneStopRef.current = startDirectCallRingtone();
       setNotice("Chamada recebida. Abra a conversa para atender.");
     }, (error) => setNotice(error.message));
-  }, [currentUserId]);
+  }, [currentUserId, directCallId, directLocalStream, directRemoteStream]);
 
   useEffect(() => {
+    handledDirectSignalIds.current.clear();
+    setPendingDirectSignals([]);
     if (!directCallId || !currentUserId) return;
-    return subscribeToDirectCallSignals(directCallId, currentUserId, (signals) => setPendingDirectSignals(signals), (error) => setNotice(error.message));
+    return subscribeToDirectCallSignals(directCallId, currentUserId, (signals) => {
+      setPendingDirectSignals(signals.filter((signal) => !handledDirectSignalIds.current.has(signal.id)));
+    }, (error) => setNotice(error.message));
   }, [directCallId, currentUserId]);
+
+  useEffect(() => {
+    const audio = directAudioRef.current;
+    if (!audio) return;
+    audio.srcObject = directRemoteStream;
+    audio.volume = 1;
+    if (!directRemoteStream) {
+      setDirectAudioBlocked(false);
+      return;
+    }
+    void audio.play().then(() => setDirectAudioBlocked(false)).catch(() => setDirectAudioBlocked(true));
+    return () => {
+      if (audio.srcObject === directRemoteStream) audio.srcObject = null;
+    };
+  }, [directRemoteStream]);
 
   useEffect(() => {
     if (!directCallId) return;
@@ -275,9 +306,17 @@ export default function FirebaseWorkspace() {
         stopDirectCallRingtone();
         directCallRef.current?.stop();
         directCallRef.current = null;
+        directLocalStream?.getTracks().forEach((track) => track.stop());
+        directRemoteStream?.getTracks().forEach((track) => track.stop());
         setDirectLocalStream(null);
         setDirectRemoteStream(null);
-        setDirectCallStatus(call?.status === "declined" ? "ended" : "ended");
+        setDirectAudioBlocked(false);
+        setDirectCallId(null);
+        setDirectFriendId(null);
+        setDirectCallDirection(null);
+        setDirectCallStatus("ended");
+        setPendingDirectSignals([]);
+        handledDirectSignalIds.current.clear();
         if (call?.status === "declined") setNotice("A chamada foi recusada.");
         return;
       }
@@ -286,13 +325,17 @@ export default function FirebaseWorkspace() {
         setDirectCallStatus("connected");
       }
     }, (error) => setNotice(error.message));
-  }, [directCallId]);
+  }, [directCallId, directLocalStream, directRemoteStream]);
 
   useEffect(() => {
-    if (!directCallRef.current || !pendingDirectSignals.length) return;
     const service = directCallRef.current;
-    for (const signal of pendingDirectSignals) void service.handleSignal(signal);
+    if (!service || !pendingDirectSignals.length) return;
+    const signals = pendingDirectSignals;
     setPendingDirectSignals([]);
+    for (const signal of signals) {
+      handledDirectSignalIds.current.add(signal.id);
+      void service.handleSignal(signal);
+    }
   }, [pendingDirectSignals]);
 
   useEffect(() => {
@@ -358,7 +401,7 @@ export default function FirebaseWorkspace() {
       const local = media === "screen" ? await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false }) : await navigator.mediaDevices.getUserMedia({ audio: true });
       const callId = await createDirectCall(currentUser.uid, directFriendId, media);
       const service = new FirebaseDirectCall({ callId, userId: currentUser.uid, localStream: local, onRemoteStream: (stream) => { setDirectRemoteStream(stream); setDirectCallStatus("connected"); }, onError: (error) => setNotice(error.message) });
-      directCallRef.current = service; setPendingDirectSignals([]); setDirectLocalStream(local); setDirectRemoteStream(null); setDirectCallId(callId); setDirectCallStatus("ringing");
+      directCallRef.current = service; setPendingDirectSignals([]); setDirectLocalStream(local); setDirectRemoteStream(null); setDirectAudioBlocked(false); setDirectCallId(callId); setDirectCallDirection("outgoing"); setDirectCallStatus("ringing");
       await service.start(directFriendId);
     } catch (error) { setNotice(error instanceof Error ? error.message : "Não foi possível iniciar a chamada individual."); }
   };
@@ -370,15 +413,26 @@ export default function FirebaseWorkspace() {
     stopDirectCallRingtone();
     try {
       const local = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const service = new FirebaseDirectCall({ callId: directCallId, userId: currentUser.uid, localStream: local, onRemoteStream: () => setDirectCallStatus("connected"), onError: (error) => setNotice(error.message) });
-      directCallRef.current = service; setDirectLocalStream(local); await updateDirectCall(directCallId, "connected"); setDirectCallStatus("connected");
+      const service = new FirebaseDirectCall({ callId: directCallId, userId: currentUser.uid, localStream: local, onRemoteStream: (stream) => { setDirectRemoteStream(stream); setDirectCallStatus("connected"); }, onError: (error) => setNotice(error.message) });
+      directCallRef.current = service;
+      setDirectLocalStream(local);
+      setDirectRemoteStream(null);
+      setDirectAudioBlocked(false);
+      const signalsToHandle = pendingDirectSignals;
+      setPendingDirectSignals([]);
+      for (const signal of signalsToHandle) {
+        handledDirectSignalIds.current.add(signal.id);
+        await service.handleSignal(signal);
+      }
+      await updateDirectCall(directCallId, "connected");
+      setDirectCallStatus("connected");
     } catch (error) { setNotice(error instanceof Error ? error.message : "Não foi possível atender a chamada."); }
   };
 
   const rejectDirectCall = async () => {
     stopDirectCallRingtone();
     if (directCallId) await updateDirectCall(directCallId, "declined").catch(() => undefined);
-    setDirectCallId(null); setDirectFriendId(null); setDirectCallStatus("ended"); setNotice("Chamada recusada.");
+      setDirectCallId(null); setDirectFriendId(null); setDirectCallDirection(null); setDirectCallStatus("ended"); setNotice("Chamada recusada.");
   };
 
   const endDirectCall = async () => {
@@ -389,7 +443,18 @@ export default function FirebaseWorkspace() {
       directCallRef.current?.stop(); directCallRef.current = null;
       directLocalStream?.getTracks().forEach((track) => track.stop());
       directRemoteStream?.getTracks().forEach((track) => track.stop());
-      setDirectLocalStream(null); setDirectRemoteStream(null); setDirectCallId(null); setDirectCallStatus("ended");
+      setDirectLocalStream(null); setDirectRemoteStream(null); setDirectAudioBlocked(false); setDirectCallId(null); setDirectCallDirection(null); setDirectCallStatus("ended"); setPendingDirectSignals([]); handledDirectSignalIds.current.clear();
+    }
+  };
+
+  const enableDirectAudio = async () => {
+    try {
+      await directAudioRef.current?.play();
+      setDirectAudioBlocked(false);
+      setNotice("Áudio da chamada ativado.");
+    } catch {
+      setDirectAudioBlocked(true);
+      setNotice("O navegador bloqueou o áudio. Clique novamente em Ativar áudio.");
     }
   };
 
@@ -540,12 +605,12 @@ export default function FirebaseWorkspace() {
       <header className="content-header"><div className="mobile-nav-actions"><button aria-label="Abrir canais" onClick={() => setActivePanel("chat")}><Compass size={17} /></button><button aria-label="Abrir amigos" onClick={() => setActivePanel("friends")}><Users size={17} /></button><button aria-label="Abrir perfil" onClick={() => setActivePanel("profile")}><Settings size={17} /></button></div><div className="channel-title"><div className="title-symbol"><Hash size={18} /></div><div><h2>{directFriendId ? "Mensagem direta" : channel?.name ?? "geral"}</h2><span>{channel?.kind === "voice" ? "Sala de voz em tempo real." : "Um espaço para começar qualquer conversa."}</span></div></div><div className="header-actions"><button title="Notificações" onClick={() => setNotice("Você está em dia.")}><Bell size={17} /></button><button title="Abrir Amigos" onClick={() => { setActivePanel("friends"); setSocialOpen(false); }}><Search size={17} /></button><button title="Abrir ou recolher membros" onClick={() => setMembersOpen((open) => !open)}><Users size={17} /></button><div className="header-divider" /><button className="profile-chip" onClick={() => setActivePanel("profile")}><span className="avatar bg-amber-200 text-amber-900"><span>{initials(profile?.displayName ?? currentUser.displayName ?? "Conta")}</span><span className="online-dot" /></span><span>{profile?.displayName ?? currentUser.displayName ?? "Conta Concord"}</span><ChevronDown size={14} /></button></div></header>
       {notice && <div className="firebase-notice" role="status">{notice}</div>}
       {activePanel === "chat" ? <>
-      {directFriendId ? <><section className="message-area"><div className="direct-chat-toolbar"><div className="direct-chat-identity"><span className="avatar bg-blue-200 text-blue-900">{initials(activeFriend?.displayName ?? "Amigo")}</span><div><strong>{activeFriend?.displayName ?? "Conversa direta"}</strong><small>{activeFriend?.presence === "online" ? "Online" : activeFriend?.presence === "away" ? "Ocupado" : "Indisponível"}</small></div></div><div className="direct-chat-actions"><button onClick={() => void startDirectCall("audio")} aria-label="Iniciar chamada de áudio"><Headphones size={16} /></button><button onClick={() => setSocialOpen(true)} aria-label="Convidar para o grupo"><UserPlus size={16} /></button><button onClick={() => void startDirectCall("screen")} aria-label="Compartilhar tela na conversa"><Video size={16} /></button>{directCallStatus === "ringing" && !directCallRef.current ? <button onClick={() => void acceptDirectCall()} aria-label="Atender chamada"><Headphones size={16} /></button> : null}{directCallStatus !== "idle" && directCallStatus !== "ended" ? <button onClick={() => void endDirectCall()} aria-label="Encerrar chamada"><PhoneOff size={16} /></button> : null}<button onClick={() => { if (directFriendId) void deleteDirect(directFriendId); }} aria-label="Apagar conversa"><X size={16} /></button></div></div>{directLocalStream && <div className="direct-media-preview"><ScreenPreview stream={directLocalStream} /><span className="direct-call-state">{directCallStatus === "connected" ? "Chamada conectada" : "Chamando..."}</span></div>}{directRemoteStream && <audio autoPlay ref={(element) => { if (element) element.srcObject = directRemoteStream; }} /> }<div className="channel-intro"><div className="intro-symbol"><MessageCircle size={27} /></div><h1>Conversa com {activeFriend?.displayName ?? "seu amigo"}</h1><p>Mensagens diretas com sua conexão.</p><div className="intro-rule" /></div><div className="message-list">{directMessages.length ? directMessages.map((item) => <article className="message-row" key={item.id}><span className="avatar bg-blue-200 text-blue-900">{initials(item.authorId)}</span><div className="message-copy"><div className="message-author"><strong>{item.authorId === currentUser.uid ? "Você" : item.authorId}</strong><span>@conexão</span><time>agora</time></div><p>{item.body}</p></div></article>) : <div className="empty-state">Nenhuma mensagem nesta conversa ainda.</div>}</div></section><div className="composer-wrap"><div className="composer"><Input value={directBody} onChange={(event) => setDirectBody(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") void sendDirect(); }} placeholder="Mensagem direta" /><button className="send-button" onClick={() => void sendDirect()} aria-label="Enviar mensagem direta"><Send size={17} /></button></div></div></> : channel?.kind === "voice" ? <section className="message-area firebase-voice-original-stage"><div className="channel-intro"><div className="intro-symbol"><Headphones size={27} /></div><h1>{channel.name}</h1><p>{members.length} participante(s) sincronizado(s) pelo Firestore.</p><div className="intro-rule" /></div><div className="firebase-member-grid">{members.length ? members.map((member) => <div className={member.isSpeaking || (member.uid === currentUser.uid && localSpeaking) ? "firebase-member speaking" : "firebase-member"} key={member.uid}><span className={member.isSpeaking || (member.uid === currentUser.uid && localSpeaking) ? "avatar bg-blue-200 text-blue-900 speaking-avatar" : "avatar bg-blue-200 text-blue-900"}>{initials(member.displayName)}</span><strong>{member.displayName}</strong></div>) : <div className="empty-state">Ninguém na sala ainda.</div>}</div>{Object.entries(remoteStreams).map(([peerId, stream]) => <RemoteAudio key={peerId} peerId={peerId} stream={stream} />)}{screenPreviewStream && <ScreenPreview stream={screenPreviewStream} />}<VoiceScreenPanel currentUid={currentUser.uid} members={members} remoteStreams={remoteStreams} viewers={screenViewerIds} onToggleViewer={toggleScreenViewer} /><div className="call-actions firebase-voice-actions"><button className={muted ? "control-active" : ""} onClick={toggleMute} disabled={!voiceRoomId} aria-label="Mutar microfone"><Mic size={16} /></button><button className={screenSharing ? "control-active" : ""} onClick={() => void toggleScreen()} disabled={!voiceRoomId} aria-label="Compartilhar tela"><Video size={16} /></button><button className="disconnect" onClick={() => void leaveVoiceRoom()} aria-label="Sair da sala"><PhoneOff size={16} /></button></div></section> : <><section className="message-area"><div className="channel-intro"><div className="intro-symbol"><Hash size={27} /></div><h1>Bem-vindo ao #{channel?.name ?? "geral"}</h1><p>Este é o começo do canal. Um bom lugar para dizer olá.</p><div className="intro-rule" /></div><div className="message-list">{messages.length ? messages.map((item) => <article className="message-row" key={item.id}><span className="avatar bg-blue-200 text-blue-900">{initials(item.authorId)}</span><div className="message-copy"><div className="message-author"><strong>{item.authorId === currentUser.uid ? "Você" : "Concord"}</strong><span>@concord</span><time>agora</time></div><p>{item.body}</p></div></article>) : <article className="message-row"><span className="avatar bg-blue-100 text-blue-900">CO</span><div className="message-copy"><div className="message-author"><strong>Concord</strong><span>@concord</span><time>agora</time></div><p>Bem-vindo ao Concord. Esta é a primeira mensagem deste canal.</p></div></article>}</div></section><div className="composer-wrap"><div className="composer"><button aria-label="Mais opções"><Plus size={19} /></button><Input value={body} onChange={(event) => setBody(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") void sendMessage(); }} placeholder={"Mensagem em #" + (channel?.name ?? "geral")} /><button onClick={() => void sendMessage()} className="send-button" aria-label="Enviar mensagem"><Send size={17} /></button></div><span className="composer-hint">Enter para enviar <span>•</span> Shift + Enter para nova linha</span></div></>}
+      {directFriendId ? <><section className="message-area"><div className="direct-chat-toolbar"><div className="direct-chat-identity"><span className="avatar bg-blue-200 text-blue-900">{initials(activeFriend?.displayName ?? "Amigo")}</span><div><strong>{activeFriend?.displayName ?? "Conversa direta"}</strong><small>{activeFriend?.presence === "online" ? "Online" : activeFriend?.presence === "away" ? "Ocupado" : "Indisponível"}</small></div></div><div className="direct-chat-actions"><button onClick={() => void startDirectCall("audio")} aria-label="Iniciar chamada de áudio"><Headphones size={16} /></button><button onClick={() => setSocialOpen(true)} aria-label="Convidar para o grupo"><UserPlus size={16} /></button><button onClick={() => void startDirectCall("screen")} aria-label="Compartilhar tela na conversa"><Video size={16} /></button>{directCallStatus === "ringing" && !directCallRef.current ? <button onClick={() => void acceptDirectCall()} aria-label="Atender chamada"><Headphones size={16} /></button> : null}{directCallStatus !== "idle" && directCallStatus !== "ended" ? <button onClick={() => void endDirectCall()} aria-label="Encerrar chamada"><PhoneOff size={16} /></button> : null}<button onClick={() => { if (directFriendId) void deleteDirect(directFriendId); }} aria-label="Apagar conversa"><X size={16} /></button></div></div>{directLocalStream && <div className="direct-media-preview"><ScreenPreview stream={directLocalStream} /><span className="direct-call-state">{directCallStatus === "connected" ? "Chamada conectada" : "Chamando..."}</span></div>}<audio ref={directAudioRef} autoPlay playsInline aria-label="Áudio remoto da chamada" />{directRemoteStream && directAudioBlocked && <button className="direct-audio-unlock" onClick={() => void enableDirectAudio()}><Volume2 size={15} /> Ativar áudio</button>}<div className="channel-intro"><div className="intro-symbol"><MessageCircle size={27} /></div><h1>Conversa com {activeFriend?.displayName ?? "seu amigo"}</h1><p>Mensagens diretas com sua conexão.</p><div className="intro-rule" /></div><div className="message-list">{directMessages.length ? directMessages.map((item) => <article className="message-row" key={item.id}><span className="avatar bg-blue-200 text-blue-900">{initials(item.authorId)}</span><div className="message-copy"><div className="message-author"><strong>{item.authorId === currentUser.uid ? "Você" : item.authorId}</strong><span>@conexão</span><time>agora</time></div><p>{item.body}</p></div></article>) : <div className="empty-state">Nenhuma mensagem nesta conversa ainda.</div>}</div></section><div className="composer-wrap"><div className="composer"><Input value={directBody} onChange={(event) => setDirectBody(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") void sendDirect(); }} placeholder="Mensagem direta" /><button className="send-button" onClick={() => void sendDirect()} aria-label="Enviar mensagem direta"><Send size={17} /></button></div></div></> : channel?.kind === "voice" ? <section className="message-area firebase-voice-original-stage"><div className="channel-intro"><div className="intro-symbol"><Headphones size={27} /></div><h1>{channel.name}</h1><p>{members.length} participante(s) sincronizado(s) pelo Firestore.</p><div className="intro-rule" /></div><div className="firebase-member-grid">{members.length ? members.map((member) => <div className={member.isSpeaking || (member.uid === currentUser.uid && localSpeaking) ? "firebase-member speaking" : "firebase-member"} key={member.uid}><span className={member.isSpeaking || (member.uid === currentUser.uid && localSpeaking) ? "avatar bg-blue-200 text-blue-900 speaking-avatar" : "avatar bg-blue-200 text-blue-900"}>{initials(member.displayName)}</span><strong>{member.displayName}</strong></div>) : <div className="empty-state">Ninguém na sala ainda.</div>}</div>{Object.entries(remoteStreams).map(([peerId, stream]) => <RemoteAudio key={peerId} peerId={peerId} stream={stream} />)}{screenPreviewStream && <ScreenPreview stream={screenPreviewStream} />}<VoiceScreenPanel currentUid={currentUser.uid} members={members} remoteStreams={remoteStreams} viewers={screenViewerIds} onToggleViewer={toggleScreenViewer} /><div className="call-actions firebase-voice-actions"><button className={muted ? "control-active" : ""} onClick={toggleMute} disabled={!voiceRoomId} aria-label="Mutar microfone"><Mic size={16} /></button><button className={screenSharing ? "control-active" : ""} onClick={() => void toggleScreen()} disabled={!voiceRoomId} aria-label="Compartilhar tela"><Video size={16} /></button><button className="disconnect" onClick={() => void leaveVoiceRoom()} aria-label="Sair da sala"><PhoneOff size={16} /></button></div></section> : <><section className="message-area"><div className="channel-intro"><div className="intro-symbol"><Hash size={27} /></div><h1>Bem-vindo ao #{channel?.name ?? "geral"}</h1><p>Este é o começo do canal. Um bom lugar para dizer olá.</p><div className="intro-rule" /></div><div className="message-list">{messages.length ? messages.map((item) => <article className="message-row" key={item.id}><span className="avatar bg-blue-200 text-blue-900">{initials(item.authorId)}</span><div className="message-copy"><div className="message-author"><strong>{item.authorId === currentUser.uid ? "Você" : "Concord"}</strong><span>@concord</span><time>agora</time></div><p>{item.body}</p></div></article>) : <article className="message-row"><span className="avatar bg-blue-100 text-blue-900">CO</span><div className="message-copy"><div className="message-author"><strong>Concord</strong><span>@concord</span><time>agora</time></div><p>Bem-vindo ao Concord. Esta é a primeira mensagem deste canal.</p></div></article>}</div></section><div className="composer-wrap"><div className="composer"><button aria-label="Mais opções"><Plus size={19} /></button><Input value={body} onChange={(event) => setBody(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") void sendMessage(); }} placeholder={"Mensagem em #" + (channel?.name ?? "geral")} /><button onClick={() => void sendMessage()} className="send-button" aria-label="Enviar mensagem"><Send size={17} /></button></div><span className="composer-hint">Enter para enviar <span>•</span> Shift + Enter para nova linha</span></div></>}
       </> : activePanel === "friends" ? <FriendsPanel currentUid={currentUser.uid} searchValue={search} results={results} friendships={friendships} friendProfiles={friendProfiles} invites={invites} onOpenChat={(uid) => { setDirectFriendId(uid); setActivePanel("chat"); }} onSearchValueChange={setSearch} onSearch={() => void searchProfiles()} onAddFriend={(target) => void addFriend(target)} onRespondFriend={(request, status) => void respondFriend(request, status)} onRespondInvite={(invite, status) => void respondInvite(invite, status)} /> : activePanel === "profile" ? <ProfilePanel profile={profile} email={currentUser.email ?? ""} onSave={(name) => void saveDisplayName(name)} /> : <SettingsPanel onVoiceSettings={() => setNotice("Entre em uma sala para testar o microfone; a permissão será solicitada pelo navegador.")} />}
     </main>
 
     <aside className={membersOpen ? "member-sidebar" : "member-sidebar collapsed"}><div className="member-heading"><span>MEMBROS — {friendships.filter((item) => item.status === "accepted").length}</span><button onClick={() => setNotice("Membros sincronizados pelo Firebase.")} aria-label="Mais opções"><MoreHorizontal size={17} /></button></div><div className="member-group"><span className="member-role">CONEXÕES</span>{friendships.filter((item) => item.status === "accepted").map((item) => <button className="member-card" key={item.id} onClick={() => setDirectFriendId(item.requesterId === currentUser.uid ? item.addresseeId : item.requesterId)}><span className="avatar bg-blue-200 text-blue-900"><Users size={13} /></span><div><strong>{friendProfiles[item.requesterId === currentUser.uid ? item.addresseeId : item.requesterId]?.displayName ?? "Conexão"}</strong><span>{friendProfiles[item.requesterId === currentUser.uid ? item.addresseeId : item.requesterId]?.presence === "online" ? "Online" : friendProfiles[item.requesterId === currentUser.uid ? item.addresseeId : item.requesterId]?.presence === "away" ? "Ocupado" : "Indisponível"}</span></div></button>)}{!friendships.filter((item) => item.status === "accepted").length && <div className="empty-state">Nenhuma conexão aceita.</div>}</div>{voiceRoomId && <div className="call-dock"><div className="call-status"><span className="call-pulse" /><div><strong>{rooms.find((room) => room.id === voiceRoomId)?.name ?? "Sala de voz"}</strong><span>{members.length || 1} pessoa(s) na sala</span></div><button onClick={() => setNotice("Convite de sala disponível quando houver conexões.")} aria-label="Convidar"><UserPlus size={15} /></button></div><div className="call-actions"><button className={muted ? "control-active" : ""} onClick={toggleMute} aria-label="Mutar microfone"><Mic size={16} /></button><button className={screenSharing ? "control-active" : ""} onClick={() => void toggleScreen()} aria-label="Compartilhar tela"><Video size={16} /></button><button className="disconnect" onClick={() => void leaveVoiceRoom()} aria-label="Sair da call"><X size={16} /></button></div></div>}</aside>
-    {directCallStatus === "ringing" && !directCallRef.current && directCallId && <div className="firebase-dialog-backdrop incoming-call-backdrop" role="presentation"><section className="firebase-dialog incoming-call-dialog" role="dialog" aria-modal="true" aria-labelledby="incoming-call-title"><span className="firebase-kicker">CONCORD / CHAMADA RECEBIDA</span><div className="incoming-call-avatar avatar bg-blue-200 text-blue-900">{initials(activeFriend?.displayName ?? "Amigo")}</div><h2 id="incoming-call-title">{activeFriend?.displayName ?? "Seu amigo"} está ligando</h2><p>{activeFriend?.displayName ?? "Seu amigo"} iniciou uma chamada de {directCallStatus === "ringing" ? "áudio" : "áudio"}.</p><div className="firebase-dialog-actions"><Button variant="outline" onClick={() => void rejectDirectCall()}>Rejeitar</Button><Button className="primary-cta" onClick={() => void acceptDirectCall()}><Headphones size={16} /> Aceitar chamada</Button></div></section></div>}
+    {directCallStatus === "ringing" && directCallDirection === "incoming" && directCallId && <div className="firebase-dialog-backdrop incoming-call-backdrop" role="presentation"><section className="firebase-dialog incoming-call-dialog" role="dialog" aria-modal="true" aria-labelledby="incoming-call-title"><div className="incoming-call-glow" aria-hidden="true" /><span className="firebase-kicker">CONCORD / CHAMADA RECEBIDA</span><div className="incoming-call-avatar-wrap"><div className="incoming-call-avatar avatar bg-blue-200 text-blue-900">{initials(activeFriend?.displayName ?? "Amigo")}</div><span className="incoming-call-wave incoming-call-wave-one" /><span className="incoming-call-wave incoming-call-wave-two" /></div><span className="incoming-call-label"><Headphones size={13} /> Chamada de áudio</span><h2 id="incoming-call-title">{activeFriend?.displayName ?? "Seu amigo"} está ligando</h2><p>Atenda para iniciar uma conversa em tempo real.</p><div className="incoming-call-actions"><Button className="incoming-call-reject" onClick={() => void rejectDirectCall()}><PhoneOff size={16} /> Recusar</Button><Button className="incoming-call-accept" onClick={() => void acceptDirectCall()}><Headphones size={16} /> Atender</Button></div></section></div>}
     {creationTarget && <CreationDialog target={creationTarget} value={creationName} error={creationError} pending={creationPending} onChange={setCreationName} onClose={closeCreationDialog} onSubmit={() => void submitCreation()} />}
     {socialOpen && <SocialDialog currentPublicId={profile?.publicId ?? "CON-00000000"} searchValue={search} results={results} friendships={friendships} invites={invites} currentUid={currentUser.uid} community={community} onSearchValueChange={setSearch} onSearch={() => void searchProfiles()} onAddFriend={(target) => void addFriend(target)} onInvite={(targetUid) => void inviteFriend(targetUid)} onRespondInvite={(invite, status) => void respondInvite(invite, status)} onClose={() => setSocialOpen(false)} />}
   </div>;

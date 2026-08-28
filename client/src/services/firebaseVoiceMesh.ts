@@ -8,6 +8,7 @@ export type VoicePeerQuality = { ping: number | null; packetLoss: number | null;
 type VoiceMeshOptions = {
   roomId: string;
   userId: string;
+  sessionId?: string;
   localStream: MediaStream;
   onRemoteStream: (peerId: string, stream: MediaStream) => void;
   onRemoteScreenStream?: (peerId: string, stream: MediaStream) => void;
@@ -19,9 +20,11 @@ type VoiceMeshOptions = {
 
 export class FirebaseVoiceMesh {
   private readonly peers = new Map<string, RTCPeerConnection>();
+  private readonly peerSessionIds = new Map<string, string>();
   private readonly screenSenders = new Map<string, RTCRtpSender>();
   private readonly screenAudioSenders = new Map<string, RTCRtpSender>();
   private readonly pendingCandidates = new Map<string, RTCIceCandidateInit[]>();
+  private readonly handledSignalIds = new Set<string>();
   private readonly qualityTimers = new Map<string, ReturnType<typeof setInterval>>();
   private readonly previousStats = new Map<string, { timestamp: number; packetsLost: number; packetsReceived: number }>();
   private readonly remoteCallStreams = new Map<string, MediaStream>();
@@ -29,10 +32,11 @@ export class FirebaseVoiceMesh {
   private readonly remoteScreenTracks = new Map<string, Map<string, MediaStreamTrack>>();
   private readonly remoteScreenStreams = new Map<string, MediaStream>();
   private readonly options: VoiceMeshOptions;
+  private readonly sessionId: string;
   private screenStream: MediaStream | null = null;
   private stoppingScreen = false;
 
-  constructor(options: VoiceMeshOptions) { this.options = options; }
+  constructor(options: VoiceMeshOptions) { this.options = options; this.sessionId = options.sessionId ?? "legacy"; }
 
   private reportError(reason: unknown, fallback: string): void {
     this.options.onError?.(reason instanceof Error ? reason : new Error(fallback));
@@ -137,7 +141,7 @@ export class FirebaseVoiceMesh {
     this.screenSenders.set(peerId, screenTransceiver.sender);
     peer.ontrack = (event) => this.handleRemoteTrack(peerId, event);
     peer.onicecandidate = (event) => {
-      if (event.candidate) void publishSignal(this.options.roomId, { from: this.options.userId, to: peerId, kind: "ice", payload: JSON.stringify({ candidate: event.candidate.toJSON() }) });
+      if (event.candidate) void publishSignal(this.options.roomId, { from: this.options.userId, to: peerId, sessionId: this.sessionId, targetSessionId: this.peerSessionIds.get(peerId), kind: "ice", payload: JSON.stringify({ candidate: event.candidate.toJSON() }) });
     };
     peer.onconnectionstatechange = () => {
       if (["failed", "closed"].includes(peer.connectionState)) {
@@ -161,16 +165,17 @@ export class FirebaseVoiceMesh {
     try {
       const offer = await peer.createOffer();
       await peer.setLocalDescription(offer);
-      await publishSignal(this.options.roomId, { from: this.options.userId, to: peerId, kind: "offer", payload: JSON.stringify({ sdp: offer }) });
+      await publishSignal(this.options.roomId, { from: this.options.userId, to: peerId, sessionId: this.sessionId, targetSessionId: this.peerSessionIds.get(peerId), kind: "offer", payload: JSON.stringify({ sdp: offer }) });
     } catch (reason) { this.reportError(reason, "Não foi possível iniciar a conexão de voz."); }
   }
 
   async syncMembers(members: FirebaseVoiceMember[]): Promise<void> {
     const others = members.filter((member) => member.uid !== this.options.userId);
-    for (const member of others) this.createPeer(member.uid, this.options.userId < member.uid);
+    for (const member of others) { this.peerSessionIds.set(member.uid, member.sessionId ?? ""); this.createPeer(member.uid, this.options.userId < member.uid); }
     for (const [peerId, peer] of Array.from(this.peers.entries())) if (!others.some((member) => member.uid === peerId)) {
       peer.close();
       this.peers.delete(peerId);
+      this.peerSessionIds.delete(peerId);
       this.screenSenders.delete(peerId);
       this.screenAudioSenders.delete(peerId);
       this.pendingCandidates.delete(peerId);
@@ -189,7 +194,7 @@ export class FirebaseVoiceMesh {
   }
 
   async handleSignal(signal: FirebaseSignal): Promise<void> {
-    if (signal.to !== this.options.userId || signal.from === this.options.userId) return;
+    if (signal.to !== this.options.userId || signal.from === this.options.userId || (signal.targetSessionId && signal.targetSessionId !== this.sessionId) || this.handledSignalIds.has(signal.id)) return;
     const payload = JSON.parse(signal.payload) as SignalPayload;
     const peer = this.createPeer(signal.from, false);
     try {
@@ -198,7 +203,7 @@ export class FirebaseVoiceMesh {
         await this.flushPendingCandidates(signal.from, peer);
         const answer = await peer.createAnswer();
         await peer.setLocalDescription(answer);
-        await publishSignal(this.options.roomId, { from: this.options.userId, to: signal.from, kind: "answer", payload: JSON.stringify({ sdp: answer }) });
+        await publishSignal(this.options.roomId, { from: this.options.userId, to: signal.from, sessionId: this.sessionId, targetSessionId: signal.sessionId, kind: "answer", payload: JSON.stringify({ sdp: answer }) });
       } else if (signal.kind === "answer" && payload.sdp) {
         await peer.setRemoteDescription(payload.sdp);
         await this.flushPendingCandidates(signal.from, peer);
@@ -210,6 +215,7 @@ export class FirebaseVoiceMesh {
         if (ownerId === this.options.userId && this.screenStream) await this.closeScreenForEveryone();
         else this.clearRemoteScreen(ownerId);
       }
+      this.handledSignalIds.add(signal.id);
     } catch (reason) { this.reportError(reason instanceof Error ? reason : new Error("Não foi possível sincronizar a chamada de voz."), "Não foi possível sincronizar a chamada de voz."); }
   }
 
@@ -268,6 +274,8 @@ export class FirebaseVoiceMesh {
     await Promise.all(targets.map((target) => publishSignal(this.options.roomId, {
       from: this.options.userId,
       to: target,
+      sessionId: this.sessionId,
+      targetSessionId: this.peerSessionIds.get(target),
       kind: "screen-close",
       payload: JSON.stringify({ ownerId, reason: "closed-by-participant" }),
     })));
@@ -278,9 +286,11 @@ export class FirebaseVoiceMesh {
     void this.stopScreen();
     for (const peer of Array.from(this.peers.values())) peer.close();
     this.peers.clear();
+    this.peerSessionIds.clear();
     this.screenSenders.clear();
     this.screenAudioSenders.clear();
     this.pendingCandidates.clear();
+    this.handledSignalIds.clear();
     for (const peerId of Array.from(this.qualityTimers.keys())) this.stopPeerQualityMonitor(peerId);
     this.remoteCallStreams.clear();
     this.remoteCallStreamIds.clear();

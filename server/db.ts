@@ -79,7 +79,6 @@ export async function createVoiceChannel(userId: number, communityId: number, na
   const membership = await db.select().from(communityMembers).where(and(eq(communityMembers.communityId, communityId), eq(communityMembers.userId, userId))).limit(1);
   if (!membership[0]) throw new Error("Você não participa deste servidor");
   const existing = await db.select().from(channels).where(and(eq(channels.communityId, communityId), eq(channels.kind, "voice")));
-  if (existing.length >= 3) throw new Error("Este servidor já possui o limite de 3 salas de voz");
   const created = await db.insert(channels).values({ communityId, name, kind: "voice", position: existing.length }).$returningId();
   return db.select().from(channels).where(eq(channels.id, created[0]!.id)).limit(1);
 }

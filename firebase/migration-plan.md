@@ -13,7 +13,7 @@ O frontend será publicado como aplicação estática no GitHub Pages. O Firebas
 | Membros | `communities/{communityId}/members/{uid}` | Presença, papel e participação. |
 | Canais | `communities/{communityId}/channels/{channelId}` | Canais de texto e metadados de voz. |
 | Mensagens | `communities/{communityId}/messages/{messageId}` | Consultadas por `channelId` e ordenadas por `createdAt`. |
-| Salas de voz | `communities/{communityId}/voiceRooms/{roomId}` | Limite de três salas aplicado no cliente e em Cloud Functions/backend seguro. |
+| Salas de voz | `communities/{communityId}/voiceRooms/{roomId}` | Salas podem ser criadas conforme a comunidade precisar; cada chamada limita-se a oito participantes ativos. |
 | Membros de voz | `communities/{communityId}/voiceMembers/{uid}` | `isSpeaking`, `joinedAt`, mute e presença. |
 | Amizades | `friendRequests/{requestId}` | Solicitações e estado entre dois usuários. |
 | DMs | `directThreads/{threadId}/messages/{messageId}` | Participantes devem ser mantidos no documento do thread. |

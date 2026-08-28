@@ -33,13 +33,13 @@ export type FirebaseProfile = {
 
 export type FirebaseCommunity = { id: string; name: string; description?: string; ownerId: string; createdAt?: unknown };
 export type FirebaseChannel = { id: string; communityId: string; name: string; kind: "text" | "voice"; category?: string };
-export type FirebaseMessage = { id: string; channelId: string; authorId: string; body: string; createdAt?: unknown; kind?: "text" | "file"; fileUrl?: string; fileName?: string; fileType?: string; fileSize?: number };
-export type FirebaseVoiceMember = { uid: string; roomId: string; displayName: string; avatarUrl?: string | null; isSpeaking: boolean; muted: boolean; screenSharing?: boolean; joinedAt?: unknown };
+export type FirebaseMessage = { id: string; channelId: string; authorId: string; authorName?: string; body: string; createdAt?: unknown; kind?: "text" | "file"; fileUrl?: string; fileName?: string; fileType?: string; fileSize?: number };
+export type FirebaseVoiceMember = { uid: string; roomId: string; sessionId?: string; displayName: string; avatarUrl?: string | null; isSpeaking: boolean; muted: boolean; screenSharing?: boolean; joinedAt?: unknown };
 export type FirebaseFriendship = { id: string; requesterId: string; addresseeId: string; status: "pending" | "accepted" | "declined"; updatedAt?: unknown };
 export type FirebaseCommunityInvite = { id: string; communityId: string; communityName?: string; inviterId: string; inviteeId: string; status: "pending" | "accepted" | "declined"; updatedAt?: unknown };
 export type FirebaseDirectMessage = { id: string; authorId: string; body: string; createdAt?: unknown };
 export type FirebaseVoiceRoom = { id: string; name: string; communityId: string; createdAt?: unknown };
-export type FirebaseSignal = { id: string; from: string; to: string; kind: "offer" | "answer" | "ice" | "screen-close"; payload: string; createdAt?: unknown };
+export type FirebaseSignal = { id: string; from: string; to: string; sessionId?: string; targetSessionId?: string; kind: "offer" | "answer" | "ice" | "screen-close"; payload: string; createdAt?: unknown };
 export type FirebaseDirectCall = { id: string; callerId: string; calleeId: string; status: "ringing" | "connected" | "ended" | "declined"; media: "audio" | "screen"; createdAt?: unknown; updatedAt?: unknown };
 
 function clean<T extends DocumentData>(id: string, data: T): T & { id: string } {
@@ -179,8 +179,6 @@ export function subscribeToVoiceRooms(communityId: string, listener: (rooms: Fir
 
 export async function createVoiceRoom(communityId: string, name: string): Promise<string> {
   return withFirestoreTimeout((async () => {
-    const existing = await getDocs(query(communityCollection(communityId, "voiceRooms"), limit(4)));
-    if (existing.size >= 3) throw new Error("Cada comunidade pode ter no máximo 3 salas de voz.");
     const created = await addDoc(communityCollection(communityId, "voiceRooms"), { communityId, name, createdAt: serverTimestamp() });
     return created.id;
   })(), "Criar sala de voz");
@@ -227,10 +225,11 @@ export function subscribeToChannelMessages(communityId: string, channelId: strin
   }, (reason) => onError?.(reason instanceof Error ? reason : new Error("Não foi possível sincronizar as mensagens.")));
 }
 
-export async function sendVoiceChatMessage(communityId: string, roomId: string, authorId: string, body: string, attachment?: { url: string; name: string; type: string; size: number }): Promise<string> {
+export async function sendVoiceChatMessage(communityId: string, roomId: string, authorId: string, body: string, attachment?: { url: string; name: string; type: string; size: number }, authorName?: string): Promise<string> {
   const created = await addDoc(communityCollection(communityId, "messages"), {
     channelId: roomId,
     authorId,
+    ...(authorName ? { authorName } : {}),
     body,
     kind: attachment ? "file" : "text",
     ...(attachment ? { fileUrl: attachment.url, fileName: attachment.name, fileType: attachment.type, fileSize: attachment.size } : {}),

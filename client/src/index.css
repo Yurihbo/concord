@@ -443,3 +443,6 @@ a { color: inherit; text-decoration: none; }
 .voice-chat-composer input:focus { box-shadow: none; }
 @media (max-width: 640px) { .firebase-member-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); padding-inline: .4rem; } .firebase-member { min-height: 6.5rem; padding-inline: .35rem; } .voice-chat-panel { min-height: 15rem; margin-inline: .2rem; padding: .75rem; } .voice-chat-file span { max-width: 10rem; } }
 @media (min-width: 641px) and (max-width: 1040px) { .firebase-member-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+
+.voice-audio-unlock { display: inline-flex; align-items: center; gap: .45rem; align-self: center; margin: .35rem auto; padding: .55rem .8rem; color: #1d4ed8; background: #eff6ff; border: 1px solid #93c5fd; border-radius: .5rem; font-size: .7rem; cursor: pointer; }
+.voice-audio-unlock:hover { background: #dbeafe; }

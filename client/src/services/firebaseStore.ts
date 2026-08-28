@@ -233,7 +233,14 @@ export async function sendChannelMessage(communityId: string, channelId: string,
   const created = await addDoc(communityCollection(communityId, "messages"), { channelId, authorId, body, createdAt: serverTimestamp() });
   return created.id;
 }
-
+export async function deleteChannelMessage(communityId: string, messageId: string, authorId: string): Promise<void> {
+  const messageRef = doc(communityCollection(communityId, "messages"), messageId);
+  const snapshot = await getDoc(messageRef);
+  if (!snapshot.exists()) return;
+  const message = snapshot.data() as Pick<FirebaseMessage, "authorId">;
+  if (message.authorId !== authorId) throw new Error("Você só pode apagar suas próprias mensagens.");
+  await deleteDoc(messageRef);
+}
 export function subscribeToChannelMessages(communityId: string, channelId: string, listener: (messages: FirebaseMessage[]) => void, onError?: (error: Error) => void): Unsubscribe {
   const constraints: QueryConstraint[] = [where("channelId", "==", channelId), limit(200)];
   return onSnapshot(query(communityCollection(communityId, "messages"), ...constraints), (snapshot) => {

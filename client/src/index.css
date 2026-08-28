@@ -1234,3 +1234,46 @@ button:not(:disabled):not([data-no-neon]):active { transform: translateY(0) scal
     display: inline;
   }
 }
+
+/* Message deletion action */
+.app-shell.firebase-original-shell .group-message-row {
+  position: relative;
+  padding-right: 2.6rem;
+}
+.app-shell.firebase-original-shell .message-delete-button {
+  position: absolute;
+  top: 50%;
+  right: .45rem;
+  display: grid;
+  place-items: center;
+  width: 1.85rem;
+  height: 1.85rem;
+  padding: 0;
+  color: #9fc1d8;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: .45rem;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-50%);
+  transition: opacity .16s ease, color .16s ease, background .16s ease, border-color .16s ease;
+  cursor: pointer;
+}
+.app-shell.firebase-original-shell .group-message-row:hover .message-delete-button,
+.app-shell.firebase-original-shell .group-message-row:focus-within .message-delete-button {
+  opacity: 1;
+  visibility: visible;
+}
+.app-shell.firebase-original-shell .message-delete-button:hover,
+.app-shell.firebase-original-shell .message-delete-button:focus-visible {
+  color: #ffb0bd;
+  background: rgba(255, 101, 126, .14);
+  border-color: rgba(255, 127, 148, .42);
+  outline: none;
+}
+@media (max-width: 760px) {
+  .app-shell.firebase-original-shell .group-message-row .message-delete-button {
+    opacity: .72;
+    visibility: visible;
+  }
+}

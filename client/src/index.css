@@ -294,6 +294,8 @@ a { color: inherit; text-decoration: none; }
 .firebase-screen-preview { position: relative; width: min(100%, 22rem); margin: 1rem auto; overflow: hidden; background: #08111f; border: 2px solid #2563eb; border-radius: .75rem; box-shadow: 0 1rem 2.5rem rgba(15,23,42,.2); }
 .firebase-screen-preview video { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: contain; background: #020617; transform: none; }
 .firebase-screen-preview span { display: flex; align-items: center; justify-content: center; gap: .35rem; padding: .45rem .6rem; color: #dbeafe; background: #17345b; font-size: .68rem; font-weight: 700; }
+.firebase-screen-playback-action { position: absolute; left: 50%; top: 50%; min-height: 2.35rem; padding: .55rem .8rem; color: #fff; background: rgba(37,99,235,.95); border: 1px solid rgba(191,219,254,.9); border-radius: .55rem; box-shadow: 0 .5rem 1.2rem rgba(2,6,23,.35); font-size: .68rem; font-weight: 800; transform: translate(-50%, -50%); cursor: pointer; }
+.firebase-screen-playback-action:hover, .firebase-screen-playback-action:focus-visible { background: #1d4ed8; outline: 2px solid #bfdbfe; outline-offset: 2px; }
 .firebase-social-dialog { width: min(100%, 38rem); max-height: min(90dvh, 42rem); overflow: auto; }
 .firebase-social-search { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .5rem; }
 .firebase-social-search input { min-height: 2.65rem; color: #111827; background: #fff; border-color: #cbd5e1; }

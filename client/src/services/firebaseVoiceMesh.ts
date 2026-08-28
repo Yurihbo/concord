@@ -32,6 +32,7 @@ export class FirebaseVoiceMesh {
   private readonly remoteCallStreamIds = new Map<string, string>();
   private readonly remoteScreenTracks = new Map<string, Map<string, MediaStreamTrack>>();
   private readonly remoteScreenStreams = new Map<string, MediaStream>();
+  private readonly offerQueues = new Map<string, Promise<void>>();
   private readonly options: VoiceMeshOptions;
   private readonly sessionId: string;
   private screenStream: MediaStream | null = null;
@@ -108,6 +109,7 @@ export class FirebaseVoiceMesh {
   private closePeer(peerId: string, peer = this.peers.get(peerId)): void {
     if (this.peers.get(peerId) === peer) this.peers.delete(peerId);
     this.peerSessionIds.delete(peerId);
+    this.offerQueues.delete(peerId);
     this.screenSenders.delete(peerId);
     this.screenAudioSenders.delete(peerId);
     this.pendingCandidates.delete(peerId);
@@ -168,12 +170,40 @@ export class FirebaseVoiceMesh {
     return peer;
   }
 
-  private async createOffer(peerId: string, peer: RTCPeerConnection): Promise<void> {
-    try {
-      const offer = await peer.createOffer();
-      await peer.setLocalDescription(offer);
-      await publishSignal(this.options.roomId, { from: this.options.userId, to: peerId, sessionId: this.sessionId, targetSessionId: this.peerSessionIds.get(peerId), kind: "offer", payload: JSON.stringify({ sdp: offer }) });
-    } catch (reason) { this.reportError(reason, "Não foi possível iniciar a conexão de voz."); }
+  private async waitForStable(peer: RTCPeerConnection): Promise<void> {
+    if (peer.signalingState === "stable" || typeof peer.signalingState === "undefined") return;
+    await new Promise<void>((resolve) => {
+      let settled = false;
+      let timeout: ReturnType<typeof setTimeout> | undefined;
+      const finish = () => {
+        if (settled) return;
+        settled = true;
+        if (timeout) clearTimeout(timeout);
+        peer.removeEventListener("signalingstatechange", onStateChange);
+        resolve();
+      };
+      const onStateChange = () => {
+        if (peer.signalingState === "stable" || peer.signalingState === "closed") finish();
+      };
+      peer.addEventListener("signalingstatechange", onStateChange);
+      timeout = setTimeout(finish, 10_000);
+      onStateChange();
+    });
+  }
+
+  private createOffer(peerId: string, peer: RTCPeerConnection): Promise<void> {
+    const previous = this.offerQueues.get(peerId) ?? Promise.resolve();
+    const next = previous.then(async () => {
+      try {
+        if (peer.signalingState === "closed" || peer.connectionState === "closed") return;
+        await this.waitForStable(peer);
+        const offer = await peer.createOffer();
+        await peer.setLocalDescription(offer);
+        await publishSignal(this.options.roomId, { from: this.options.userId, to: peerId, sessionId: this.sessionId, targetSessionId: this.peerSessionIds.get(peerId), kind: "offer", payload: JSON.stringify({ sdp: offer }) });
+      } catch (reason) { this.reportError(reason, "Não foi possível iniciar a conexão de voz."); }
+    });
+    this.offerQueues.set(peerId, next);
+    return next;
   }
 
   async syncMembers(members: FirebaseVoiceMember[]): Promise<void> {
@@ -204,10 +234,7 @@ export class FirebaseVoiceMesh {
     const peer = this.createPeer(signal.from, false);
     try {
       if (signal.kind === "offer" && payload.sdp) {
-        if (peer.signalingState === "have-local-offer") {
-          if (this.options.userId < signal.from) return;
-          await peer.setLocalDescription({ type: "rollback" });
-        }
+        if (peer.signalingState === "have-local-offer") await peer.setLocalDescription({ type: "rollback" });
         await peer.setRemoteDescription(payload.sdp);
         await this.flushPendingCandidates(signal.from, peer);
         const answer = await peer.createAnswer();
@@ -297,6 +324,7 @@ export class FirebaseVoiceMesh {
     for (const peer of Array.from(this.peers.values())) peer.close();
     this.peers.clear();
     this.peerSessionIds.clear();
+    this.offerQueues.clear();
     this.screenSenders.clear();
     this.screenAudioSenders.clear();
     this.pendingCandidates.clear();

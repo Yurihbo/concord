@@ -37,6 +37,31 @@ describe("FirebaseVoiceMesh", () => {
     mesh.dispose();
   });
 
+  it("encaminha uma track de vídeo remota como stream de tela", async () => {
+    const peers: FakePeer[] = [];
+    vi.stubGlobal("RTCPeerConnection", class extends FakePeer { constructor() { super(); peers.push(this); } });
+    class FakeMediaStream {
+      private readonly tracks: MediaStreamTrack[];
+      constructor(tracks: MediaStreamTrack[] = []) { this.tracks = tracks; }
+      getTracks() { return this.tracks; }
+      getVideoTracks() { return this.tracks.filter((track) => track.kind === "video"); }
+      getAudioTracks() { return this.tracks.filter((track) => track.kind === "audio"); }
+    }
+    vi.stubGlobal("MediaStream", FakeMediaStream);
+    const audioTrack = { kind: "audio", id: "local-audio", stop: vi.fn() } as unknown as MediaStreamTrack;
+    const screenTrack = { kind: "video", id: "remote-screen", addEventListener: vi.fn() } as unknown as MediaStreamTrack;
+    const onRemoteScreenStream = vi.fn();
+    const localStream = { getTracks: () => [audioTrack], getAudioTracks: () => [audioTrack] } as unknown as MediaStream;
+    const mesh = new FirebaseVoiceMesh({ roomId: "room-screen", userId: "user-a", localStream, onRemoteStream: vi.fn(), onRemoteScreenStream });
+
+    await mesh.syncMembers([{ uid: "user-b", roomId: "room-screen", displayName: "B", isSpeaking: false, muted: false }]);
+    peers[0].ontrack?.({ streams: [], track: screenTrack } as unknown as { streams: MediaStream[] });
+
+    expect(onRemoteScreenStream).toHaveBeenCalledTimes(1);
+    expect(onRemoteScreenStream.mock.calls[0]?.[1].getVideoTracks()).toContain(screenTrack);
+    mesh.dispose();
+  });
+
   it("substitui a track de vídeo em todos os peers e a remove ao parar", async () => {
     const peers: FakePeer[] = [];
     vi.stubGlobal("RTCPeerConnection", class extends FakePeer { constructor() { super(); peers.push(this); } });

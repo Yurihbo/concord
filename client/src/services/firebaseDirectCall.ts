@@ -34,6 +34,8 @@ export class FirebaseDirectCall {
   private stoppingScreen = false;
   private pendingCandidates: RTCIceCandidateInit[] = [];
   private remoteDescriptionReady = false;
+  private offerQueue = Promise.resolve();
+  private signalQueue = Promise.resolve();
 
   constructor(options: DirectCallOptions) {
     this.options = options;
@@ -127,15 +129,40 @@ export class FirebaseDirectCall {
     if (hadScreen) this.options.onRemoteScreenEnded?.();
   }
 
-  private async publishOffer(peer: RTCPeerConnection, peerId: string): Promise<void> {
-    const offer = await peer.createOffer();
-    await peer.setLocalDescription(offer);
-    await publishDirectCallSignal(this.options.callId, {
-      from: this.options.userId,
-      to: peerId,
-      kind: "offer",
-      payload: JSON.stringify({ sdp: offer }),
+  private async waitForStable(peer: RTCPeerConnection): Promise<void> {
+    if (peer.signalingState === "stable" || typeof peer.signalingState === "undefined") return;
+    await new Promise<void>((resolve) => {
+      let settled = false;
+      const finish = () => {
+        if (settled) return;
+        settled = true;
+        peer.removeEventListener("signalingstatechange", onStateChange);
+        resolve();
+      };
+      const onStateChange = () => {
+        if (peer.signalingState === "stable" || peer.signalingState === "closed") finish();
+      };
+      peer.addEventListener("signalingstatechange", onStateChange);
+      globalThis.setTimeout(finish, 10_000);
+      onStateChange();
     });
+  }
+
+  private publishOffer(peer: RTCPeerConnection, peerId: string): Promise<void> {
+    const next = this.offerQueue.then(async () => {
+      if (peer.signalingState === "closed" || peer.connectionState === "closed") return;
+      await this.waitForStable(peer);
+      const offer = await peer.createOffer();
+      await peer.setLocalDescription(offer);
+      await publishDirectCallSignal(this.options.callId, {
+        from: this.options.userId,
+        to: peerId,
+        kind: "offer",
+        payload: JSON.stringify({ sdp: offer }),
+      });
+    });
+    this.offerQueue = next.catch(() => undefined);
+    return next;
   }
 
   private ensurePeer(peerId: string): RTCPeerConnection {
@@ -184,11 +211,22 @@ export class FirebaseDirectCall {
   }
 
   async handleSignal(signal: FirebaseSignal): Promise<void> {
+    const next = this.signalQueue.then(() => this.processSignal(signal));
+    this.signalQueue = next.catch(() => undefined);
+    return next;
+  }
+
+  private async processSignal(signal: FirebaseSignal): Promise<void> {
     const payload = JSON.parse(signal.payload) as { sdp?: RTCSessionDescriptionInit; candidate?: RTCIceCandidateInit };
     const peer = this.ensurePeer(signal.from);
     try {
       if (signal.kind === "offer" && payload.sdp) {
-        if (payload.sdp.sdp?.includes("m=video") && !this.videoSender) {
+        if (peer.signalingState === "have-local-offer") {
+          // Use a deterministic polite/impolite role if both sides renegotiate at once.
+          if (this.options.userId < signal.from) return;
+          await peer.setLocalDescription({ type: "rollback" });
+        }
+        if (payload.sdp.sdp?.includes("m=video") && !this.videoTransceiver) {
           this.videoTransceiver = peer.addTransceiver("video", { direction: "recvonly" });
           this.videoSender = this.videoTransceiver.sender;
         }
@@ -293,6 +331,8 @@ export class FirebaseDirectCall {
     this.remoteCallSourceId = null;
     this.pendingCandidates = [];
     this.remoteDescriptionReady = false;
+    this.offerQueue = Promise.resolve();
+    this.signalQueue = Promise.resolve();
     this.stoppingScreen = false;
   }
 }

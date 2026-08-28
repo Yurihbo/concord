@@ -46,6 +46,29 @@ describe("FirebaseDirectCall", () => {
     call.stop();
   });
 
+  it("encaminha uma track de vídeo remota para o stream de tela", async () => {
+    let peer: FakePeer | undefined;
+    vi.stubGlobal("RTCPeerConnection", class extends FakePeer { constructor() { super(); peer = this; } });
+    class FakeMediaStream {
+      private readonly tracks: MediaStreamTrack[];
+      constructor(tracks: MediaStreamTrack[] = []) { this.tracks = tracks; }
+      getTracks() { return this.tracks; }
+      getVideoTracks() { return this.tracks.filter((track) => track.kind === "video"); }
+      getAudioTracks() { return this.tracks.filter((track) => track.kind === "audio"); }
+    }
+    vi.stubGlobal("MediaStream", FakeMediaStream);
+    const screenTrack = { kind: "video", id: "remote-screen", addEventListener: vi.fn() } as unknown as MediaStreamTrack;
+    const onRemoteScreenStream = vi.fn();
+    const call = new FirebaseDirectCall({ callId: "call-remote-screen", userId: "user-b", media: "audio", localStream: localStream(), onRemoteStream: vi.fn(), onRemoteScreenStream });
+
+    await call.start("user-a");
+    peer?.ontrack?.({ streams: [{ id: "screen-source" } as MediaStream], track: screenTrack });
+
+    expect(onRemoteScreenStream).toHaveBeenCalledTimes(1);
+    expect(onRemoteScreenStream.mock.calls[0]?.[0].getVideoTracks()).toContain(screenTrack);
+    call.stop();
+  });
+
   it("renegocia tela dentro de uma chamada de áudio e permite encerrar a transmissão", async () => {
     let peer: FakePeer | undefined;
     vi.stubGlobal("RTCPeerConnection", class extends FakePeer { constructor() { super(); peer = this; } });

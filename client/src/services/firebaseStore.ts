@@ -38,7 +38,7 @@ export type FirebaseFriendship = { id: string; requesterId: string; addresseeId:
 export type FirebaseCommunityInvite = { id: string; communityId: string; communityName?: string; inviterId: string; inviteeId: string; status: "pending" | "accepted" | "declined"; updatedAt?: unknown };
 export type FirebaseDirectMessage = { id: string; authorId: string; body: string; createdAt?: unknown };
 export type FirebaseVoiceRoom = { id: string; name: string; communityId: string; createdAt?: unknown };
-export type FirebaseSignal = { id: string; from: string; to: string; kind: "offer" | "answer" | "ice"; payload: string; createdAt?: unknown };
+export type FirebaseSignal = { id: string; from: string; to: string; kind: "offer" | "answer" | "ice" | "screen-close"; payload: string; createdAt?: unknown };
 export type FirebaseDirectCall = { id: string; callerId: string; calleeId: string; status: "ringing" | "connected" | "ended" | "declined"; media: "audio" | "screen"; createdAt?: unknown; updatedAt?: unknown };
 
 function clean<T extends DocumentData>(id: string, data: T): T & { id: string } {

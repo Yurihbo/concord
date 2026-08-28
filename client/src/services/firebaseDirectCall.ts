@@ -63,6 +63,15 @@ export class FirebaseDirectCall {
     for (const candidate of candidates) await peer.addIceCandidate(candidate);
   }
 
+  private clearRemoteScreen(): void {
+    const stream = this.remoteStream;
+    if (!stream) return;
+    const videoTracks = stream.getVideoTracks();
+    videoTracks.forEach((track) => stream.removeTrack(track));
+    if (videoTracks.length) this.options.onRemoteStream(stream);
+    this.options.onRemoteScreenEnded?.();
+  }
+
   private async publishOffer(peer: RTCPeerConnection, peerId: string): Promise<void> {
     const offer = await peer.createOffer();
     await peer.setLocalDescription(offer);
@@ -146,6 +155,9 @@ export class FirebaseDirectCall {
       } else if (signal.kind === "ice" && payload.candidate) {
         if (!this.remoteDescriptionReady || !peer.remoteDescription) this.pendingCandidates.push(payload.candidate);
         else await peer.addIceCandidate(payload.candidate);
+      } else if (signal.kind === "screen-close") {
+        if (this.screenStream || this.videoSender?.track?.kind === "video") await this.stopScreenShare();
+        this.clearRemoteScreen();
       }
     } catch (reason) {
       this.reportError(reason, "Não foi possível sincronizar a chamada individual.");
@@ -173,6 +185,17 @@ export class FirebaseDirectCall {
       this.reportError(reason, "Não foi possível compartilhar a tela.");
       throw reason;
     }
+  }
+
+  async closeScreenForEveryone(): Promise<void> {
+    if (this.screenStream || this.videoSender?.track?.kind === "video") await this.stopScreenShare();
+    this.clearRemoteScreen();
+    if (this.peerId) await publishDirectCallSignal(this.options.callId, {
+      from: this.options.userId,
+      to: this.peerId,
+      kind: "screen-close",
+      payload: JSON.stringify({ reason: "closed-by-participant" }),
+    });
   }
 
   async stopScreenShare(): Promise<void> {

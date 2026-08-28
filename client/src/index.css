@@ -1147,3 +1147,40 @@ button:not(:disabled):not([data-no-neon]):active { transform: translateY(0) scal
     padding: .85rem;
   }
 }
+
+/* Final containment fixes for settings and account actions */
+.app-shell.firebase-original-shell .settings-workspace-panel .voice-settings-card {
+  box-sizing: border-box;
+  min-width: 0;
+  width: 100%;
+  overflow: hidden;
+}
+.app-shell.firebase-original-shell .settings-workspace-panel .voice-settings-card-heading,
+.app-shell.firebase-original-shell .settings-workspace-panel .voice-settings-fields,
+.app-shell.firebase-original-shell .settings-workspace-panel .voice-settings-fields label {
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+.app-shell.firebase-original-shell .settings-workspace-panel .voice-settings-fields {
+  overflow: hidden;
+}
+.app-shell.firebase-original-shell .settings-workspace-panel .voice-settings-fields select {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+.app-shell.firebase-original-shell .user-panel .logout-button {
+  display: grid;
+  place-items: center;
+  color: #9fc1d8;
+}
+.app-shell.firebase-original-shell .user-panel .logout-button:hover,
+.app-shell.firebase-original-shell .user-panel .logout-button:focus-visible {
+  color: #ff9fae;
+  background: rgba(255, 101, 126, .14);
+  border-color: rgba(255, 127, 148, .42);
+  outline: none;
+}

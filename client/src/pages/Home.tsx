@@ -7,6 +7,7 @@ import { trpc } from "@/lib/trpc";
 import { ConcordWebRTCService } from "@/services/webrtc";
 import { getVoiceParticipantEvents, getVoiceSwitchResetChannel, playVoiceToneOnContext } from "@/services/voiceActivity";
 import { Input } from "@/components/ui/input";
+import { PwaInstallButton } from "@/components/PwaInstallButton";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import {
@@ -80,14 +81,14 @@ function Landing({ onLogin }: { onLogin: () => void }) {
       <div className="landing-glow landing-glow-two" />
       <nav className="landing-nav">
         <div className="brand-lockup"><LogoMark /><span>CONCORD</span></div>
-        <div className="landing-nav-actions"><a href="#principles">Princípios</a><a href="#experience">Experiência</a><Button variant="outline" className="nav-login" onClick={onLogin}><LogIn size={16} /> Entrar</Button></div>
+        <div className="landing-nav-actions"><a href="#principles">Princípios</a><a href="#experience">Experiência</a><PwaInstallButton compact /><Button variant="outline" className="nav-login" onClick={onLogin}><LogIn size={16} /> Entrar</Button></div>
       </nav>
       <section className="landing-hero">
         <div className="hero-copy">
           <div className="eyebrow"><span className="eyebrow-dot" /> Conversas que encontram seu ritmo</div>
           <h1>O lugar onde boas ideias <em>convergem.</em></h1>
           <p>Concord é uma plataforma elegante para comunidades que querem conversar com clareza, criar com intenção e manter as pessoas próximas.</p>
-          <div className="hero-actions"><Button className="primary-cta" onClick={onLogin}>Começar agora <ArrowRight size={17} /></Button><a className="text-link" href="#experience">Conheça a experiência <ChevronDown size={15} /></a></div>
+          <div className="hero-actions"><Button className="primary-cta" onClick={onLogin}>Começar agora <ArrowRight size={17} /></Button><PwaInstallButton /><a className="text-link" href="#experience">Conheça a experiência <ChevronDown size={15} /></a></div>
           <div className="hero-note"><Shield size={14} /> Acesso seguro via Manus OAuth</div>
         </div>
         <div className="hero-art" aria-label="Prévia do Concord">

@@ -851,3 +851,158 @@ button:not(:disabled):not([data-no-neon]):active { transform: translateY(0) scal
   .app-shell.firebase-original-shell .member-sidebar.mobile-open { flex-direction: column; }
   .app-shell.firebase-original-shell .member-sidebar.mobile-open .member-group { flex: 1; min-height: 0; overflow-y: auto; }
 }
+
+
+/* Mobile reliability, high-contrast actions and PWA installation */
+.pwa-install-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .45rem;
+  min-height: 2.6rem;
+  padding: 0 .85rem;
+  color: #03131e !important;
+  background: linear-gradient(135deg, #5ef1ff, #2aa8f4) !important;
+  border: 1px solid rgba(126, 243, 255, .9) !important;
+  border-radius: .65rem;
+  box-shadow: 0 0 1.2rem rgba(42, 207, 255, .26), inset 0 1px rgba(255, 255, 255, .35);
+  font-size: .69rem;
+  font-weight: 800;
+  line-height: 1;
+  white-space: nowrap;
+}
+.pwa-install-button:hover,
+.pwa-install-button:focus-visible {
+  color: #02111c !important;
+  background: linear-gradient(135deg, #a3f7ff, #4bc3ff) !important;
+  border-color: #b9faff !important;
+  box-shadow: 0 0 1.6rem rgba(42, 207, 255, .45), inset 0 1px rgba(255, 255, 255, .5);
+}
+.pwa-install-button-compact { min-height: 2.3rem; padding-inline: .7rem; font-size: .64rem; }
+.landing-nav-actions .pwa-install-button { flex: 0 0 auto; }
+.header-actions .pwa-install-button { display: inline-flex; flex: 0 0 auto; }
+.pwa-install-backdrop { position: fixed; inset: 0; z-index: 120; display: grid; place-items: center; padding: 1rem; background: rgba(1, 8, 20, .82); backdrop-filter: blur(12px); }
+.pwa-install-dialog { position: relative; width: min(100%, 29rem); padding: 1.35rem; color: #dff7ff; background: linear-gradient(145deg, #0b2d4d, #06172e); border: 1px solid rgba(84, 225, 255, .4); border-radius: 1rem; box-shadow: 0 1.8rem 5rem rgba(0, 0, 0, .5), 0 0 2.5rem rgba(0, 183, 255, .16); }
+.pwa-install-dialog h2 { margin: .55rem 0 .35rem; color: #f1fdff; font-size: 1.25rem; }
+.pwa-install-dialog > p { margin: 0; color: #a8cde0; font-size: .78rem; line-height: 1.55; }
+.pwa-install-close { position: absolute; top: .75rem; right: .75rem; display: grid; place-items: center; width: 2.2rem; height: 2.2rem; padding: 0; color: #bdebf7 !important; background: rgba(20, 76, 111, .7) !important; border: 1px solid rgba(102, 213, 255, .28) !important; border-radius: .6rem; }
+.pwa-install-guide { display: grid; gap: .65rem; margin: 1.1rem 0; }
+.pwa-install-guide > div { display: grid; gap: .28rem; padding: .75rem; color: #dff7ff; background: rgba(6, 35, 63, .9); border: 1px solid rgba(84, 203, 255, .2); border-radius: .65rem; }
+.pwa-install-guide strong { color: #65eaff; font-size: .72rem; }
+.pwa-install-guide span { display: flex; align-items: flex-start; gap: .3rem; color: #b3d2e2; font-size: .68rem; line-height: 1.5; }
+.pwa-install-guide svg { flex: 0 0 auto; margin-top: .1rem; color: #61e9ff; }
+.pwa-install-dismiss { width: 100%; min-height: 2.65rem; color: #03131e !important; background: linear-gradient(135deg, #5ef1ff, #2aa8f4) !important; border: 0 !important; border-radius: .65rem; font-size: .72rem; font-weight: 800; }
+
+/* Dialog actions must remain readable over the dark cyberpunk surface. */
+.firebase-dialog button[data-slot="button"] { color: #e5f9ff; background: #12395f; border-color: rgba(94, 221, 255, .38); }
+.firebase-dialog button[data-slot="button"]:hover { color: #041421; background: #5ceaff; border-color: #9ff6ff; }
+.firebase-dialog button[data-slot="button"].primary-cta { color: #03131e; background: linear-gradient(135deg, #37e3ff, #1986e9); border-color: transparent; }
+.firebase-dialog .firebase-social-row button { min-height: 2.35rem; }
+.firebase-dialog .firebase-dialog-actions button { min-width: 6rem; }
+.firebase-social-row > div { flex-wrap: wrap; }
+
+@media (max-width: 760px) {
+  html, body, #root { height: 100%; min-height: 100%; }
+  body { overflow-x: hidden; }
+  .app-shell.firebase-original-shell { height: 100dvh; min-height: 100dvh; overflow: hidden; }
+  .app-shell.firebase-original-shell .content-area { display: flex; min-height: 0; height: 100%; overflow: hidden; }
+  .app-shell.firebase-original-shell .workspace-panel { flex: 1 1 auto; width: 100%; height: auto !important; min-height: 0 !important; max-height: none; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; padding-bottom: calc(2rem + env(safe-area-inset-bottom)); }
+  .app-shell.firebase-original-shell .workspace-panel-heading { flex: 0 0 auto; }
+  .app-shell.firebase-original-shell .friends-section,
+  .app-shell.firebase-original-shell .settings-card,
+  .app-shell.firebase-original-shell .profile-edit-card,
+  .app-shell.firebase-original-shell .account-results { color: #e6f8ff; background: linear-gradient(145deg, #0b2d4d, #071b35); border-color: rgba(86, 215, 255, .3); box-shadow: 0 8px 22px rgba(0, 0, 0, .2); }
+  .app-shell.firebase-original-shell .friends-section h2 { color: #effcff; }
+  .app-shell.firebase-original-shell .friends-section h2 span { color: #03131e; background: #5ceaff; }
+  .app-shell.firebase-original-shell .friends-list-row { border-top-color: rgba(105, 220, 255, .2); }
+  .app-shell.firebase-original-shell .friends-list-row strong { color: #e8fbff; }
+  .app-shell.firebase-original-shell .friends-list-row small,
+  .app-shell.firebase-original-shell .workspace-muted { color: #a9ccde; }
+  .app-shell.firebase-original-shell .friends-actions { display: flex; flex-wrap: wrap; gap: .5rem; }
+  .app-shell.firebase-original-shell .friends-actions button,
+  .app-shell.firebase-original-shell .friends-list-row > button { min-height: 2.7rem; color: #e9fbff !important; background: #12416a !important; border: 1px solid rgba(92, 224, 255, .42) !important; box-shadow: none; }
+  .app-shell.firebase-original-shell .friends-actions button:hover,
+  .app-shell.firebase-original-shell .friends-list-row > button:hover { color: #03131e !important; background: #5ceaff !important; }
+  .app-shell.firebase-original-shell .settings-card strong { color: #e8fbff; }
+  .app-shell.firebase-original-shell .settings-card small { color: #a9ccde; }
+  .app-shell.firebase-original-shell .profile-edit-card label,
+  .app-shell.firebase-original-shell .profile-field-label { color: #e8fbff; }
+  .app-shell.firebase-original-shell .profile-edit-card .primary-cta { min-height: 2.9rem; }
+  .app-shell.firebase-original-shell .header-actions .pwa-install-button { display: inline-flex; width: 2.35rem; height: 2.35rem; min-height: 2.35rem; padding: 0; }
+  .app-shell.firebase-original-shell .header-actions .pwa-install-button span { display: none; }
+  .app-shell.firebase-original-shell .pwa-install-button-compact { flex: 0 0 auto; }
+  .firebase-social-dialog { max-height: calc(100dvh - 1.5rem); overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
+  .firebase-dialog .firebase-social-row { width: 100%; }
+  .firebase-dialog .firebase-social-row > div { width: 100%; display: flex; }
+  .firebase-dialog .firebase-social-row > div button { flex: 1 1 0; min-width: 0; }
+  .pwa-install-backdrop { align-items: end; padding: .75rem; }
+  .pwa-install-dialog { max-height: calc(100dvh - 1.5rem); overflow-y: auto; padding: 1.15rem; padding-bottom: calc(1.15rem + env(safe-area-inset-bottom)); }
+}
+
+@media (max-width: 420px) {
+  .landing-nav-actions .pwa-install-button span { display: none; }
+  .landing-nav-actions .pwa-install-button { width: 2.25rem; min-height: 2.25rem; padding: 0; }
+  .firebase-dialog-actions { flex-wrap: wrap; }
+  .firebase-dialog-actions button { flex: 1 1 8rem; }
+}
+
+
+/* The existing compact header rule hides utility buttons on small screens; the install CTA stays visible. */
+.app-shell.firebase-original-shell .header-actions .pwa-install-button { display: inline-flex !important; }
+@media (max-width: 760px) {
+  .app-shell.firebase-original-shell .header-actions .pwa-install-button { display: inline-flex !important; }
+}
+
+
+/* High-contrast information surfaces */
+.friends-section,
+.settings-card,
+.call-history,
+.device-controls,
+.account-results {
+  background: linear-gradient(145deg, #0b2d4d, #071b35) !important;
+  border-color: rgba(86, 215, 255, .3) !important;
+  color: #e6f8ff !important;
+}
+.friends-section h2,
+.settings-card strong,
+.call-history strong,
+.device-controls label,
+.account-result strong { color: #effcff !important; }
+.friends-section p,
+.settings-card small,
+.call-history span,
+.call-history small,
+.device-controls span,
+.account-result span,
+.workspace-muted { color: #a9ccde !important; }
+.firebase-dialog .firebase-social-row { border-bottom-color: rgba(105, 220, 255, .22); }
+.firebase-dialog .firebase-social-row strong { color: #effcff !important; }
+.firebase-dialog .firebase-social-row small { color: #a9ccde !important; }
+.firebase-dialog .firebase-social-section { border-top-color: rgba(105, 220, 255, .22); }
+.firebase-dialog .member-role { color: #63e8ff !important; }
+.firebase-dialog .inline-copy { color: #03131e; background: #5ceaff; border-color: #9ff6ff; }
+.firebase-notice { color: #03243a; background: #9beeff; border-color: #5ceaff; }
+.empty-state { color: #c2e4f2 !important; background: #0b2947 !important; border-color: rgba(105, 220, 255, .3) !important; }
+
+@media (max-width: 760px) {
+  .app-shell.firebase-original-shell .content-header { flex: 0 0 auto; }
+  .app-shell.firebase-original-shell .workspace-panel .primary-cta { color: #03131e !important; background: linear-gradient(135deg, #5ceaff, #2aa8f4) !important; }
+  .app-shell.firebase-original-shell .friends-list-row,
+  .app-shell.firebase-original-shell .friends-person { min-width: 0; }
+  .app-shell.firebase-original-shell .friends-list-row > div:first-child { width: 100%; }
+  .app-shell.firebase-original-shell .friends-list-row .friends-person > span:last-child { overflow-wrap: anywhere; }
+}
+
+.pwa-settings-card { align-items: center; }
+.pwa-settings-card > span { min-width: 0; flex: 1; }
+.pwa-settings-card .pwa-install-button { flex: 0 0 auto; }
+@media (max-width: 520px) {
+  .pwa-settings-card { align-items: stretch; flex-direction: column; }
+  .pwa-settings-card .pwa-install-button { width: 100%; }
+}
+
+@media (max-width: 760px) {
+  .firebase-dialog { max-height: calc(100dvh - 1.5rem); overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
+  .firebase-dialog-backdrop { overflow-y: auto; align-items: end; }
+}

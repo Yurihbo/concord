@@ -2,6 +2,7 @@ import { useState } from "react";
 import { ArrowRight, Chrome, Loader2, Mail, WandSparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PwaInstallButton } from "@/components/PwaInstallButton";
 import { useFirebaseAuth } from "@/hooks/useFirebaseAuth";
 
 export function FirebaseAuthPanel() {
@@ -72,6 +73,7 @@ export function FirebaseAuthPanel() {
         <button type="button" className="firebase-mode-toggle" onClick={() => { setMode((current) => current === "signin" ? "signup" : "signin"); setMessage(""); }} disabled={busy}>
           {mode === "signup" ? "Já tenho uma conta" : "Criar uma conta nova"}
         </button>
+        <PwaInstallButton />
       </section>
     </main>
   );

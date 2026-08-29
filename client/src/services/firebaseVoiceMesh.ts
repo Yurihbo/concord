@@ -29,6 +29,7 @@ export class FirebaseVoiceMesh {
   private readonly qualityTimers = new Map<string, ReturnType<typeof setInterval>>();
   private readonly previousStats = new Map<string, { timestamp: number; packetsLost: number; packetsReceived: number }>();
   private readonly remoteCallStreams = new Map<string, MediaStream>();
+  private readonly remoteCallTracks = new Map<string, Map<string, MediaStreamTrack>>();
   private readonly remoteCallStreamIds = new Map<string, string>();
   private readonly remoteScreenTracks = new Map<string, Map<string, MediaStreamTrack>>();
   private readonly remoteScreenStreams = new Map<string, MediaStream>();
@@ -115,7 +116,7 @@ export class FirebaseVoiceMesh {
     this.screenAudioSenders.delete(peerId);
     this.pendingCandidates.delete(peerId);
     this.stopPeerQualityMonitor(peerId);
-    const hadCallStream = this.remoteCallStreams.delete(peerId) || this.remoteCallStreamIds.delete(peerId);
+    const hadCallStream = this.remoteCallStreams.delete(peerId) || this.remoteCallStreamIds.delete(peerId) || this.remoteCallTracks.delete(peerId);
     if (hadCallStream) this.options.onRemoteStreamEnded?.(peerId);
     else this.remoteCallStreamIds.delete(peerId);
     this.clearRemoteScreen(peerId);
@@ -130,10 +131,21 @@ export class FirebaseVoiceMesh {
     const isScreenTrack = event.track.kind === "video" || isScreenAudio;
 
     if (!isScreenTrack) {
+      // Some browsers emit RTCTrackEvent with an empty streams array for a
+      // recvonly/renegotiated audio track. Keep a per-peer audio stream so a
+      // later track event cannot replace the first participant's audio.
       if (eventStream && !callStreamId) this.remoteCallStreamIds.set(peerId, eventStreamId ?? "");
+      const tracks = this.remoteCallTracks.get(peerId) ?? new Map<string, MediaStreamTrack>();
+      tracks.set(event.track.id, event.track);
+      this.remoteCallTracks.set(peerId, tracks);
       const existing = this.remoteCallStreams.get(peerId);
-      if (existing && !eventStream && !existing.getTracks().some((track) => track.id === event.track.id)) existing.addTrack(event.track);
-      this.notifyCallStream(peerId, eventStream ?? existing ?? new MediaStream([event.track]));
+      if (!existing && eventStream) {
+        this.notifyCallStream(peerId, eventStream);
+        return;
+      }
+      const stream = existing ?? new MediaStream([event.track]);
+      if (!stream.getTracks().some((track) => track.id === event.track.id)) stream.addTrack(event.track);
+      this.notifyCallStream(peerId, stream);
       return;
     }
 
@@ -341,6 +353,7 @@ export class FirebaseVoiceMesh {
     this.handledSignalIds.clear();
     for (const peerId of Array.from(this.qualityTimers.keys())) this.stopPeerQualityMonitor(peerId);
     this.remoteCallStreams.clear();
+    this.remoteCallTracks.clear();
     this.remoteCallStreamIds.clear();
     this.remoteScreenTracks.clear();
     this.remoteScreenStreams.clear();

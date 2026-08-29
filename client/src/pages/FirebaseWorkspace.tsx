@@ -263,11 +263,22 @@ function RemoteAudio({ stream, peerId, unlockVersion, outputDeviceId, onBlocked 
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
+    const playRemoteAudio = () => {
+      void audio.play().catch(() => onBlockedRef.current());
+    };
+    audio.autoplay = true;
+    audio.muted = false;
     audio.srcObject = stream;
     audio.volume = 1;
+    audio.addEventListener("loadedmetadata", playRemoteAudio);
+    audio.addEventListener("canplay", playRemoteAudio);
     if (outputDeviceId && "setSinkId" in audio) void (audio as HTMLAudioElement & { setSinkId: (deviceId: string) => Promise<void> }).setSinkId(outputDeviceId).catch(() => undefined);
-    void audio.play().catch(() => onBlockedRef.current());
-    return () => { if (audio.srcObject === stream) audio.srcObject = null; };
+    playRemoteAudio();
+    return () => {
+      audio.removeEventListener("loadedmetadata", playRemoteAudio);
+      audio.removeEventListener("canplay", playRemoteAudio);
+      if (audio.srcObject === stream) audio.srcObject = null;
+    };
   }, [stream, unlockVersion, outputDeviceId]);
   return <audio ref={audioRef} autoPlay playsInline aria-label={`Áudio de ${peerId}`} />;
 }

@@ -6,7 +6,7 @@ vi.mock("@/services/firebaseSignaling", () => ({ publishSignal }));
 
 class FakePeer {
   connectionState = "new";
-  ontrack: ((event: { streams: MediaStream[] }) => void) | null = null;
+  ontrack: ((event: { streams: MediaStream[]; track: MediaStreamTrack }) => void) | null = null;
   onicecandidate: ((event: { candidate: null }) => void) | null = null;
   onconnectionstatechange: (() => void) | null = null;
   addTrack = vi.fn();
@@ -34,6 +34,39 @@ describe("FirebaseVoiceMesh", () => {
     const remoteTrack = { kind: "audio", id: "remote-audio" } as unknown as MediaStreamTrack;
     peers[0].ontrack?.({ streams: [remoteStream], track: remoteTrack } as unknown as { streams: MediaStream[] });
     expect(onRemoteStream).toHaveBeenCalledWith("user-b", remoteStream);
+    mesh.dispose();
+  });
+
+  it("mantém o áudio de cada participante quando o navegador não associa stream à track", async () => {
+    const peers: FakePeer[] = [];
+    vi.stubGlobal("RTCPeerConnection", class extends FakePeer { constructor() { super(); peers.push(this); } });
+    class FakeMediaStream {
+      private readonly tracks: MediaStreamTrack[];
+      constructor(tracks: MediaStreamTrack[] = []) { this.tracks = [...tracks]; }
+      getTracks() { return this.tracks; }
+      getAudioTracks() { return this.tracks.filter((track) => track.kind === "audio"); }
+      addTrack(track: MediaStreamTrack) { if (!this.tracks.some((candidate) => candidate.id === track.id)) this.tracks.push(track); }
+    }
+    vi.stubGlobal("MediaStream", FakeMediaStream);
+    const localTrack = { kind: "audio", id: "local-audio", stop: vi.fn() } as unknown as MediaStreamTrack;
+    const localStream = { getTracks: () => [localTrack], getAudioTracks: () => [localTrack] } as unknown as MediaStream;
+    const onRemoteStream = vi.fn();
+    const mesh = new FirebaseVoiceMesh({ roomId: "room-group", userId: "user-a", localStream, onRemoteStream });
+
+    await mesh.syncMembers([
+      { uid: "user-b", roomId: "room-group", displayName: "B", isSpeaking: false, muted: false },
+      { uid: "user-c", roomId: "room-group", displayName: "C", isSpeaking: false, muted: false },
+    ]);
+    const remoteTrackB = { kind: "audio", id: "remote-b" } as unknown as MediaStreamTrack;
+    const remoteTrackC = { kind: "audio", id: "remote-c" } as unknown as MediaStreamTrack;
+    peers.find((peer) => peer !== undefined)?.ontrack?.({ streams: [], track: remoteTrackB });
+    peers[1]?.ontrack?.({ streams: [], track: remoteTrackC });
+
+    expect(onRemoteStream).toHaveBeenCalledTimes(2);
+    expect(onRemoteStream.mock.calls[0]?.[0]).toBe("user-b");
+    expect(onRemoteStream.mock.calls[0]?.[1].getAudioTracks()).toContain(remoteTrackB);
+    expect(onRemoteStream.mock.calls[1]?.[0]).toBe("user-c");
+    expect(onRemoteStream.mock.calls[1]?.[1].getAudioTracks()).toContain(remoteTrackC);
     mesh.dispose();
   });
 

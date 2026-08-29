@@ -1,7 +1,8 @@
 import {
   addDoc,
   collection,
-  limit,
+  deleteDoc,
+  doc,
   onSnapshot,
   query,
   serverTimestamp,
@@ -22,8 +23,12 @@ export function isSignalForVoiceSession(signal: Pick<FirebaseSignal, "targetSess
   return !signal.targetSessionId || signal.targetSessionId === sessionId;
 }
 
+export async function removeSignal(callId: string, signalId: string): Promise<void> {
+  await deleteDoc(doc(firebaseDb, "calls", callId, "signals", signalId));
+}
+
 export function subscribeToSignals(callId: string, recipientId: string, sessionId: string, listener: (signals: FirebaseSignal[]) => void, onError?: (error: Error) => void): Unsubscribe {
-  return onSnapshot(query(collection(firebaseDb, "calls", callId, "signals"), where("to", "==", recipientId), limit(100)), (snapshot) => {
+  return onSnapshot(query(collection(firebaseDb, "calls", callId, "signals"), where("to", "==", recipientId)), (snapshot) => {
     listener(snapshot.docs.map((item) => ({ id: item.id, ...item.data() } as FirebaseSignal)).filter((signal) => isSignalForVoiceSession(signal, sessionId)));
   }, (reason) => onError?.(reason instanceof Error ? reason : new Error("Não foi possível sincronizar a sinalização da chamada.")));
 }

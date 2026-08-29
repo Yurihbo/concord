@@ -235,8 +235,9 @@ export class FirebaseVoiceMesh {
     const others = members.filter((member) => member.uid !== this.options.userId);
     for (const member of others) {
       const nextSessionId = member.sessionId ?? "";
+      const hasPreviousSession = this.peerSessionIds.has(member.uid);
       const previousSessionId = this.peerSessionIds.get(member.uid);
-      if (previousSessionId && nextSessionId && previousSessionId !== nextSessionId) this.closePeer(member.uid);
+      if (hasPreviousSession && previousSessionId !== nextSessionId) this.closePeer(member.uid);
       this.peerSessionIds.set(member.uid, nextSessionId);
       this.createPeer(member.uid, this.options.userId < member.uid);
     }

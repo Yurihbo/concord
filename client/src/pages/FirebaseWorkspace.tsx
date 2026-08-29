@@ -8,7 +8,7 @@ import { ConcordWebRTCService } from "@/services/webrtc";
 import { FirebaseVoiceMesh } from "@/services/firebaseVoiceMesh";
 import { FirebaseDirectCall } from "@/services/firebaseDirectCall";
 import { getVoiceParticipantEvents, playVoiceTone, startDirectCallRingtone } from "@/services/voiceActivity";
-import { subscribeToSignals } from "@/services/firebaseSignaling";
+import { removeSignal, subscribeToSignals } from "@/services/firebaseSignaling";
 import { useFirebaseAuth } from "@/hooks/useFirebaseAuth";
 import { hasFirebaseConfig, missingFirebaseConfigKeys } from "@/lib/firebase";
 import {
@@ -521,16 +521,20 @@ export default function FirebaseWorkspace() {
   }, [activePanel, channel]);
 
   useEffect(() => {
-    if (!community || !voiceRoomId || !voiceSessionId || !auth.user || !meshRef.current) return;
+    if (!community || !voiceRoomId || !voiceSessionId || !auth.user || !meshRef.current || !members.length) return;
+    const mesh = meshRef.current;
+    void mesh.syncMembers(members);
     return subscribeToSignals(voiceRoomId, auth.user.uid, voiceSessionId, (signals) => {
       for (const signal of signals) {
         voiceSignalQueueRef.current = voiceSignalQueueRef.current.then(async () => {
-          const mesh = meshRef.current;
-          if (mesh) await mesh.handleSignal(signal);
+          const activeMesh = meshRef.current;
+          if (!activeMesh) return;
+          await activeMesh.handleSignal(signal);
+          await removeSignal(voiceRoomId, signal.id).catch(() => undefined);
         }).catch((error) => setNotice(error instanceof Error ? error.message : "Não foi possível sincronizar a chamada de voz."));
       }
     }, (error) => setNotice(error.message));
-  }, [auth.user, community, voiceRoomId, voiceSessionId]);
+  }, [auth.user, community, members, voiceRoomId, voiceSessionId]);
 
   useEffect(() => {
     if (!community || !voiceRoomId || !auth.user) return;

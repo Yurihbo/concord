@@ -647,7 +647,13 @@ body { background: #050a16; color: #e8f4ff; font-family: 'Space Grotesk', 'Manro
 
 /* Group call participant cards */
 .firebase-member-grid { width: min(100%, 58rem); display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px; margin: 1.4rem auto 0; padding: 0 .5rem; }
-.firebase-member { min-height: 142px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 1rem .75rem; border-radius: 18px !important; text-align: center; }
+.firebase-member { min-height: 142px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 1rem .75rem; border-radius: 18px !important; text-align: center; cursor: pointer; }
+.peer-volume-panel { width: min(100% - 1rem, 34rem); margin: .2rem auto .8rem; padding: .75rem .9rem; color: #dff7ff; background: linear-gradient(135deg, rgba(8, 31, 59, .95), rgba(12, 49, 83, .9)); border: 1px solid rgba(84,203,255,.3); border-radius: 12px; box-shadow: inset 0 0 18px rgba(0,143,255,.06), 0 8px 20px rgba(0,0,0,.16); }
+.peer-volume-heading { display: flex; align-items: center; gap: .45rem; margin-bottom: .55rem; font-size: .72rem; }
+.peer-volume-heading svg { color: #65d9ff; }
+.peer-volume-heading strong { overflow: hidden; flex: 1; text-overflow: ellipsis; white-space: nowrap; }
+.peer-volume-heading output { min-width: 3.2rem; color: #65f0b2; font-family: 'DM Mono', monospace; font-weight: 800; text-align: right; }
+.peer-volume-panel input { width: 100%; accent-color: #39d8ff; cursor: pointer; }
 .firebase-member .avatar { width: 54px; height: 54px; border-radius: 17px; font-size: 14px; box-shadow: 0 0 0 5px rgba(73, 179, 255, .08); }
 .firebase-member.call-member-speaking .avatar { box-shadow: 0 0 0 5px rgba(57,243,156,.14), 0 0 18px rgba(57,243,156,.3); }
 .firebase-member strong { max-width: 100%; overflow: hidden; color: #dff7ff; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }

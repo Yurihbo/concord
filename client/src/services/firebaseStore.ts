@@ -28,6 +28,7 @@ export type FirebaseProfile = {
   email: string | null;
   displayName: string;
   avatarUrl: string | null;
+  photoURL?: string | null;
   publicId?: string;
   presence?: "online" | "away" | "offline";
   updatedAt?: unknown;
@@ -46,6 +47,11 @@ export type FirebaseDirectCall = { id: string; callerId: string; calleeId: strin
 
 function clean<T extends DocumentData>(id: string, data: T): T & { id: string } {
   return { id, ...data };
+}
+
+function normalizeProfile(id: string, data: Omit<FirebaseProfile, "id"> & { photoURL?: string | null }): FirebaseProfile {
+  const profile = clean(id, data);
+  return { ...profile, avatarUrl: profile.avatarUrl ?? profile.photoURL ?? null };
 }
 
 function userDoc(uid: string) { return doc(firebaseDb, "users", uid); }
@@ -84,7 +90,7 @@ export async function saveProfile(user: User, profile: Partial<FirebaseProfile>)
 
 export async function searchProfilesByPublicId(publicId: string): Promise<FirebaseProfile[]> {
   const snapshot = await getDocs(query(collection(firebaseDb, "users"), where("publicId", "==", publicId), limit(10)));
-  return snapshot.docs.map((item) => clean(item.id, item.data() as Omit<FirebaseProfile, "id">));
+  return snapshot.docs.map((item) => normalizeProfile(item.id, item.data() as Omit<FirebaseProfile, "id"> & { photoURL?: string | null }));
 }
 
 function friendshipId(firstUid: string, secondUid: string): string { return [firstUid, secondUid].sort().join("__"); }
@@ -150,7 +156,7 @@ export async function respondToFriendRequest(requestId: string, uid: string, sta
 
 export async function getProfile(uid: string): Promise<FirebaseProfile | null> {
   const snapshot = await getDoc(userDoc(uid));
-  return snapshot.exists() ? clean(snapshot.id, snapshot.data() as FirebaseProfile) : null;
+  return snapshot.exists() ? normalizeProfile(snapshot.id, snapshot.data() as FirebaseProfile & { photoURL?: string | null }) : null;
 }
 
 export async function getProfiles(uids: string[]): Promise<FirebaseProfile[]> {
@@ -163,7 +169,7 @@ export function subscribeToProfiles(uids: string[], listener: (profiles: Firebas
   if (!uniqueIds.length) { listener([]); return () => undefined; }
   const profiles = new Map<string, FirebaseProfile>();
   const unsubscribers = uniqueIds.map((uid) => onSnapshot(userDoc(uid), (snapshot) => {
-    if (snapshot.exists()) profiles.set(uid, clean(snapshot.id, snapshot.data() as Omit<FirebaseProfile, "id">));
+    if (snapshot.exists()) profiles.set(uid, normalizeProfile(snapshot.id, snapshot.data() as Omit<FirebaseProfile, "id"> & { photoURL?: string | null }));
     else profiles.delete(uid);
     listener(Array.from(profiles.values()));
   }, (reason) => onError?.(reason instanceof Error ? reason : new Error("Não foi possível sincronizar a presença dos amigos."))));

@@ -66,11 +66,14 @@ function assetUrl(path: string): string { return `${import.meta.env.BASE_URL}${p
 function hasVideoTrack(stream: MediaStream | null): stream is MediaStream { return Boolean(stream?.getVideoTracks().length); }
 function currentUserId(user: { uid: string } | null): string { return user?.uid ?? ""; }
 
-type AvatarSource = { displayName?: string | null; avatarUrl?: string | null };
+type AvatarSource = { displayName?: string | null; avatarUrl?: string | null; photoURL?: string | null };
 
 function ProfileAvatar({ profile, fallbackName, className = "" }: { profile?: AvatarSource | null; fallbackName?: string; className?: string }) {
   const name = profile?.displayName ?? fallbackName ?? "Conta";
-  return <span className={`avatar profile-avatar-shell ${className}`.trim()}>{profile?.avatarUrl ? <img src={profile.avatarUrl} alt="" /> : <span>{initials(name)}</span>}</span>;
+  const [imageFailed, setImageFailed] = useState(false);
+  const imageUrl = profile?.avatarUrl ?? profile?.photoURL ?? null;
+  useEffect(() => setImageFailed(false), [imageUrl]);
+  return <span className={`avatar profile-avatar-shell ${className}`.trim()}>{imageUrl && !imageFailed ? <img src={imageUrl} alt={`${name} — foto de perfil`} loading="lazy" onError={() => setImageFailed(true)} /> : <span>{initials(name)}</span>}</span>;
 }
 
 type PeerQuality = { ping: number | null; level: "excellent" | "good" | "fair" | "poor" | "unknown"; packetLoss: number | null; state: RTCPeerConnectionState };

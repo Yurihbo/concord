@@ -408,6 +408,10 @@ a { color: inherit; text-decoration: none; }
 .direct-screen-volume svg { flex: 0 0 auto; color: #8fc7ff; }
 .direct-screen-volume input { min-width: 0; flex: 1; accent-color: #60a5fa; cursor: pointer; }
 .direct-screen-volume output { min-width: 2.35rem; color: #8fc7ff; text-align: right; font-variant-numeric: tabular-nums; }
+.voice-screen-volume { display: flex; align-items: center; gap: .45rem; padding: .55rem .6rem; color: #334155; background: #f8fafc; border: 1px solid #dbeafe; border-radius: .5rem; font-size: .64rem; font-weight: 800; }
+.voice-screen-volume svg { flex: 0 0 auto; color: #2563eb; }
+.voice-screen-volume input { min-width: 0; flex: 1; accent-color: #2563eb; cursor: pointer; }
+.voice-screen-volume output { min-width: 2.35rem; color: #1d4ed8; text-align: right; font-variant-numeric: tabular-nums; }
 .direct-screen-view-mini { width: min(22rem, calc(100vw - 2rem)); }
 .direct-screen-view-mini .firebase-screen-preview video { max-height: 14rem; }
 .direct-screen-view-medium { width: min(40rem, calc(100vw - 2rem)); }

@@ -655,6 +655,11 @@ body { background: #050a16; color: #e8f4ff; font-family: 'Space Grotesk', 'Manro
 .peer-volume-heading output { min-width: 3.2rem; color: #65f0b2; font-family: 'DM Mono', monospace; font-weight: 800; text-align: right; }
 .peer-volume-panel input { width: 100%; accent-color: #39d8ff; cursor: pointer; }
 .firebase-member .avatar { width: 54px; height: 54px; border-radius: 17px; font-size: 14px; box-shadow: 0 0 0 5px rgba(73, 179, 255, .08); }
+.participant-avatar-wrap { position: relative; display: inline-flex; }
+.participant-audio-indicator { position: absolute; right: -5px; bottom: -5px; display: inline-flex; align-items: center; justify-content: center; width: 1.35rem; height: 1.35rem; color: #dff7ff; background: #123b5b; border: 2px solid #081f3b; border-radius: 999px; box-shadow: 0 2px 8px rgba(0,0,0,.25); }
+.participant-audio-indicator.is-speaking { color: #062b1e; background: #65f0b2; border-color: #39f39c; box-shadow: 0 0 0 3px rgba(57,243,156,.18), 0 0 12px rgba(57,243,156,.55); }
+.participant-audio-indicator.is-muted { color: #fff; background: #a52d4c; border-color: #ff8b9b; }
+.participant-audio-indicator.is-idle { color: #8fc7ff; }
 .firebase-member.call-member-speaking .avatar { box-shadow: 0 0 0 5px rgba(57,243,156,.14), 0 0 18px rgba(57,243,156,.3); }
 .firebase-member strong { max-width: 100%; overflow: hidden; color: #dff7ff; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
 .firebase-member .voice-quality { margin-top: 1px; color: #84b4cd; background: rgba(15, 63, 96, .72); border: 1px solid rgba(84,203,255,.18); }

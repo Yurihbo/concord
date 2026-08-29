@@ -166,7 +166,10 @@ export class FirebaseVoiceMesh {
     const existing = this.peers.get(peerId);
     if (existing) return existing;
     const peer = new RTCPeerConnection({ iceServers: [{ urls: "stun:stun.l.google.com:19302" }, { urls: "stun:stun1.l.google.com:19302" }, { urls: "stun:stun.cloudflare.com:3478" }], iceCandidatePoolSize: 10 });
-    this.localStream.getAudioTracks().forEach((track) => peer.addTrack(track, this.localStream));
+    this.localStream.getAudioTracks().forEach((track) => {
+      track.enabled = true;
+      peer.addTrack(track, this.localStream);
+    });
     const screenTransceiver = peer.addTransceiver("video", { direction: "sendrecv" });
     this.screenSenders.set(peerId, screenTransceiver.sender);
     peer.ontrack = (event) => this.handleRemoteTrack(peerId, event);
@@ -272,9 +275,15 @@ export class FirebaseVoiceMesh {
   async replaceMicrophone(stream: MediaStream): Promise<void> {
     this.localStream = stream;
     const audioTrack = stream.getAudioTracks()[0] ?? null;
-    for (const peer of Array.from(this.peers.values())) {
+    if (!audioTrack) throw new Error("Nenhum microfone ativo foi encontrado.");
+    audioTrack.enabled = true;
+    for (const [peerId, peer] of Array.from(this.peers.entries())) {
       const sender = peer.getSenders().find((candidate: RTCRtpSender) => candidate.track?.kind === "audio");
       if (sender) await sender.replaceTrack(audioTrack);
+      else {
+        peer.addTrack(audioTrack, stream);
+        await this.createOffer(peerId, peer);
+      }
     }
   }
 

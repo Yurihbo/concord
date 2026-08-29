@@ -177,12 +177,13 @@ export async function signOutFirebase(): Promise<void> {
 export async function ensureFirebaseProfile(user: User, input: FirebaseProfileInput = {}): Promise<void> {
   const displayName = input.displayName?.trim() || user.displayName || user.email?.split("@")[0] || "Conta Concord";
   const publicId = `CON-${user.uid.replace(/[^a-z0-9]/gi, "").slice(0, 8).toUpperCase().padEnd(8, "0")}`;
+  const avatarUrl = input.avatarUrl !== undefined ? input.avatarUrl : user.photoURL;
   await setDoc(doc(firebaseDb, "users", user.uid), {
     uid: user.uid,
     email: user.email ?? null,
     displayName,
     publicId,
-    avatarUrl: input.avatarUrl ?? user.photoURL ?? null,
+    ...(avatarUrl ? { avatarUrl } : {}),
     updatedAt: serverTimestamp(),
   }, { merge: true });
 }

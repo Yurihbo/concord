@@ -185,11 +185,14 @@ function ScreenPreview({ stream, label = "Sua tela está sendo compartilhada", m
   const playVideo = async (unlockAudio = false) => {
     const video = videoRef.current;
     if (!video) return;
-    video.muted = unlockAudio ? false : muted;
+    // O vídeo precisa iniciar mutado para que a tela apareça mesmo quando o
+    // navegador bloquear autoplay com áudio. O usuário pode liberar o áudio
+    // pelo controle depois que a imagem já estiver reproduzindo.
+    video.muted = unlockAudio ? false : true;
     try {
       await video.play();
       setPlaybackBlocked(false);
-      setAudioLocked(false);
+      setAudioLocked(!muted && !unlockAudio);
     } catch {
       setPlaybackBlocked(true);
       setAudioLocked(unlockAudio || !muted);

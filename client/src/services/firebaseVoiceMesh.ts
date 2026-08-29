@@ -34,6 +34,7 @@ export class FirebaseVoiceMesh {
   private readonly remoteScreenTracks = new Map<string, Map<string, MediaStreamTrack>>();
   private readonly remoteScreenStreams = new Map<string, MediaStream>();
   private readonly offerQueues = new Map<string, Promise<void>>();
+  private readonly peerMediaReady = new Map<string, Promise<void>>();
   private readonly options: VoiceMeshOptions;
   private readonly sessionId: string;
   private localStream: MediaStream;
@@ -114,6 +115,7 @@ export class FirebaseVoiceMesh {
     if (this.peers.get(peerId) === peer) this.peers.delete(peerId);
     this.peerSessionIds.delete(peerId);
     this.offerQueues.delete(peerId);
+    this.peerMediaReady.delete(peerId);
     this.screenSenders.delete(peerId);
     this.screenAudioSenders.delete(peerId);
     this.pendingCandidates.delete(peerId);
@@ -175,12 +177,12 @@ export class FirebaseVoiceMesh {
     const screenTransceiver = peer.addTransceiver("video", { direction: "sendrecv" });
     this.screenSenders.set(peerId, screenTransceiver.sender);
     const currentScreenTrack = this.screenStream?.getVideoTracks()[0];
-    if (currentScreenTrack) {
-      void screenTransceiver.sender.replaceTrack(currentScreenTrack);
+    const mediaReady = currentScreenTrack ? screenTransceiver.sender.replaceTrack(currentScreenTrack).then(() => {
       screenTransceiver.sender.setStreams?.(this.screenStream!);
       const currentScreenAudioTrack = this.screenStream?.getAudioTracks()[0];
       if (currentScreenAudioTrack) this.screenAudioSenders.set(peerId, peer.addTrack(currentScreenAudioTrack, this.screenStream!));
-    }
+    }) : Promise.resolve();
+    this.peerMediaReady.set(peerId, mediaReady);
     peer.ontrack = (event) => this.handleRemoteTrack(peerId, event);
     peer.onicecandidate = (event) => {
       if (!event.candidate) return;
@@ -191,7 +193,7 @@ export class FirebaseVoiceMesh {
     };
     this.peers.set(peerId, peer);
     this.startPeerQualityMonitor(peerId, peer);
-    if (initiator) void this.createOffer(peerId, peer);
+    if (initiator) void mediaReady.then(() => this.createOffer(peerId, peer));
     return peer;
   }
 
@@ -259,6 +261,7 @@ export class FirebaseVoiceMesh {
     if (signal.sessionId) this.peerSessionIds.set(signal.from, signal.sessionId);
     const peer = this.createPeer(signal.from, false);
     try {
+      await (this.peerMediaReady.get(signal.from) ?? Promise.resolve());
       if (signal.kind === "offer" && payload.sdp) {
         if (peer.signalingState === "have-local-offer") await peer.setLocalDescription({ type: "rollback" });
         await peer.setRemoteDescription(payload.sdp);
@@ -369,6 +372,7 @@ export class FirebaseVoiceMesh {
     this.peers.clear();
     this.peerSessionIds.clear();
     this.offerQueues.clear();
+    this.peerMediaReady.clear();
     this.screenSenders.clear();
     this.screenAudioSenders.clear();
     this.pendingCandidates.clear();

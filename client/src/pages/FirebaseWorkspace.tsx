@@ -180,22 +180,17 @@ function SettingsPanel({ audioDevices, selectedInput, selectedOutput, noiseSuppr
 function ScreenPreview({ stream, label = "Sua tela está sendo compartilhada", muted = true, volume = 1, outputDeviceId }: { stream: MediaStream; label?: string; muted?: boolean; volume?: number; outputDeviceId?: string }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [playbackBlocked, setPlaybackBlocked] = useState(false);
-  const [audioLocked, setAudioLocked] = useState(!muted);
-
-  const playVideo = async (unlockAudio = false) => {
+  const playVideo = async () => {
     const video = videoRef.current;
     if (!video) return;
-    // O vídeo precisa iniciar mutado para que a tela apareça mesmo quando o
-    // navegador bloquear autoplay com áudio. O usuário pode liberar o áudio
-    // pelo controle depois que a imagem já estiver reproduzindo.
-    video.muted = unlockAudio ? false : true;
+    video.muted = muted;
     try {
       await video.play();
       setPlaybackBlocked(false);
-      setAudioLocked(!muted && !unlockAudio);
+
     } catch {
       setPlaybackBlocked(true);
-      setAudioLocked(unlockAudio || !muted);
+
     }
   };
 
@@ -204,7 +199,6 @@ function ScreenPreview({ stream, label = "Sua tela está sendo compartilhada", m
     if (!video) return;
     video.srcObject = stream;
     setPlaybackBlocked(false);
-    setAudioLocked(!muted);
     void playVideo();
     return () => { if (video.srcObject === stream) video.srcObject = null; };
   }, [stream]);
@@ -212,14 +206,12 @@ function ScreenPreview({ stream, label = "Sua tela está sendo compartilhada", m
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
-    video.muted = muted || audioLocked;
+    video.muted = muted;
     video.volume = volume;
     if (outputDeviceId && "setSinkId" in video) void (video as HTMLVideoElement & { setSinkId: (deviceId: string) => Promise<void> }).setSinkId(outputDeviceId).catch(() => undefined);
-  }, [muted, volume, audioLocked, outputDeviceId]);
+  }, [muted, volume, outputDeviceId]);
 
-  const showPlaybackAction = playbackBlocked || audioLocked;
-  const actionLabel = playbackBlocked ? "Reproduzir tela" : "Ativar áudio da tela";
-  return <div className="firebase-screen-preview" aria-label={label}><video ref={videoRef} muted={muted || audioLocked} playsInline autoPlay /><span><Video size={12} /> {label}</span>{showPlaybackAction && <button type="button" className="firebase-screen-playback-action" onClick={() => void playVideo(true)}>{actionLabel}</button>}</div>;
+  return <div className="firebase-screen-preview" aria-label={label}><video ref={videoRef} muted={muted} playsInline autoPlay /><span><Video size={12} /> {label}</span>{playbackBlocked && <button type="button" className="firebase-screen-playback-action" onClick={() => void playVideo()}>Reproduzir tela</button>}</div>;
 }
 
 type ScreenViewMode = "mini" | "medium" | "full";
@@ -261,7 +253,7 @@ function DraggableScreenPanel({ stream, title, label, volume, muted = true, outp
 
   const modeLabels: Record<ScreenViewMode, string> = { mini: "Mini", medium: "Médio", full: "Tela cheia" };
   const panelStyle = viewMode === "full" ? { inset: 0, left: 0, top: 0, right: 0, bottom: 0 } : position ? { left: position.left, top: position.top, right: "auto" } : undefined;
-  return <div ref={panelRef} className={`${dragging ? "direct-screen-float is-dragging" : "direct-screen-float"} direct-screen-view-${viewMode}`} style={panelStyle}><div className="direct-screen-float-bar" onPointerDown={startDragging}><div className="direct-screen-float-title"><GripVertical size={15} aria-hidden="true" /><span><strong>{title}</strong><small>{label}</small></span></div>{onClose && <button type="button" aria-label="Fechar compartilhamento de tela" onPointerDown={(event) => event.stopPropagation()} onClick={onClose}><X size={15} /></button>}</div><div className="direct-screen-view-controls" role="group" aria-label="Modo de visualização"><span>Visualização</span>{(Object.keys(modeLabels) as ScreenViewMode[]).map((mode) => <button key={mode} type="button" className={viewMode === mode ? "is-active" : ""} onPointerDown={(event) => event.stopPropagation()} onClick={() => setViewMode(mode)}>{modeLabels[mode]}</button>)}</div><ScreenPreview stream={stream} label={label} muted={muted} volume={volume ?? 1} outputDeviceId={outputDeviceId} />{onVolumeChange && <label className="direct-screen-volume"><Volume2 size={14} /><span>Volume da tela</span><input type="range" min="0" max="1" step="0.05" value={volume ?? 1} onChange={(event) => onVolumeChange(Number(event.target.value))} aria-label="Volume do áudio da tela compartilhada" /><output>{Math.round((volume ?? 1) * 100)}%</output></label>}</div>;
+  return <div ref={panelRef} className={`${dragging ? "direct-screen-float is-dragging" : "direct-screen-float"} direct-screen-view-${viewMode}`} style={panelStyle}><div className="direct-screen-float-bar" onPointerDown={startDragging}><div className="direct-screen-float-title"><GripVertical size={15} aria-hidden="true" /><span><strong>{title}</strong><small>{label}</small></span></div>{onClose && <button type="button" aria-label="Fechar compartilhamento de tela" onPointerDown={(event) => event.stopPropagation()} onClick={onClose}><X size={15} /></button>}</div><div className="direct-screen-view-controls" role="group" aria-label="Modo de visualização"><span>Visualização</span>{(Object.keys(modeLabels) as ScreenViewMode[]).map((mode) => <button key={mode} type="button" className={viewMode === mode ? "is-active" : ""} onPointerDown={(event) => event.stopPropagation()} onClick={() => setViewMode(mode)}>{modeLabels[mode]}</button>)}</div><ScreenPreview stream={stream} label={label} muted={muted} volume={volume ?? 1} outputDeviceId={outputDeviceId} />{onVolumeChange && <label className="direct-screen-volume"><button type="button" className="screen-audio-toggle" aria-label={(volume ?? 1) > 0 ? "Desativar áudio da tela" : "Ativar áudio da tela"} aria-pressed={(volume ?? 1) > 0} onClick={() => onVolumeChange((volume ?? 1) > 0 ? 0 : 1)}><Volume2 size={14} /></button><span>Volume da tela</span><input type="range" min="0" max="1" step="0.05" value={volume ?? 1} onChange={(event) => onVolumeChange(Number(event.target.value))} aria-label="Volume do áudio da tela compartilhada" /><output>{Math.round((volume ?? 1) * 100)}%</output></label>}</div>;
 }
 
 function RemoteAudioMixer({ streams, unlockVersion, outputDeviceId, onBlocked }: { streams: Record<string, MediaStream>; unlockVersion: number; outputDeviceId?: string; onBlocked: () => void }) {

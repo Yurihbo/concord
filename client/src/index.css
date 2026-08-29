@@ -406,6 +406,8 @@ a { color: inherit; text-decoration: none; }
 .direct-screen-view-controls button:hover, .direct-screen-view-controls button.is-active { color: #fff; background: #2563eb; border-color: #60a5fa; }
 .direct-screen-volume { display: flex; align-items: center; gap: .45rem; padding: .6rem .65rem .7rem; color: #d7e8fa; background: #0b1220; font-size: .64rem; font-weight: 800; }
 .direct-screen-volume svg { flex: 0 0 auto; color: #8fc7ff; }
+.screen-audio-toggle { display: inline-flex; align-items: center; justify-content: center; width: 1.7rem; height: 1.7rem; padding: 0; color: #8fc7ff; background: rgba(96,165,250,.12); border: 1px solid rgba(143,199,255,.35); border-radius: .35rem; cursor: pointer; }
+.screen-audio-toggle:hover, .screen-audio-toggle[aria-pressed="false"] { color: #fff; background: #2563eb; }
 .direct-screen-volume input { min-width: 0; flex: 1; accent-color: #60a5fa; cursor: pointer; }
 .direct-screen-volume output { min-width: 2.35rem; color: #8fc7ff; text-align: right; font-variant-numeric: tabular-nums; }
 .voice-screen-volume { display: flex; align-items: center; gap: .45rem; padding: .55rem .6rem; color: #334155; background: #f8fafc; border: 1px solid #dbeafe; border-radius: .5rem; font-size: .64rem; font-weight: 800; }

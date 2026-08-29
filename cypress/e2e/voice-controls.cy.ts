@@ -27,18 +27,8 @@ describe("controles da chamada em grupo", () => {
     });
   });
 
-  it("silencia e restaura todos os participantes localmente", () => {
+  it("não exibe o botão Mutar Todos após sua remoção", () => {
     cy.get('[data-testid="voice-call-stage"]').should("be.visible");
-    cy.get('[data-testid="mute-all-button"]').should("contain.text", "Mutar todos").click();
-    cy.get('[data-testid="mute-all-button"]').should("contain.text", "Restaurar");
-    cy.get('[data-testid="muted-all-status"]').should("be.visible").and("contain.text", "Mutar Todos ativo");
-    cy.window().its("localStorage").invoke("getItem", "concord.voice.peerVolumes").then((value) => {
-      const volumes = JSON.parse(value ?? "{}");
-      expect(Object.values(volumes)).to.not.include(1);
-      expect(Object.values(volumes)).to.not.include(1.5);
-    });
-    cy.get('[data-testid="mute-all-button"]').click();
-    cy.get('[data-testid="mute-all-button"]').should("contain.text", "Mutar todos");
-    cy.get('[data-testid="muted-all-status"]').should("not.exist");
+    cy.get('[data-testid="mute-all-button"]').should("not.exist");
   });
 });

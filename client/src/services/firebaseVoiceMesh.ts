@@ -50,11 +50,13 @@ export class FirebaseVoiceMesh {
     try {
       const reports = await peer.getStats();
       let ping: number | null = null;
+      let remoteRoundTripTime: number | null = null;
       let packetsLost = 0;
       let packetsReceived = 0;
       reports.forEach((rawReport) => {
         const report = rawReport as Record<string, unknown>;
         if (report.type === "candidate-pair" && (report.state === "succeeded" || report.nominated === true) && typeof report.currentRoundTripTime === "number") ping = Math.round(report.currentRoundTripTime * 1000);
+        if (report.type === "remote-inbound-rtp" && typeof report.roundTripTime === "number") remoteRoundTripTime = report.roundTripTime;
         if (report.type === "inbound-rtp" && (report.kind === "audio" || report.mediaType === "audio" || report.kind === "video" || report.mediaType === "video")) {
           packetsLost += typeof report.packetsLost === "number" ? report.packetsLost : 0;
           packetsReceived += typeof report.packetsReceived === "number" ? report.packetsReceived : 0;
@@ -66,7 +68,7 @@ export class FirebaseVoiceMesh {
       const totalDelta = lostDelta + receivedDelta;
       const packetLoss = totalDelta > 0 ? Math.round((lostDelta / totalDelta) * 1000) / 10 : null;
       this.previousStats.set(peerId, { timestamp: Date.now(), packetsLost, packetsReceived });
-      const effectivePing = ping ?? null;
+      const effectivePing = ping ?? (remoteRoundTripTime === null ? null : Math.round(remoteRoundTripTime * 1000));
       const loss = packetLoss ?? 0;
       const level = effectivePing === null ? "unknown" : effectivePing <= 80 && loss <= 1 ? "excellent" : effectivePing <= 160 && loss <= 3 ? "good" : effectivePing <= 300 && loss <= 8 ? "fair" : "poor";
       this.options.onPeerQuality?.(peerId, { ping: effectivePing, packetLoss, level, state: peer.connectionState });
@@ -295,11 +297,14 @@ export class FirebaseVoiceMesh {
     try {
       for (const [peerId, peer] of Array.from(this.peers.entries())) {
         const sender = this.screenSenders.get(peerId);
-        if (sender) await sender.replaceTrack(screenTrack);
-        else {
+        if (sender) {
+          await sender.replaceTrack(screenTrack);
+          sender.setStreams?.(stream);
+        } else {
           const transceiver = peer.addTransceiver("video", { direction: "sendrecv" });
           this.screenSenders.set(peerId, transceiver.sender);
           await transceiver.sender.replaceTrack(screenTrack);
+          transceiver.sender.setStreams?.(stream);
         }
         const screenAudioTrack = stream.getAudioTracks?.()[0];
         if (screenAudioTrack) this.screenAudioSenders.set(peerId, peer.addTrack(screenAudioTrack, stream));

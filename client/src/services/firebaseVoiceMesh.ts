@@ -174,6 +174,13 @@ export class FirebaseVoiceMesh {
     });
     const screenTransceiver = peer.addTransceiver("video", { direction: "sendrecv" });
     this.screenSenders.set(peerId, screenTransceiver.sender);
+    const currentScreenTrack = this.screenStream?.getVideoTracks()[0];
+    if (currentScreenTrack) {
+      void screenTransceiver.sender.replaceTrack(currentScreenTrack);
+      screenTransceiver.sender.setStreams?.(this.screenStream!);
+      const currentScreenAudioTrack = this.screenStream?.getAudioTracks()[0];
+      if (currentScreenAudioTrack) this.screenAudioSenders.set(peerId, peer.addTrack(currentScreenAudioTrack, this.screenStream!));
+    }
     peer.ontrack = (event) => this.handleRemoteTrack(peerId, event);
     peer.onicecandidate = (event) => {
       if (!event.candidate) return;

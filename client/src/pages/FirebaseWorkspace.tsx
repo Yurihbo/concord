@@ -263,36 +263,28 @@ function DraggableScreenPanel({ stream, title, label, volume, muted = true, outp
 
 function RemoteAudioMixer({ streams, unlockVersion, outputDeviceId, onBlocked }: { streams: Record<string, MediaStream>; unlockVersion: number; outputDeviceId?: string; onBlocked: () => void }) {
   const audioRef = useRef<HTMLAudioElement>(null);
-  const contextRef = useRef<AudioContext | null>(null);
   const onBlockedRef = useRef(onBlocked);
   onBlockedRef.current = onBlocked;
   useEffect(() => {
     const audio = audioRef.current;
-    const entries = Object.entries(streams);
-    if (!audio || !entries.length) return;
-    const AudioContextClass = window.AudioContext ?? (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-    if (!AudioContextClass) return;
-    const context = contextRef.current ?? new AudioContextClass();
-    contextRef.current = context;
-    const destination = context.createMediaStreamDestination();
-    const sources = entries.map(([, stream]) => context.createMediaStreamSource(stream));
-    sources.forEach((source) => source.connect(destination));
-    audio.srcObject = destination.stream;
+    const remoteTracks = Object.values(streams).flatMap((stream) => stream.getAudioTracks());
+    if (!audio || !remoteTracks.length) return;
+    const combinedStream = new MediaStream(remoteTracks);
+    audio.srcObject = combinedStream;
     audio.autoplay = true;
     audio.muted = false;
     audio.volume = 1;
-    if (context.state === "suspended") void context.resume().catch(() => undefined);
     if (outputDeviceId && "setSinkId" in audio) void (audio as HTMLAudioElement & { setSinkId: (deviceId: string) => Promise<void> }).setSinkId(outputDeviceId).catch(() => undefined);
     const play = () => { void audio.play().catch(() => onBlockedRef.current()); };
     audio.addEventListener("canplay", play);
+    audio.addEventListener("loadedmetadata", play);
     play();
     return () => {
       audio.removeEventListener("canplay", play);
-      sources.forEach((source) => source.disconnect());
-      if (audio.srcObject === destination.stream) audio.srcObject = null;
+      audio.removeEventListener("loadedmetadata", play);
+      if (audio.srcObject === combinedStream) audio.srcObject = null;
     };
   }, [streams, unlockVersion, outputDeviceId]);
-  useEffect(() => () => { void contextRef.current?.close(); contextRef.current = null; }, []);
   return <audio ref={audioRef} autoPlay playsInline aria-label="Áudio dos participantes" />;
 }
 

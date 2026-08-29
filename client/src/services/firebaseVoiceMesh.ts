@@ -3,6 +3,16 @@ import { publishSignal } from "@/services/firebaseSignaling";
 
 type SignalPayload = { sdp?: RTCSessionDescriptionInit; candidate?: RTCIceCandidateInit };
 
+const isWebRtcDebugEnabled = (): boolean => {
+  if (import.meta.env.VITE_DEBUG_WEBRTC === "true") return true;
+  try { return window.localStorage.getItem("concord:debug-webrtc") === "1"; } catch { return false; }
+};
+
+function debugWebRtc(event: string, details: Record<string, unknown> = {}): void {
+  if (!isWebRtcDebugEnabled()) return;
+  console.debug(`[Concord WebRTC] ${event}`, { at: new Date().toISOString(), ...details });
+}
+
 export type VoicePeerQuality = { ping: number | null; packetLoss: number | null; level: "excellent" | "good" | "fair" | "poor" | "unknown"; state: RTCPeerConnectionState };
 
 type VoiceMeshOptions = {
@@ -41,7 +51,7 @@ export class FirebaseVoiceMesh {
   private screenStream: MediaStream | null = null;
   private stoppingScreen = false;
 
-  constructor(options: VoiceMeshOptions) { this.options = options; this.sessionId = options.sessionId ?? "legacy"; this.localStream = options.localStream; }
+  constructor(options: VoiceMeshOptions) { this.options = options; this.sessionId = options.sessionId ?? "legacy"; this.localStream = options.localStream; debugWebRtc("mesh-created", { roomId: options.roomId, userId: options.userId, sessionId: this.sessionId, localAudioTracks: options.localStream.getAudioTracks().length }); }
 
   private reportError(reason: unknown, fallback: string): void {
     this.options.onError?.(reason instanceof Error ? reason : new Error(fallback));
@@ -72,8 +82,11 @@ export class FirebaseVoiceMesh {
       const effectivePing = ping ?? (remoteRoundTripTime === null ? null : Math.round(remoteRoundTripTime * 1000));
       const loss = packetLoss ?? 0;
       const level = effectivePing === null ? "unknown" : effectivePing <= 80 && loss <= 1 ? "excellent" : effectivePing <= 160 && loss <= 3 ? "good" : effectivePing <= 300 && loss <= 8 ? "fair" : "poor";
-      this.options.onPeerQuality?.(peerId, { ping: effectivePing, packetLoss, level, state: peer.connectionState });
+      const quality = { ping: effectivePing, packetLoss, level, state: peer.connectionState } as VoicePeerQuality;
+      debugWebRtc("peer-quality", { peerId, connectionState: peer.connectionState, iceConnectionState: peer.iceConnectionState, ...quality });
+      this.options.onPeerQuality?.(peerId, quality);
     } catch (reason) {
+      debugWebRtc("peer-quality-error", { peerId, connectionState: peer.connectionState, error: reason instanceof Error ? reason.message : String(reason) });
       this.options.onPeerQuality?.(peerId, { ping: null, packetLoss: null, level: "unknown", state: peer.connectionState });
     }
   }
@@ -112,6 +125,7 @@ export class FirebaseVoiceMesh {
   }
 
   private closePeer(peerId: string, peer = this.peers.get(peerId)): void {
+    debugWebRtc("peer-closing", { peerId, connectionState: peer?.connectionState, iceState: peer?.iceConnectionState });
     if (this.peers.get(peerId) === peer) this.peers.delete(peerId);
     this.peerSessionIds.delete(peerId);
     this.offerQueues.delete(peerId);
@@ -183,16 +197,27 @@ export class FirebaseVoiceMesh {
       if (currentScreenAudioTrack) this.screenAudioSenders.set(peerId, peer.addTrack(currentScreenAudioTrack, this.screenStream!));
     }) : Promise.resolve();
     this.peerMediaReady.set(peerId, mediaReady);
-    peer.ontrack = (event) => this.handleRemoteTrack(peerId, event);
+    peer.ontrack = (event) => {
+      debugWebRtc("remote-track", { peerId, kind: event.track.kind, trackId: event.track.id, streamIds: event.streams.map((stream) => stream.id), readyState: event.track.readyState, muted: event.track.muted });
+      if (typeof event.track.addEventListener === "function") for (const mediaEvent of ["mute", "unmute", "ended"] as const) event.track.addEventListener(mediaEvent, () => debugWebRtc(`remote-track-${mediaEvent}`, { peerId, kind: event.track.kind, trackId: event.track.id, readyState: event.track.readyState, muted: event.track.muted }));
+      this.handleRemoteTrack(peerId, event);
+    };
     peer.onicecandidate = (event) => {
+      debugWebRtc("ice-candidate", { peerId, hasCandidate: Boolean(event.candidate) });
       if (!event.candidate) return;
       void publishSignal(this.options.roomId, { from: this.options.userId, to: peerId, sessionId: this.sessionId, targetSessionId: this.peerSessionIds.get(peerId), kind: "ice", payload: JSON.stringify({ candidate: event.candidate.toJSON() }) }).catch((reason) => this.reportError(reason, "Não foi possível enviar a sinalização de voz."));
     };
     peer.onconnectionstatechange = () => {
+      debugWebRtc("connection-state", { peerId, state: peer.connectionState, iceState: peer.iceConnectionState, signalingState: peer.signalingState });
       if (["failed", "closed"].includes(peer.connectionState) && this.peers.get(peerId) === peer) this.closePeer(peerId, peer);
     };
+    peer.oniceconnectionstatechange = () => debugWebRtc("ice-connection-state", { peerId, state: peer.iceConnectionState });
+    peer.onicegatheringstatechange = () => debugWebRtc("ice-gathering-state", { peerId, state: peer.iceGatheringState });
+    peer.onsignalingstatechange = () => debugWebRtc("signaling-state", { peerId, state: peer.signalingState });
+    peer.onnegotiationneeded = () => debugWebRtc("negotiation-needed", { peerId, signalingState: peer.signalingState });
     this.peers.set(peerId, peer);
     this.startPeerQualityMonitor(peerId, peer);
+    debugWebRtc("peer-created", { peerId, initiator, hasScreen: Boolean(currentScreenTrack), audioTracks: this.localStream.getAudioTracks().length });
     if (initiator) void mediaReady.then(() => this.createOffer(peerId, peer));
     return peer;
   }
@@ -225,8 +250,10 @@ export class FirebaseVoiceMesh {
         if (peer.signalingState === "closed" || peer.connectionState === "closed") return;
         await this.waitForStable(peer);
         const offer = await peer.createOffer();
+        debugWebRtc("offer-created", { peerId });
         await peer.setLocalDescription(offer);
         await publishSignal(this.options.roomId, { from: this.options.userId, to: peerId, sessionId: this.sessionId, targetSessionId: this.peerSessionIds.get(peerId), kind: "offer", payload: JSON.stringify({ sdp: offer }) });
+        debugWebRtc("offer-published", { peerId, targetSessionId: this.peerSessionIds.get(peerId) });
       } catch (reason) { this.reportError(reason, "Não foi possível iniciar a conexão de voz."); }
     });
     this.offerQueues.set(peerId, next);
@@ -235,6 +262,7 @@ export class FirebaseVoiceMesh {
 
   async syncMembers(members: FirebaseVoiceMember[]): Promise<void> {
     const others = members.filter((member) => member.uid !== this.options.userId);
+    debugWebRtc("roster-sync", { participants: members.map((member) => ({ uid: member.uid, sessionId: member.sessionId, screenSharing: member.screenSharing })), peerCount: this.peers.size });
     for (const member of others) {
       const nextSessionId = member.sessionId ?? "";
       const hasPreviousSession = this.peerSessionIds.has(member.uid);
@@ -254,9 +282,10 @@ export class FirebaseVoiceMesh {
   }
 
   async handleSignal(signal: FirebaseSignal): Promise<void> {
-    if (signal.to !== this.options.userId || signal.from === this.options.userId || (signal.targetSessionId && signal.targetSessionId !== this.sessionId) || this.handledSignalIds.has(signal.id)) return;
+    debugWebRtc("signal-received", { signalId: signal.id, kind: signal.kind, from: signal.from, sessionId: signal.sessionId, targetSessionId: signal.targetSessionId });
+    if (signal.to !== this.options.userId || signal.from === this.options.userId || (signal.targetSessionId && signal.targetSessionId !== this.sessionId) || this.handledSignalIds.has(signal.id)) { debugWebRtc("signal-ignored", { signalId: signal.id, reason: "recipient/session/duplicate" }); return; }
     const knownSessionId = this.peerSessionIds.get(signal.from);
-    if (knownSessionId && signal.sessionId && knownSessionId !== signal.sessionId) return;
+    if (knownSessionId && signal.sessionId && knownSessionId !== signal.sessionId) { debugWebRtc("signal-ignored", { signalId: signal.id, reason: "stale-peer-session", peerId: signal.from, knownSessionId, receivedSessionId: signal.sessionId }); return; }
     const payload = JSON.parse(signal.payload) as SignalPayload;
     if (signal.sessionId) this.peerSessionIds.set(signal.from, signal.sessionId);
     const peer = this.createPeer(signal.from, false);
@@ -269,6 +298,7 @@ export class FirebaseVoiceMesh {
         const answer = await peer.createAnswer();
         await peer.setLocalDescription(answer);
         await publishSignal(this.options.roomId, { from: this.options.userId, to: signal.from, sessionId: this.sessionId, targetSessionId: signal.sessionId, kind: "answer", payload: JSON.stringify({ sdp: answer }) });
+        debugWebRtc("answer-published", { peerId: signal.from, targetSessionId: signal.sessionId });
       } else if (signal.kind === "answer" && payload.sdp) {
         if (peer.signalingState !== "have-local-offer") return;
         await peer.setRemoteDescription(payload.sdp);
@@ -282,10 +312,13 @@ export class FirebaseVoiceMesh {
         else this.clearRemoteScreen(ownerId);
       }
       this.handledSignalIds.add(signal.id);
-    } catch (reason) { this.reportError(reason instanceof Error ? reason : new Error("Não foi possível sincronizar a chamada de voz."), "Não foi possível sincronizar a chamada de voz."); }
+      debugWebRtc("signal-processed", { signalId: signal.id, kind: signal.kind, peerId: signal.from });
+    } catch (reason) {
+      debugWebRtc("signal-error", { signalId: signal.id, kind: signal.kind, peerId: signal.from, error: reason instanceof Error ? reason.message : String(reason) }); this.reportError(reason instanceof Error ? reason : new Error("Não foi possível sincronizar a chamada de voz."), "Não foi possível sincronizar a chamada de voz."); }
   }
 
   async replaceMicrophone(stream: MediaStream): Promise<void> {
+    debugWebRtc("local-microphone-replaced", { audioTracks: stream.getAudioTracks().map((track) => ({ id: track.id, readyState: track.readyState, enabled: track.enabled, muted: track.muted })) });
     this.localStream = stream;
     const audioTrack = stream.getAudioTracks()[0] ?? null;
     if (!audioTrack) throw new Error("Nenhum microfone ativo foi encontrado.");
@@ -301,6 +334,7 @@ export class FirebaseVoiceMesh {
   }
 
   async shareScreen(): Promise<MediaStream> {
+    debugWebRtc("screen-share-requested", { peerCount: this.peers.size });
     if (!navigator.mediaDevices?.getDisplayMedia) throw new Error("Este navegador não permite compartilhamento de tela.");
     const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
     const screenTrack = stream.getVideoTracks()[0];
@@ -321,7 +355,8 @@ export class FirebaseVoiceMesh {
         if (screenAudioTrack) this.screenAudioSenders.set(peerId, peer.addTrack(screenAudioTrack, stream));
       }
       this.screenStream = stream;
-      screenTrack.addEventListener("ended", () => { void this.stopScreen(); }, { once: true });
+      debugWebRtc("screen-share-started", { videoTrackId: screenTrack.id, audioTrackCount: stream.getAudioTracks?.().length ?? 0, peerCount: this.peers.size });
+      screenTrack.addEventListener("ended", () => { debugWebRtc("screen-share-track-ended", { videoTrackId: screenTrack.id }); void this.stopScreen(); }, { once: true });
       await Promise.all(Array.from(this.peers.entries()).map(([peerId, peer]) => this.createOffer(peerId, peer)));
       return stream;
     } catch (reason) {
@@ -333,6 +368,7 @@ export class FirebaseVoiceMesh {
 
   async stopScreen(): Promise<void> {
     if (this.stoppingScreen) return;
+    debugWebRtc("screen-share-stopping", { peerCount: this.peers.size });
     const stream = this.screenStream;
     if (!stream && !this.screenAudioSenders.size) return;
     this.stoppingScreen = true;

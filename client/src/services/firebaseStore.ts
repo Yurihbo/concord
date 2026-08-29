@@ -21,6 +21,7 @@ import {
 import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
 import type { User } from "firebase/auth";
 import { firebaseDb, firebaseStorage } from "@/lib/firebase";
+import { sortMessagesByCreatedAt } from "@/services/messageOrdering";
 
 export type FirebaseProfile = {
   uid: string;
@@ -245,12 +246,7 @@ export function subscribeToChannelMessages(communityId: string, channelId: strin
   const constraints: QueryConstraint[] = [where("channelId", "==", channelId), limit(200)];
   return onSnapshot(query(communityCollection(communityId, "messages"), ...constraints), (snapshot) => {
     const messages = snapshot.docs.map((item) => clean(item.id, item.data() as Omit<FirebaseMessage, "id">));
-    messages.sort((left, right) => {
-      const leftTime = left.createdAt ? new Date(String(left.createdAt)).getTime() : 0;
-      const rightTime = right.createdAt ? new Date(String(right.createdAt)).getTime() : 0;
-      return leftTime - rightTime;
-    });
-    listener(messages);
+    listener(sortMessagesByCreatedAt(messages));
   }, (reason) => onError?.(reason instanceof Error ? reason : new Error("Não foi possível sincronizar as mensagens.")));
 }
 
@@ -366,7 +362,7 @@ export async function deleteDirectConversation(firstUid: string, secondUid: stri
 export function subscribeToDirectMessages(firstUid: string, secondUid: string, listener: (messages: FirebaseDirectMessage[]) => void, onError?: (error: Error) => void): Unsubscribe {
   const threadId = directThreadId(firstUid, secondUid);
   return onSnapshot(query(collection(firebaseDb, "directThreads", threadId, "messages"), orderBy("createdAt", "asc"), limit(200)), (snapshot) => {
-    listener(snapshot.docs.map((item) => clean(item.id, item.data() as Omit<FirebaseDirectMessage, "id">)));
+    listener(sortMessagesByCreatedAt(snapshot.docs.map((item) => clean(item.id, item.data() as Omit<FirebaseDirectMessage, "id">))));
   }, (reason) => onError?.(reason instanceof Error ? reason : new Error("Não foi possível sincronizar a conversa.")));
 }
 

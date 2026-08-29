@@ -440,6 +440,8 @@ a { color: inherit; text-decoration: none; }
 .voice-screen-panel .firebase-screen-preview video { max-height: 15rem; }
 .voice-screen-panel .direct-screen-float { position: relative; inset: auto; width: 100%; max-width: none; margin: 0; }
 .voice-screen-panel .direct-screen-float-bar { cursor: default; }
+.screen-reopen-button { display: inline-flex; align-items: center; justify-content: center; gap: .4rem; width: fit-content; margin: .65rem 0 0; padding: .45rem .7rem; color: #1d4ed8; background: #eff6ff; border: 1px solid #93c5fd; border-radius: .45rem; font-size: .68rem; font-weight: 800; cursor: pointer; }
+.screen-reopen-button:hover { color: #fff; background: #2563eb; }
 .voice-screen-panel + .call-actions { margin-top: 1rem; }
 @media (max-width: 640px) { .voice-screen-panel { margin: .75rem 0 0; } .voice-screen-card-heading { align-items: flex-start; flex-direction: column; } .voice-screen-card-heading button { width: 100%; } }
 

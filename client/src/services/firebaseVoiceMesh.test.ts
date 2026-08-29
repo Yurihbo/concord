@@ -129,5 +129,41 @@ describe("FirebaseVoiceMesh", () => {
     mesh.dispose();
     expect(peers[0].close).toHaveBeenCalled();
     expect(track.stop).toHaveBeenCalled();
+    });
+  it("suporta ciclos de entrada, saída, retorno e tela sem deixar peers órfãos", async () => {
+    const peers: FakePeer[] = [];
+    vi.stubGlobal("RTCPeerConnection", class extends FakePeer { constructor() { super(); peers.push(this); } });
+    class StressMediaStream {
+      private readonly tracks: MediaStreamTrack[];
+      constructor(tracks: MediaStreamTrack[] = []) { this.tracks = [...tracks]; }
+      getTracks() { return this.tracks; }
+      getAudioTracks() { return this.tracks.filter((track) => track.kind === "audio"); }
+      getVideoTracks() { return this.tracks.filter((track) => track.kind === "video"); }
+      addTrack(track: MediaStreamTrack) { if (!this.tracks.includes(track)) this.tracks.push(track); }
+    }
+    vi.stubGlobal("MediaStream", StressMediaStream);
+    const screenTrack = { kind: "video", id: "stress-screen", stop: vi.fn(), addEventListener: vi.fn() } as unknown as MediaStreamTrack;
+    const screenStream = { getVideoTracks: () => [screenTrack], getTracks: () => [screenTrack], getAudioTracks: () => [] } as unknown as MediaStream;
+    vi.stubGlobal("navigator", { mediaDevices: { getDisplayMedia: vi.fn().mockResolvedValue(screenStream) } });
+    const users = ["user-a", "user-b", "user-c", "user-d"];
+    const session = (userId: string, version: number) => `${userId}-session-${version}`;
+    const localTracks = new Map(users.map((userId) => [userId, { kind: "audio", id: `${userId}-audio`, stop: vi.fn() } as unknown as MediaStreamTrack]));
+    const meshes = new Map(users.map((userId) => [userId, new FirebaseVoiceMesh({ roomId: "stress-room", userId, sessionId: session(userId, 1), localStream: { getTracks: () => [localTracks.get(userId)!], getAudioTracks: () => [localTracks.get(userId)!] } as unknown as MediaStream, onRemoteStream: vi.fn(), onRemoteScreenStream: vi.fn() })]));
+    const roster = (activeUsers: string[], versions: Record<string, number>) => activeUsers.map((uid) => ({ uid, roomId: "stress-room", sessionId: session(uid, versions[uid] ?? 1), displayName: uid, isSpeaking: false, muted: false, screenSharing: uid === "user-a" }));
+    const initialRoster = roster(users, {});
+    for (const userId of users) await meshes.get(userId)!.syncMembers(initialRoster.filter((member) => member.uid !== userId));
+    expect(peers).toHaveLength(12);
+    await meshes.get("user-a")!.shareScreen();
+    expect(peers.filter((peer) => peer.transceiver.sender.replaceTrack.mock.calls.some((call) => call[0] === screenTrack))).toHaveLength(3);
+    for (const userId of users) await meshes.get(userId)!.syncMembers(roster(users.filter((uid) => uid !== "user-d"), {} ).filter((member) => member.uid !== userId));
+    expect(peers.filter((peer) => peer.close.mock.calls.length > 0)).toHaveLength(3);
+    await meshes.get("user-d")!.syncMembers(roster(users, { "user-d": 2 }).filter((member) => member.uid !== "user-d"));
+    await meshes.get("user-a")!.syncMembers(roster(users, { "user-d": 2 }).filter((member) => member.uid !== "user-a"));
+    expect(peers.some((peer) => peer.addTrack.mock.calls.some((call) => call[0] === screenTrack) || peer.transceiver.sender.replaceTrack.mock.calls.some((call) => call[0] === screenTrack))).toBe(true);
+    meshes.forEach((mesh) => mesh.dispose());
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(peers.every((peer) => peer.close.mock.calls.length > 0)).toBe(true);
+    expect(screenTrack.stop).toHaveBeenCalled();
+    for (const track of localTracks.values()) expect(track.stop).toHaveBeenCalled();
   });
 });

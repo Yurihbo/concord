@@ -20,6 +20,14 @@ export function PwaInstallButton({
 }: PwaInstallButtonProps) {
   const { install, isInstalled, isInstallable } = usePwaInstall();
   const [helpOpen, setHelpOpen] = useState(false);
+  const userAgent = typeof navigator === "undefined" ? "" : navigator.userAgent;
+  const isAppleMobile = /iPad|iPhone|iPod/i.test(userAgent) || (userAgent.includes("Macintosh") && "ontouchend" in document);
+  const isFirefox = /Firefox\//i.test(userAgent);
+  const manualInstallText = isAppleMobile
+    ? "No Safari, toque em Compartilhar e escolha “Adicionar à Tela de Início”."
+    : isFirefox
+      ? "No Firefox, abra o menu do navegador e use “Instalar” ou “Adicionar à tela inicial”, quando disponível."
+      : "Abra o menu do navegador e escolha “Instalar aplicativo” ou “Adicionar à tela inicial”.";
 
   const handleInstall = async () => {
     if (isInstalled) return;
@@ -60,17 +68,13 @@ export function PwaInstallButton({
           </DialogHeader>
           <div className="pwa-install-guide">
             <div>
-              <strong>Android ou computador</strong>
-              <span>
-                Use o botão de instalar do navegador ou escolha “Instalar
-                aplicativo” no menu da página.
-              </span>
+              <strong>{isAppleMobile ? "iPhone ou iPad" : "Seu navegador"}</strong>
+              <span>{manualInstallText}</span>
             </div>
             <div>
-              <strong>iPhone ou iPad</strong>
+              <strong>Prompt automático</strong>
               <span>
-                Abra no Safari, toque em <Share size={13} aria-hidden="true" />{" "}
-                Compartilhar e escolha “Adicionar à Tela de Início”.
+                Quando o navegador oferecer instalação automática, este botão abrirá o prompt nativo. Se ele não aparecer, as instruções acima continuam válidas.
               </span>
             </div>
           </div>

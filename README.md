@@ -2,7 +2,7 @@
 
 # CONCORD
 
-### ✦ Comunicação livre, comunidades e colaboração em tempo real.
+###  Comunicação livre, comunidades e colaboração em tempo real.
 
 Uma plataforma de comunicação web/PWA criada para reunir **comunidades, canais, mensagens diretas, chamadas de voz e compartilhamento de tela** em uma única experiência.
 
@@ -25,7 +25,7 @@ Uma plataforma de comunicação web/PWA criada para reunir **comunidades, canais
 
 ---
 
-## ✦ Sobre o Concord
+##  Sobre o Concord
 
 O **Concord** é um projeto de comunicação livre desenvolvido como uma aplicação web progressiva, com foco em comunidades, conversas em tempo real e colaboração.
 
@@ -46,11 +46,11 @@ A interface segue uma estética **dark/cyber**, com azul profundo, ciano, brilho
 
 ---
 
-## 🖼️ Interface
+##  Interface
 
 <div align="center">
 
-### 🔐 Acesso
+###  Acesso
 
 <img src="docs/screenshots/login.png" alt="Tela de login do Concord" width="90%">
 
@@ -62,7 +62,7 @@ A interface segue uma estética **dark/cyber**, com azul profundo, ciano, brilho
 
 <br><br>
 
-### 🎥 Sala de voz e compartilhamento de tela
+###  Sala de voz e compartilhamento de tela
 
 <img src="docs/screenshots/voice-screen-share.png" alt="Sala de voz com compartilhamento de tela no Concord" width="90%">
 
@@ -70,28 +70,28 @@ A interface segue uma estética **dark/cyber**, com azul profundo, ciano, brilho
 
 ---
 
-## ⚡ Principais recursos
+##  Principais recursos
 
-### 🔐 Autenticação
+###  Autenticação
 
 - Login com Google
 - Login por e-mail e senha
 - Criação de conta
 - Integração preparada com Firebase Authentication
 
-### 🌐 Comunidades
+###  Comunidades
 
 Espaços próprios para reunir pessoas, canais e salas de voz.
 
-### #️⃣ Canais de texto
+###  Canais de texto
 
 Conversas organizadas por canais, com navegação lateral e composição de mensagens.
 
-### 💬 Mensagens diretas
+###  Mensagens diretas
 
 Área dedicada a conversas individuais e conexões entre usuários.
 
-### 🎙️ Salas de voz
+###  Salas de voz
 
 - Entrada e saída de chamadas
 - Participantes conectados
@@ -101,7 +101,7 @@ Conversas organizadas por canais, com navegação lateral e composição de mens
 - Convites
 - Estado de conexão
 
-### 🖥️ Compartilhamento de tela
+###  Compartilhamento de tela
 
 Um dos principais diferenciais do Concord:
 
@@ -113,17 +113,17 @@ Um dos principais diferenciais do Concord:
 - identificação do participante;
 - integração com a sala de voz.
 
-### 👥 Participantes
+###  Participantes
 
 Cartões de participantes com avatar, nome, estado de conexão, áudio e informações da chamada.
 
-### 📲 PWA
+###  PWA
 
 O projeto possui `manifest.json` e `sw.js`, além de assets próprios e estrutura preparada para instalação como aplicativo.
 
 ---
 
-## 🧱 Arquitetura
+##  Arquitetura
 
 ```text
 CONCORD/
@@ -174,7 +174,7 @@ O repositório atualmente separa `client`, `server`, `firebase`, `drizzle`, `cyp
 
 ---
 
-## 🧩 Stack tecnológica
+##  Stack tecnológica
 
 | Tecnologia | Função |
 |---|---|
@@ -199,7 +199,7 @@ O repositório atualmente separa `client`, `server`, `firebase`, `drizzle`, `cyp
 
 ---
 
-## 🔥 Firebase
+##  Firebase
 
 O projeto possui uma camada própria:
 
@@ -228,7 +228,7 @@ VITE_FIREBASE_MEASUREMENT_ID=
 
 ---
 
-## 🚀 Executando localmente
+##  Executando localmente
 
 ### Pré-requisitos
 
@@ -262,7 +262,7 @@ pnpm dev
 
 ---
 
-## 📦 Scripts
+##  Scripts
 
 ```bash
 pnpm dev          # Desenvolvimento
@@ -279,7 +279,7 @@ pnpm db:push      # Drizzle
 
 ---
 
-## 🧪 Testes
+##  Testes
 
 O projeto possui testes unitários e E2E.
 
@@ -306,7 +306,7 @@ pnpm test:e2e
 
 ---
 
-## 🌍 GitHub Pages
+##  GitHub Pages
 
 O projeto possui build específico para publicação:
 
@@ -318,24 +318,24 @@ A configuração atual documenta o uso do GitHub Pages com base `/concord/`.
 
 ---
 
-## 🎨 Identidade visual
+##  Identidade visual
 
 A identidade do Concord combina:
 
-- 🌌 Azul-marinho profundo
-- ⚡ Ciano neon
-- 💠 Bordas luminosas
-- 🖥️ Painéis escuros
-- 🔵 Estados de conexão
-- 🎙️ Controles de chamada
-- ✦ Elementos tecnológicos
-- 📱 Interface responsiva
+-  Azul-marinho profundo
+-  Ciano neon
+-  Bordas luminosas
+-  Painéis escuros
+-  Estados de conexão
+-  Controles de chamada
+-  Elementos tecnológicos
+-  Interface responsiva
 
 A intenção é criar um **espaço digital próprio**, em vez de apenas reproduzir outra plataforma.
 
 ---
 
-## 🧠 Conceito
+##  Conceito
 
 > **"Converse. Conecte-se. Compartilhe. Construa seu espaço."**
 
@@ -347,7 +347,7 @@ em um único projeto.
 
 ---
 
-## 🛠️ Estado atual
+##  Estado atual
 
 O Concord está em **desenvolvimento contínuo**.
 
@@ -368,7 +368,7 @@ A base já contempla interface, autenticação, comunidades, canais, chamadas e 
 
 ---
 
-## 🔐 Segurança
+##  Segurança
 
 O projeto possui regras específicas para Firestore e Storage.
 
@@ -386,7 +386,7 @@ Para uma implantação pública, revise:
 
 ---
 
-## 🤝 Contribuição
+##  Contribuição
 
 ```bash
 git checkout -b feature/minha-melhoria
@@ -399,7 +399,7 @@ Depois, abra um Pull Request descrevendo as alterações e como testar.
 
 ---
 
-## 📁 Screenshots deste README
+##  Screenshots deste README
 
 Como o repositório **já possui uma pasta `docs/`**, não substitua essa pasta.
 
@@ -415,7 +415,7 @@ docs/
 
 ---
 
-## 📜 Licença
+##  Licença
 
 O projeto declara licença **MIT**.
 
@@ -425,7 +425,7 @@ Consulte o arquivo `LICENSE` para os termos completos.
 
 <div align="center">
 
-## ✦ CONCORD
+##  CONCORD
 
 ### Seu espaço. Seu ritmo. Sua comunidade.
 
